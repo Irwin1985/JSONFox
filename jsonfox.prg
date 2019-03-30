@@ -1,22 +1,22 @@
 *---------------------------------------------------------------------------------------------------------------*
 *
-* @title:		LibrerÌa JsonFOX
-* @description:	LibrerÌa 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
-* 				ideal para el trabajo en capas y comunicaciÛn con interfaces desarrolladas en Visual FoxPro 9.0
-*				ya que mediante el mecanismo de serializaciÛn de XML la hace eficiente para el pase de cursores
+* @title:		Librer√≠a JsonFOX
+* @description:	Librer√≠a 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
+* 				ideal para el trabajo en capas y comunicaci√≥n con interfaces desarrolladas en Visual FoxPro 9.0
+*				ya que mediante el mecanismo de serializaci√≥n de XML la hace eficiente para el pase de cursores
 *				serializados.
 *
 *				Para el trabajo en capas y reutilizar esta libreria se recomienda compilar como DLL. Si no lo
-*				desea entonces deber· quitar la palabra "OLEPUBLIC" de la linea 1.
+*				desea entonces deber√° quitar la palabra "OLEPUBLIC" de la linea 1.
 *
 * @version:		1.2 (beta)
-* @author:		Irwin RodrÌguez
+* @author:		Irwin Rodr√≠guez
 * @email:		rodriguez.irwin@gmail.com
 * @license:		MIT
 * @inspired_by:	#VFPJSON JSON library for VFP
 *
 *---------------------------------------------------------------------------------------------------------------*
-DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
+DEFINE CLASS jsonfox AS CUSTOM
 
 	HIDDEN cJsonOri
 	HIDDEN cJsonStr
@@ -34,8 +34,8 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	FLAG = .F.
 	
 	PROCEDURE INIT
-		THIS.nPos 		= 0
-		THIS.nLen 		= 0
+		THIS.nPos 	= 0
+		THIS.nLen 	= 0
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
 		THIS.lValidCall = .T.
@@ -43,11 +43,11 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		THIS.lValidCall = .T.
 		THIS.LastUpdate	= "30/03/19 01:47:31"
 		THIS.lValidCall = .T.
-		THIS.Author		= "Irwin RodrÌguez"
+		THIS.Author	= "Irwin Rodr√≠guez"
 		THIS.lValidCall = .T.
-		THIS.Email		= "rodriguez.irwin@gmail.com"
+		THIS.Email	= "rodriguez.irwin@gmail.com"
 *-- State Flag
-		THIS.FLAG 		= CREATEOBJECT("FLAG")
+		THIS.FLAG 	= CREATEOBJECT("FLAG")
 	ENDPROC
 
 *--	decode into an object using a JSON string valid format.	
@@ -68,7 +68,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	ENDFUNC
 
 *-- Serialize XML from a valid JSON Array.
-	FUNCTION ArrayToXML(tStrArray) HELPSTRING "Serializa una cadena en formato JSON a una representaciÛn en XML"
+	FUNCTION ArrayToXML(tStrArray) HELPSTRING "Serializa una cadena en formato JSON a una representaci√≥n en XML"
 
 		IF EMPTY(tStrArray)
 			THIS.__setLastErrorText("invalid JSON format")
@@ -468,7 +468,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			RETURN ''
 		ELSE &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
 		ENDIF &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-		lnLenExp = lnLenExp + 1 && El valor m·s el salto.
+		lnLenExp = lnLenExp + 1 && El valor m√°s el salto.
 		THIS.__eat_json(lnLenExp)
 		RETURN vNewVal
 	ENDFUNC
@@ -487,7 +487,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			RETURN ''
 		ELSE &&EMPTY(lcValue)
 		ENDIF &&EMPTY(lcValue)
-		THIS.__eat_json(LEN(lcValue) + 3) && El nombre m·s los delimitadores '"'/'"' y una posicion m·s para saltarse el ˙ltimo ".
+		THIS.__eat_json(LEN(lcValue) + 3) && El nombre m√°s los delimitadores '"'/'"' y una posicion m√°s para saltarse el √∫ltimo ".
 		RETURN lcValue
 	ENDFUNC
 
@@ -598,18 +598,18 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 
 	HIDDEN FUNCTION __html_entity_decode
 		LPARAMETERS cText
-		cText = STRTRAN(cText, "\u00e1", "·")
-		cText = STRTRAN(cText, "\u00e9", "È")
-		cText = STRTRAN(cText, "\u00ed", "Ì")
-		cText = STRTRAN(cText, "\u00f3", "Û")
-		cText = STRTRAN(cText, "\u00fa", "˙")
-		cText = STRTRAN(cText, "\u00c1", "¡")
-		cText = STRTRAN(cText, "\u00c9", "…")
-		cText = STRTRAN(cText, "\u00cd", "Õ")
-		cText = STRTRAN(cText, "\u00d3", "”")
-		cText = STRTRAN(cText, "\u00da", "⁄")
-		cText = STRTRAN(cText, "\u00f1", "Ò")
-		cText = STRTRAN(cText, "\u00d1", "—")
+		cText = STRTRAN(cText, "\u00e1", "√°")
+		cText = STRTRAN(cText, "\u00e9", "√©")
+		cText = STRTRAN(cText, "\u00ed", "√≠")
+		cText = STRTRAN(cText, "\u00f3", "√≥")
+		cText = STRTRAN(cText, "\u00fa", "√∫")
+		cText = STRTRAN(cText, "\u00c1", "√Å")
+		cText = STRTRAN(cText, "\u00c9", "√â")
+		cText = STRTRAN(cText, "\u00cd", "√ç")
+		cText = STRTRAN(cText, "\u00d3", "√ì")
+		cText = STRTRAN(cText, "\u00da", "√ö")
+		cText = STRTRAN(cText, "\u00f1", "√±")
+		cText = STRTRAN(cText, "\u00d1", "√ë")
 		cText = STRTRAN(cText, "\u0026", "&")
 		cText = STRTRAN(cText, "\u0022", '"')
 		cText = STRTRAN(cText, "\u2019", "'")
@@ -618,7 +618,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		cText = STRTRAN(cText, "\u002D", "-")
 		cText = STRTRAN(cText, "\u0023", "#")
 		cText = STRTRAN(cText, "\u0025", "%")
-		cText = STRTRAN(cText, "\u00b2", "≤")
+		cText = STRTRAN(cText, "\u00b2", "¬≤")
 		RETURN cText
 	ENDFUNC
 
@@ -732,7 +732,7 @@ DEFINE CLASS __custom_array AS CUSTOM
 
 	ENDFUNC
 
-	FUNCTION getvalue(tnIndex AS INTEGER) HELPSTRING "Obtiene el contenido del array dado su Ìndice."
+	FUNCTION getvalue(tnIndex AS INTEGER) HELPSTRING "Obtiene el contenido del array dado su √≠ndice."
 		TRY
 			nLen = THIS.ARRAY[tnIndex]
 		CATCH
