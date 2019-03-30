@@ -1,13 +1,10 @@
 *---------------------------------------------------------------------------------------------------------------*
 *
 * @title:		Librería JsonFOX
-* @description:	Librería 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
-* 				ideal para el trabajo en capas y comunicación con interfaces desarrolladas en Visual FoxPro 9.0
-*				ya que mediante el mecanismo de serialización de XML la hace eficiente para el pase de cursores
-*				serializados.
-*
-*				Para el trabajo en capas y reutilizar esta libreria se recomienda compilar como DLL. Si no lo
-*				desea entonces deberá quitar la palabra "OLEPUBLIC" de la linea 1.
+* @description:		Librería 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
+* 			ideal para el trabajo en capas y comunicación con interfaces desarrolladas en Visual FoxPro 9.0
+*			ya que mediante el mecanismo de serialización de XML la hace eficiente para el pase de cursores
+*			serializados.
 *
 * @version:		1.2 (beta)
 * @author:		Irwin Rodríguez
