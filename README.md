@@ -8,7 +8,7 @@
 
 ### Latest Release
 
-**[JSONFox](/JSONFox/)** - v.1.2 (beta) - Release 2019-03-30 01:47:31
+**[JSONFox](/)** - v.1.2 (beta) - Release 2019-03-30 01:47:31
 
 <hr>
 
