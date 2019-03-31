@@ -10,7 +10,7 @@
 * @author:		Irwin Rodríguez
 * @email:		rodriguez.irwin@gmail.com
 * @license:		MIT
-* @inspired_by:	#VFPJSON JSON library for VFP
+* @inspired_by:		VFPJSON JSON library for VFP
 *
 *---------------------------------------------------------------------------------------------------------------*
 DEFINE CLASS jsonfox AS CUSTOM
