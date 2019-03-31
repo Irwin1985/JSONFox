@@ -85,25 +85,25 @@
  
  *-- Serialize XML from JSON Array*
  TEXT TO lcStr NOSHOW
-	 {
-	  "status": "success",
-	  "data": [
-	    {
-	      "id": 2,
-	      "correo": "rodriguez.irwin@gmail.com",
-	      "nombre": "Irwin1985",
-	      "apellido": "Rodriguez",
-	      "sexo": "1",
-	      "sueldo": 2278.45,
-	      "profesion_id": 1,
-	      "fechanacimiento": "1985-11-15",
-	      "fecharegistro": "2019-03-31",
-	      "soltero": true
-	    }
-	  ],
-	  "code": 200,
-	  "message": "empleados consultados"
-	}
+ {
+  "status": "success",
+  "data": [
+    {
+      "id": 2,
+      "correo": "rodriguez.irwin@gmail.com",
+      "nombre": "Irwin1985",
+      "apellido": "Rodriguez",
+      "sexo": "1",
+      "sueldo": 2278.45,
+      "profesion_id": 1,
+      "fechanacimiento": "1985-11-15",
+      "fecharegistro": "2019-03-31",
+      "soltero": true
+    }
+  ],
+  "code": 200,
+  "message": "empleados consultados"
+}
 ENDTEXT
 
  lcXML = loJSON.
