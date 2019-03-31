@@ -21,6 +21,9 @@
 
 **JSONFox** adds an **underscore** before the attribute name for avoiding internal conflict with native object properties. That means you'll have to reference your deserialized object like: obj._attribute
 
+## Properties
+* ![](images/prop.gif) **LastErrorText:** Stores the possible error generated in the current sentence.
+
 ## Methods
 
 * ![](images/meth.gif) **Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
