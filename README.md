@@ -2,7 +2,7 @@
 
 **JSONFox** is a free **JSON / XML** ***parser*** for exchanging data between layers developed in Visual FoxPro 9.0
 
-**NOTE:** This library was inspired by **[vfpjson] (https://github.com/sait/vfpjson)**.
+**NOTE:** This library was inspired by **[vfpjson](https://github.com/sait/vfpjson)**.
 
 
 ### Project Manager
