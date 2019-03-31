@@ -18,6 +18,7 @@
 ## Features
 
 **JSONFox** supports XML serialization using a JSON Array as parameters. This is useful for CURSORS serialization between layers.
+**JSONFox** adds an **underscore** before the attribute name for avoiding internal conflict with native object properties. That means you'll have to reference your deserialized object like: obj._attribute
 
 ## Methods
 
@@ -77,7 +78,7 @@
  ENDIF &&!EMPTY(loJson.LastErrorText)
  ?cJSONStr
  
- *-- Serialize XML from JSON Array
+ *-- Serialize XML from JSON Array*
  
  
  
