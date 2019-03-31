@@ -39,7 +39,7 @@
 ### Examples
 
 <pre>
- *-- Serialize JSON String
+ *-- Serialize JSON String*
  SET PROCEDURE TO "JSONFox.prg" ADDITIVE
  loJSON = NEWOBJECT("JSONFox", "JSONFox.prg")
  TEXT TO lcJsonStr NOSHOW
@@ -58,11 +58,28 @@
  ENDTEXT
  obj = loJSON.decode(lcJsonStr)
  
- * Don't forget ever check the LastErrorText
- IF !EMPTY(loJson.LastErrorText)
-	   MESSAGEBOX(loJson.LastErrorText, 0+48, "Error")
-	   RELEASE loJson
-	   RETURN
+ *-- Don't forget check the LastErrorText*
+ IF !EMPTY(loJson.LastErrorText) 
+ 	MESSAGEBOX(loJson.LastErrorText, 0+48, "Something went wrong")
+	RELEASE loJson
+	RETURN
  ELSE &&!EMPTY(loJson.LastErrorText)
  ENDIF &&!EMPTY(loJson.LastErrorText)
+ DISPLAY OBJECTS LIKE obj
+ 
+ *-- Deserialize Object*
+ cJSONStr = loJSON.encode(obj)
+ IF !EMPTY(loJson.LastErrorText) 
+ 	MESSAGEBOX(loJson.LastErrorText, 0+48, "Something went wrong")
+	RELEASE loJson
+	RETURN
+ ELSE &&!EMPTY(loJson.LastErrorText)
+ ENDIF &&!EMPTY(loJson.LastErrorText)
+ ?cJSONStr
+ 
+ *-- Serialize XML from JSON Array
+ 
+ 
+ 
+ 
 </pre>
