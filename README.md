@@ -42,6 +42,20 @@
  *-- Create object
  SET PROCEDURE TO "JSONFox.prg" ADDITIVE
  loJSON = NEWOBJECT("JSONFox", "JSONFox.prg")
- obj = loJSON.decode('{"name":"Irwin Rodriguez", "age": 33, "birth": "1985-11-15", "wife": "Serelys Fonseca", "music_band": "The Beatles", "PI": 3.14159265, "married": false, "programmer": true, "hascar": null}')
+ TEXT TO lcJsonStr NOSHOW
+   {
+    "name":"Irwin",
+    "surname": "Rodriguez",
+    "birth":"1985-11-15",
+    "current_year": 2019    
+    "wife": "Serelys Fonseca",
+    "music_band":"The Beatles",
+    "size": 1.79,
+    "isGamer": false,
+    "isProgrammer": true, 
+    "hasCar": null
+   }
+ ENDTEXT
+ obj = loJSON.decode(lcJsonStr)
  
 </pre>
