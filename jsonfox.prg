@@ -1,19 +1,22 @@
 *---------------------------------------------------------------------------------------------------------------*
 *
 * @title:		Librería JsonFOX
-* @description:		Librería 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
-* 			ideal para el trabajo en capas y comunicación con interfaces desarrolladas en Visual FoxPro 9.0
-*			ya que mediante el mecanismo de serialización de XML la hace eficiente para el pase de cursores
-*			serializados.
+* @description:	Librería 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
+* 				ideal para el trabajo en capas y comunicación con interfaces desarrolladas en Visual FoxPro 9.0
+*				ya que mediante el mecanismo de serialización de XML la hace eficiente para el pase de cursores
+*				serializados.
 *
-* @version:		1.2 (beta)
+*				Para el trabajo en capas y reutilizar esta libreria se recomienda compilar como DLL. Si no lo
+*				desea entonces deberá quitar la palabra "OLEPUBLIC" de la linea 1.
+*
+* @version:		1.3 (beta)
 * @author:		Irwin Rodríguez
 * @email:		rodriguez.irwin@gmail.com
 * @license:		MIT
-* @inspired_by:		VFPJSON JSON library for VFP
+* @inspired_by:	#VFPJSON JSON library for VFP
 *
 *---------------------------------------------------------------------------------------------------------------*
-DEFINE CLASS jsonfox AS CUSTOM
+DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 
 	HIDDEN cJsonOri
 	HIDDEN cJsonStr
@@ -23,34 +26,36 @@ DEFINE CLASS jsonfox AS CUSTOM
 	HIDDEN lparseXML
 	HIDDEN nPosXML
 	
-	Version		= ""
-	LastUpdate	= ""
-	Author		= ""
-	Email		= ""
+	Version			= ""
+	LastUpdate		= ""
+	Author			= ""
+	Email			= ""
 	LastErrorText 	= ""
-	FLAG 		= .F.
+	FLAG = .F.
 	
 	PROCEDURE INIT
-		THIS.nPos 	= 0
-		THIS.nLen 	= 0
+		THIS.nPos 		= 0
+		THIS.nLen 		= 0
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
 		THIS.lValidCall = .T.
-		THIS.Version	= "1.2 (beta)"
+		THIS.Version	= "1.3 (beta)"
 		THIS.lValidCall = .T.
-		THIS.LastUpdate	= "30/03/19 01:47:31"
+		THIS.LastUpdate	= "2019-01-04 07:05:26"
 		THIS.lValidCall = .T.
-		THIS.Author	= "Irwin Rodríguez"
+		THIS.Author		= "Irwin Rodríguez"
 		THIS.lValidCall = .T.
-		THIS.Email	= "rodriguez.irwin@gmail.com"
+		THIS.Email		= "rodriguez.irwin@gmail.com"
 *-- State Flag
-		THIS.FLAG 	= CREATEOBJECT("FLAG")
+		THIS.FLAG 		= CREATEOBJECT("FLAG")
 	ENDPROC
+
 *--	decode into an object using a JSON string valid format.	
 	FUNCTION decode(tcJsonStr AS MEMO) HELPSTRING "Decodifica una cadena en formato JSON."
 		THIS.cJsonStr = tcJsonStr
 		RETURN THIS.__decode()
 	ENDFUNC
+
 *-- loads a file with a JSON valid format and decodes it into an object.
 	FUNCTION loadFile(tcJsonFile AS STRING) HELPSTRING "Decodifica un archivo con formato JSON."
 		IF !FILE(tcJsonFile)
@@ -61,23 +66,29 @@ DEFINE CLASS jsonfox AS CUSTOM
 		ENDIF &&!FILE(tcJsonFile)
 		RETURN THIS.__decode()
 	ENDFUNC
+
 *-- Serialize XML from a valid JSON Array.
-	FUNCTION ArrayToXML(tStrArray) HELPSTRING "Serializa una cadena en formato JSON a una representación en XML"
+	FUNCTION ArrayToXML(tStrArray AS MEMO) HELPSTRING "Serializa una cadena en formato JSON a una representación en XML"
+
 		IF EMPTY(tStrArray)
 			THIS.__setLastErrorText("invalid JSON format")
 			RETURN NULL
 		ELSE &&EMPTY(tStrArray)
-		ENDIF &&EMPTY(tStrArray)		
+		ENDIF &&EMPTY(tStrArray)
+
+
 		IF LEFT(tStrArray,1) == "{" AND RIGHT(tStrArray,1) == "}"
 			tStrArray = "??" + tStrArray + "??"
 			tStrArray = STREXTRACT(tStrArray, "??{", "}??")
 		ELSE &&LEFT(tStrArray,1) == "{" AND RIGHT(tStrArray,1) == "}"
 		ENDIF &&LEFT(tStrArray,1) == "{" AND RIGHT(tStrArray,1) == "}"
+
 		THIS.cJsonStr 	= tStrArray
 		THIS.lparseXML 	= .T.
 		THIS.__parse_value()
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
+
 		cSelect = ""
 		cFrom	= ""
 		cPiloto = ""
@@ -103,6 +114,7 @@ DEFINE CLASS jsonfox AS CUSTOM
 		RELEASE aColumns
 		RETURN lcOut
 	ENDFUNC
+
 *-- Deserialize a XML format into a JSON string.
 	FUNCTION XMLToJson(tcXML AS MEMO) HELPSTRING "Convierte un XML a una representacion JSON"
 		IF EMPTY(tcXML)
@@ -133,8 +145,10 @@ DEFINE CLASS jsonfox AS CUSTOM
 		CLOSE DATABASES ALL
 		RETURN lcJsonXML
 	ENDFUNC
-	*-- Serialize a valid JSON format.
+
+	*-- deserialize a JSON object.
 	FUNCTION encode(vNewProp as variant)
+
 		DO CASE
 		CASE VARTYPE(vNewProp) == "C"
 			vNewProp = ALLT(vNewProp)
@@ -145,24 +159,32 @@ DEFINE CLASS jsonfox AS CUSTOM
 			vNewProp = STRTRAN(vNewProp, CHR(13), '\r' )
 			vNewProp = STRTRAN(vNewProp, '"', '\"' )
 			RETURN '"' + vNewProp + '"'
+
 		CASE VARTYPE(vNewProp) == "N"
 			RETURN TRANSFORM(vNewProp)
+
 		CASE VARTYPE(vNewProp) == "L"
 			RETURN IIF(vNewProp, "true", "false")
+
 		CASE VARTYPE(vNewProp) == "X"
 			RETURN "null"
+
 		CASE VARTYPE(vNewProp) == "D"
 			RETURN '"' + DTOC(vNewProp) + '"'
+
 		CASE VARTYPE(vNewProp) == "O"
 			RETURN "{" + EXECSCRIPT(THIS.load_script(), vNewProp, THIS.load_script()) + "}"
 		OTHERWISE
 		ENDCASE
 	ENDFUNC
-	FUNCTION load_script
+
+	HIDDEN FUNCTION load_script
 		TEXT TO lcLoad NOSHOW TEXTMERGE PRETEXT 7
 			LPARAMETERS toObj, tcExecScript
+
 			LOCAL vNewVal
 			vNewVal = toObj
+
 			LOCAL cProp, cJsonValue, cReturn, aProp[1]
 			=AMEMBERS(aProp,vNewVal)
 			cReturn = ""
@@ -193,9 +215,11 @@ DEFINE CLASS jsonfox AS CUSTOM
 			NEXT &&EACH cProp IN aProp
 			lcRet = SUBSTR(cReturn,2)
 			RETURN lcRet
+
 			*-- Internal usage only.
 			FUNCTION encode
 				LPARAMETERS vNewVal, tcExecScript
+
 				LOCAL cTipo
 		* Cuando se manda una arreglo,
 				IF TYPE('ALen(vNewVal)') == "N"
@@ -203,15 +227,23 @@ DEFINE CLASS jsonfox AS CUSTOM
 				ELSE &&TYPE('ALen(vNewVal)') == "N"
 					cTipo = VARTYPE(vNewVal)
 				ENDIF &&TYPE('ALen(vNewVal)') == "N"
+
 				DO CASE
 				CASE cTipo == "D"
-					RETURN '"' + DTOS(vNewVal) + '"'
+					cCenturyAct = SET("Century")
+					SET CENTURY ON
+					lcDate = '"' + ALLTRIM(STR(YEAR(vNewVal))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewVal))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewVal))),2,'0') + '"'
+					SET CENTURY &cCenturyAct
+					RETURN lcDate
 				CASE cTipo == "N"
 					RETURN TRANSFORM(vNewVal)
+
 				CASE cTipo == "L"
 					RETURN IIF(vNewVal, "true", "false")
+
 				CASE cTipo == "X"
 					RETURN "null"
+
 				CASE cTipo == "C"
 					vNewVal = ALLT(vNewVal)
 					vNewVal = STRTRAN(vNewVal, '\', '\\' )
@@ -221,6 +253,7 @@ DEFINE CLASS jsonfox AS CUSTOM
 					vNewVal = STRTRAN(vNewVal, CHR(13), '\r' )
 					vNewVal = STRTRAN(vNewVal, '"', '\"' )
 					RETURN '"' + vNewVal + '"'
+
 				CASE cTipo == "A"
 					LOCAL valor, cReturn
 					cReturn = ''
@@ -228,6 +261,7 @@ DEFINE CLASS jsonfox AS CUSTOM
 						cReturn = cReturn + ',' +  THIS.encode( valor )
 					NEXT &&EACH valor IN vNewVal
 					RETURN  "[" + SUBSTR(cReturn,2) + "]"
+
 				CASE cTipo == "O"
 					lcRet = EXECSCRIPT(tcExecScript, vNewVal, tcExecScript)
 					IF LEFT(lcRet,1) <> "["
@@ -241,26 +275,30 @@ DEFINE CLASS jsonfox AS CUSTOM
 		ENDTEXT
 		RETURN lcLoad
 	ENDFUNC
+
 	HIDDEN FUNCTION __decode
-*-- Save original string
+*-- Guardamos la cadena original
 		THIS.cJsonOri = THIS.cJsonStr
 		THIS.__cleanJsonString()
+
 		THIS.nPos = 1
 		THIS.nLen = LEN(THIS.cJsonOri)
+
 		IF THIS.__validate_json_format()
-*-- First character its always an object.
+*-- El primer caracter siempre es un objeto.
 			RETURN THIS.__parse_object()
 		ELSE &&THIS.__validate_json_format()
 			THIS.__setLastErrorText("invalid JSON format")
 			RETURN NULL
 		ENDIF &&THIS.__validate_json_format()
 	ENDFUNC
+
 	HIDDEN FUNCTION __parse_object
 		LOCAL oCurObj AS OBJECT, lcPropName AS STRING, lcType AS STRING, vNewVal AS VARIANT
 		oCurObj = CREATEOBJECT("__custom_object")
 		THIS.__eat_json(2)
 		DO WHILE .T.
-			lcPropName = THIS.__parse_string()
+			lcPropName = THIS.__parse_string(.T.)
 			IF EMPTY(lcPropName)
 				RETURN NULL
 			ELSE &&EMPTY(lcPropName)
@@ -294,6 +332,7 @@ DEFINE CLASS jsonfox AS CUSTOM
 		ENDDO
 		RETURN oCurObj
 	ENDFUNC
+
 	HIDDEN FUNCTION __parse_value
 		LPARAMETERS tcType AS STRING
 		LOCAL cToken AS STRING
@@ -303,31 +342,40 @@ DEFINE CLASS jsonfox AS CUSTOM
 			RETURN NULL
 		ELSE &&!INLIST(cToken, '{', '[', '"', 't', 'f', '-', 'n') AND !ISDIGIT(cToken)
 		ENDIF &&!INLIST(cToken, '{', '[', '"', 't', 'f', '-', 'n') AND !ISDIGIT(cToken)
+
 		DO CASE
 		CASE cToken == '{'
 			tcType = "O"
 			RETURN THIS.__parse_object()
+
 		CASE cToken == '['
 			tcType = "A"
 			RETURN THIS.__parse_array()
+
 		CASE cToken == '"'
 			tcType = "S"
 			RETURN THIS.__parse_string()
+
 		CASE cToken == 't'
 			tcType = "B"
 			RETURN THIS.__parse_expr("true")
+
 		CASE cToken == 'f'
 			tcType = "B"
 			RETURN THIS.__parse_expr("false")
+
 		CASE cToken == 'n'
 			tcType = "N"
 			RETURN THIS.__parse_expr("null")
+
 		CASE ISDIGIT(cToken) OR cToken == '-'
 			tcType = "I"
 			RETURN THIS.__parse_number()
+
 		OTHERWISE
 		ENDCASE
 	ENDFUNC
+
 	HIDDEN FUNCTION __parse_array
 		LOCAL aCustomArr AS OBJECT
 		THIS.__eat_json(2)
@@ -354,6 +402,7 @@ DEFINE CLASS jsonfox AS CUSTOM
 		ENDDO
 		RETURN aCustomArr
 	ENDFUNC
+
 	HIDDEN FUNCTION __parse_number
 		LOCAL cNumber AS STRING, bIsNegative AS boolean
 		bIsNegative = .F.
@@ -426,8 +475,11 @@ DEFINE CLASS jsonfox AS CUSTOM
 		THIS.__eat_json(lnLenExp)
 		RETURN vNewVal
 	ENDFUNC
+
 	HIDDEN FUNCTION __parse_string
-		LOCAL lcValue AS STRING
+		LPARAMETERS tlisNameAttr
+		
+		LOCAL lcValue AS STRING, dDate as Date
 		lcValue = ""
 		IF THIS.__get_Token() <> '"'
 			THIS.__setLastErrorText('Expected " - Got undefined')
@@ -435,14 +487,26 @@ DEFINE CLASS jsonfox AS CUSTOM
 		ELSE &&THIS.__get_Token() <> '"'
 		ENDIF &&THIS.__get_Token() <> '"'
 		lcValue = STREXTRACT(THIS.cJsonStr, '"', '"', 1)
+
+		*-- Analyze date type in current value
+		IF OCCURS("-",lcValue) = 2 .AND. NOT tlisNameAttr
+			lDate = THIS.__checkDate(lcValue)
+			IF !ISNULL(lDate)
+				dDate = lDate
+			ELSE &&!ISNULL(lDate)
+			ENDIF &&!ISNULL(lDate)
+		ELSE &&OCCURS("-",lcValue) = 2 .AND. NOT tlisNameAttr
+		ENDIF &&OCCURS("-",lcValue) = 2 .AND. NOT tlisNameAttr
+		
 		IF EMPTY(lcValue)
 			THIS.__setLastErrorText('Invalid string value')
 			RETURN ''
 		ELSE &&EMPTY(lcValue)
 		ENDIF &&EMPTY(lcValue)
 		THIS.__eat_json(LEN(lcValue) + 3) && El nombre más los delimitadores '"'/'"' y una posicion más para saltarse el último ".
-		RETURN lcValue
+		RETURN IIF(EMPTY(dDate),lcValue,dDate)
 	ENDFUNC
+
 	HIDDEN PROCEDURE __parse_XML
 		LPARAMETERS tcColumn, tvNewVal
 		IF THIS.lparseXML
@@ -532,19 +596,22 @@ DEFINE CLASS jsonfox AS CUSTOM
 			RETURN cToken
 		ENDDO
 	ENDFUNC
+
 	HIDDEN FUNCTION __validate_json_format
 		IF LEFT(THIS.cJsonStr,1) == "{" AND RIGHT(THIS.cJsonStr, 1) == "}"
 			RETURN .T.
 		ELSE &&LEFT(THIS.cJsonStr,1) == "{" AND RIGHT(THIS.cJsonStr, 1) == "}"
 			RETURN .F.
 		ENDIF &&LEFT(THIS.cJsonStr,1) == "{" AND RIGHT(THIS.cJsonStr, 1) == "}"
-	ENDFUNC	
+	ENDFUNC
+	
 	HIDDEN FUNCTION __cleanJsonString
 		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(9))
 		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(10))
 		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(13))
 		THIS.cJsonStr = ALLTRIM(THIS.__html_entity_decode(THIS.cJsonStr))
 	ENDFUNC
+
 	HIDDEN FUNCTION __html_entity_decode
 		LPARAMETERS cText
 		cText = STRTRAN(cText, "\u00e1", "á")
@@ -570,6 +637,7 @@ DEFINE CLASS jsonfox AS CUSTOM
 		cText = STRTRAN(cText, "\u00b2", "²")
 		RETURN cText
 	ENDFUNC
+
 	HIDDEN PROCEDURE __setLastErrorText
 		LPARAMETERS tcErrorText
 		THIS.lValidCall = .T.
@@ -579,6 +647,7 @@ DEFINE CLASS jsonfox AS CUSTOM
 			THIS.LastErrorText = ""
 		ENDIF &&!EMPTY(tcErrorText)
 	ENDPROC
+
 	HIDDEN PROCEDURE LastErrorText_Assign
 		LPARAMETERS vNewVal
 		IF THIS.lValidCall
@@ -586,7 +655,8 @@ DEFINE CLASS jsonfox AS CUSTOM
 			THIS.LastErrorText = m.vNewVal
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
-	ENDPROC	
+	ENDPROC
+	
 	HIDDEN PROCEDURE Version_Assign
 		LPARAMETERS vNewVal
 		IF THIS.lValidCall
@@ -594,10 +664,12 @@ DEFINE CLASS jsonfox AS CUSTOM
 			THIS.Version = m.vNewVal
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
-	ENDPROC	
+	ENDPROC
+	
 	HIDDEN FUNCTION Version_Access
 		RETURN THIS.Version
 	ENDFUNC
+
 	HIDDEN PROCEDURE LastUpdate_Assign
 		LPARAMETERS vNewVal
 		IF THIS.lValidCall
@@ -605,10 +677,12 @@ DEFINE CLASS jsonfox AS CUSTOM
 			THIS.LastUpdate = m.vNewVal
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
-	ENDPROC	
+	ENDPROC
+	
 	HIDDEN FUNCTION LastUpdate_Access
 		RETURN THIS.LastUpdate
 	ENDFUNC
+
 	HIDDEN PROCEDURE Author_Assign
 		LPARAMETERS vNewVal
 		IF THIS.lValidCall
@@ -616,10 +690,12 @@ DEFINE CLASS jsonfox AS CUSTOM
 			THIS.Author = m.vNewVal
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
-	ENDPROC	
+	ENDPROC
+	
 	HIDDEN FUNCTION Author_Access
 		RETURN THIS.Author
 	ENDFUNC
+
 	HIDDEN PROCEDURE Email_Assign
 		LPARAMETERS vNewVal
 		IF THIS.lValidCall
@@ -627,11 +703,14 @@ DEFINE CLASS jsonfox AS CUSTOM
 			THIS.Email = m.vNewVal
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
-	ENDPROC	
+	ENDPROC
+	
 	HIDDEN FUNCTION Email_Access
 		RETURN THIS.Email
 	ENDFUNC
+
 ENDDEFINE
+
 DEFINE CLASS __custom_array AS CUSTOM
 	HIDDEN 					;
 		CLASSLIBRARY, 		;
@@ -655,15 +734,20 @@ DEFINE CLASS __custom_array AS CUSTOM
 		CLASS
 
 	HIDDEN nArrLen
+
 	DIMENSION ARRAY[1]
+
 	PROCEDURE INIT
 		THIS.nArrLen = 0
 	ENDPROC
+
 	FUNCTION array_push(vNewVal AS VARIANT)
 		THIS.nArrLen = THIS.nArrLen + 1
 		DIMENSION THIS.ARRAY[THIS.nArrLen]
 		THIS.ARRAY[this.nArrLen] = vNewVal
+
 	ENDFUNC
+
 	FUNCTION getvalue(tnIndex AS INTEGER) HELPSTRING "Obtiene el contenido del array dado su índice."
 		TRY
 			nLen = THIS.ARRAY[tnIndex]
@@ -672,10 +756,12 @@ DEFINE CLASS __custom_array AS CUSTOM
 		ENDTRY
 		RETURN nLen
 	ENDFUNC
+
 	FUNCTION LEN
 		RETURN THIS.nArrLen
 	ENDFUNC
 ENDDEFINE
+
 DEFINE CLASS __custom_object AS CUSTOM
 	HIDDEN 					;
 		CLASSLIBRARY, 		;
@@ -697,6 +783,7 @@ DEFINE CLASS __custom_object AS CUSTOM
 		WHATSTHISHELPID, 	;
 		WIDTH,				;
 		CLASS
+
 	PROCEDURE setProperty(tcName AS STRING, tvNewVal AS VARIANT, tcType AS STRING, vFlag AS OBJECT)
 		IF vFlag.ACTIVE
 			vFlag.ACTIVE 	= .F.
@@ -709,6 +796,7 @@ DEFINE CLASS __custom_object AS CUSTOM
 		ELSE &&vFlag.ACTIVE
 		ENDIF &&vFlag.ACTIVE
 	ENDPROC
+
 	FUNCTION valueOf(tcName AS STRING) HELPSTRING "Obtiene el valor de una propiedad"
 		tcName = "_" + tcName
 		IF VARTYPE(THIS. &tcName) == "U"
@@ -720,6 +808,7 @@ DEFINE CLASS __custom_object AS CUSTOM
 		RETURN ""
 	ENDFUNC
 ENDDEFINE
+
 DEFINE CLASS FLAG AS CUSTOM
 	ACTIVE = .F.
 ENDDEFINE
