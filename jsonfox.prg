@@ -6,10 +6,7 @@
 *				ya que mediante el mecanismo de serialización de XML la hace eficiente para el pase de cursores
 *				serializados.
 *
-*				Para el trabajo en capas y reutilizar esta libreria se recomienda compilar como DLL. Si no lo
-*				desea entonces deberá quitar la palabra "OLEPUBLIC" de la linea 1.
-*
-* @version:		1.3 (beta)
+* @version:		1.4 (beta)
 * @author:		Irwin Rodríguez
 * @email:		rodriguez.irwin@gmail.com
 * @license:		MIT
@@ -25,23 +22,23 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	HIDDEN lValidCall
 	HIDDEN lparseXML
 	HIDDEN nPosXML
-	
-	Version			= ""
+
+	VERSION			= ""
 	LastUpdate		= ""
 	Author			= ""
 	Email			= ""
 	LastErrorText 	= ""
 	FLAG = .F.
-	
+
 	PROCEDURE INIT
 		THIS.nPos 		= 0
 		THIS.nLen 		= 0
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
 		THIS.lValidCall = .T.
-		THIS.Version	= "1.3 (beta)"
+		THIS.VERSION	= "1.4 (beta)"
 		THIS.lValidCall = .T.
-		THIS.LastUpdate	= "2019-01-04 07:05:26"
+		THIS.LastUpdate	= "2019-04-02 09:45:26"
 		THIS.lValidCall = .T.
 		THIS.Author		= "Irwin Rodríguez"
 		THIS.lValidCall = .T.
@@ -50,14 +47,14 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		THIS.FLAG 		= CREATEOBJECT("FLAG")
 	ENDPROC
 
-*--	decode into an object using a JSON string valid format.	
-	FUNCTION decode(tcJsonStr AS MEMO) HELPSTRING "Decodifica una cadena en formato JSON."
+*--	decode into an object using a JSON string valid format.
+	FUNCTION decode(tcJsonStr AS MEMO) AS OBJECT HELPSTRING "Decodifica una cadena en formato JSON."
 		THIS.cJsonStr = tcJsonStr
 		RETURN THIS.__decode()
 	ENDFUNC
 
 *-- loads a file with a JSON valid format and decodes it into an object.
-	FUNCTION loadFile(tcJsonFile AS STRING) HELPSTRING "Decodifica un archivo con formato JSON."
+	FUNCTION loadFile(tcJsonFile AS STRING) AS OBJECT HELPSTRING "Decodifica un archivo con formato JSON."
 		IF !FILE(tcJsonFile)
 			THIS.__setLastErrorText("File not found")
 			RETURN NULL
@@ -68,30 +65,41 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	ENDFUNC
 
 *-- Serialize XML from a valid JSON Array.
-	FUNCTION ArrayToXML(tStrArray AS MEMO) HELPSTRING "Serializa una cadena en formato JSON a una representación en XML"
+	FUNCTION ArrayToXML(tvArray AS Variant) AS STRING HELPSTRING "Serializa una cadena u objeto JSON a una representación en XML"
 
-		IF EMPTY(tStrArray)
-			THIS.__setLastErrorText("invalid JSON format")
-			RETURN NULL
-		ELSE &&EMPTY(tStrArray)
-		ENDIF &&EMPTY(tStrArray)
+		IF NOT INLIST(VARTYPE(tvArray), "O", "C")
+			THIS.__setLastErrorText("invalid param")
+			RETURN ''
+		ELSE && NOT INLIST(VARTYPE(tvArray), "O", "C")
+		ENDIF && NOT INLIST(VARTYPE(tvArray), "O", "C")
 
+		IF VARTYPE(tvArray) == "O"
+			tvArray = THIS.encode(tvArray)
+		ELSE &&VARTYPE(tvArray) == "O"
+		ENDIF &&VARTYPE(tvArray) == "O"
 
-		IF LEFT(tStrArray,1) == "{" AND RIGHT(tStrArray,1) == "}"
-			tStrArray = "??" + tStrArray + "??"
-			tStrArray = STREXTRACT(tStrArray, "??{", "}??")
-		ELSE &&LEFT(tStrArray,1) == "{" AND RIGHT(tStrArray,1) == "}"
-		ENDIF &&LEFT(tStrArray,1) == "{" AND RIGHT(tStrArray,1) == "}"
+		IF LEFT(tvArray,1) == "{" AND RIGHT(tvArray,1) == "}"
+			tvArray = "??" + tvArray + "??"
+			tvArray = STREXTRACT(tvArray, "??{", "}??")
+		ELSE &&LEFT(tvArray,1) == "{" AND RIGHT(tvArray,1) == "}"
+		ENDIF &&LEFT(tvArray,1) == "{" AND RIGHT(tvArray,1) == "}"
 
-		THIS.cJsonStr 	= tStrArray
+		THIS.cJsonStr 	= tvArray
 		THIS.lparseXML 	= .T.
 		THIS.__parse_value()
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
 
+		IF TYPE("aColumns") = "U"
+			THIS.__setLastErrorText("could not parse XML. Aux var was not created")
+			RETURN ''
+		ELSE &&TYPE("aColumns") = "U"
+		ENDIF &&TYPE("aColumns") = "U"
+
 		cSelect = ""
 		cFrom	= ""
 		cPiloto = ""
+
 		FOR i=1 TO ALEN(aColumns)
 			IF !EMPTY(cSelect)
 				cSelect = cSelect + ","
@@ -116,13 +124,13 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	ENDFUNC
 
 *-- Deserialize a XML format into a JSON string.
-	FUNCTION XMLToJson(tcXML AS MEMO) HELPSTRING "Convierte un XML a una representacion JSON"
+	FUNCTION XMLToJson(tcXML AS MEMO) AS MEMO HELPSTRING "Convierte un XML a una representacion JSON"
 		IF EMPTY(tcXML)
 			THIS.__setLastErrorText("invalid XML format")
 			RETURN ""
 		ELSE &&EMPTY(tcXML)
 		ENDIF &&EMPTY(tcXML)
-		LOCAL lcJsonXML AS MEMO, nCount as integer
+		LOCAL lcJsonXML AS MEMO, nCount AS INTEGER
 		lcJsonXML 	= ""
 		nCount 		= 0
 		=XMLTOCURSOR(tcXML, "qXML")
@@ -137,7 +145,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			SCATTER NAME loXML MEMO
 			lcJsonXML = lcJsonXML + THIS.encode(loXML)
 			SELECT qXML
-		ENDSCAN		
+		ENDSCAN
 		IF nCount > 1
 			lcJsonXML = "[" + lcJsonXML + "]"
 		ELSE &&nCount > 1
@@ -146,9 +154,8 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		RETURN lcJsonXML
 	ENDFUNC
 
-	*-- deserialize a JSON object.
-	FUNCTION encode(vNewProp as variant)
-
+*-- deserialize a JSON object.
+	FUNCTION encode(vNewProp AS Variant) AS MEMO
 		DO CASE
 		CASE VARTYPE(vNewProp) == "C"
 			vNewProp = ALLT(vNewProp)
@@ -170,7 +177,21 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			RETURN "null"
 
 		CASE VARTYPE(vNewProp) == "D"
-			RETURN '"' + DTOC(vNewProp) + '"'
+			cCenturyAct = SET("Century")
+			SET CENTURY ON
+			lcDate = '"' + ALLTRIM(STR(YEAR(vNewProp))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewProp))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewProp))),2,'0') + '"'
+			SET CENTURY &cCenturyAct
+			RETURN lcDate
+
+		CASE VARTYPE(vNewProp) == "T"
+			cCenturyAct = SET("Century")
+			cHourAct 	= SET("Hours")
+			SET CENTURY ON
+			SET HOURS TO 24
+			lcDate = '"' + ALLTRIM(STR(YEAR(vNewVal))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewVal))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewVal))),2,'0') + SPACE(1) + PADL(ALLTRIM(STR(HOUR(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(MINUTE(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(SEC(vNewVal))),2,'0') + '"'
+			SET CENTURY  &cCenturyAct
+			SET HOURS TO &cHourAct
+			RETURN lcDate
 
 		CASE VARTYPE(vNewProp) == "O"
 			RETURN "{" + EXECSCRIPT(THIS.load_script(), vNewProp, THIS.load_script()) + "}"
@@ -178,7 +199,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ENDCASE
 	ENDFUNC
 
-	HIDDEN FUNCTION load_script
+	HIDDEN FUNCTION load_script AS MEMO
 		TEXT TO lcLoad NOSHOW TEXTMERGE PRETEXT 7
 			LPARAMETERS toObj, tcExecScript
 
@@ -217,7 +238,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			RETURN lcRet
 
 			*-- Internal usage only.
-			FUNCTION encode
+			FUNCTION encode as memo
 				LPARAMETERS vNewVal, tcExecScript
 
 				LOCAL cTipo
@@ -235,6 +256,17 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 					lcDate = '"' + ALLTRIM(STR(YEAR(vNewVal))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewVal))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewVal))),2,'0') + '"'
 					SET CENTURY &cCenturyAct
 					RETURN lcDate
+
+				CASE cTipo == "T"
+					cCenturyAct = SET("Century")
+					cHourAct 	= SET("Hours")
+					SET CENTURY ON
+					SET HOURS TO 24
+					lcDate = '"' + ALLTRIM(STR(YEAR(vNewVal))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewVal))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewVal))),2,'0') + SPACE(1) + PADL(ALLTRIM(STR(HOUR(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(MINUTE(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(SEC(vNewVal))),2,'0') + '"'
+					SET CENTURY  &cCenturyAct
+					SET HOURS TO &cHourAct
+					RETURN lcDate
+
 				CASE cTipo == "N"
 					RETURN TRANSFORM(vNewVal)
 
@@ -276,7 +308,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		RETURN lcLoad
 	ENDFUNC
 
-	HIDDEN FUNCTION __decode
+	HIDDEN FUNCTION __decode AS OBJECT
 *-- Guardamos la cadena original
 		THIS.cJsonOri = THIS.cJsonStr
 		THIS.__cleanJsonString()
@@ -293,8 +325,8 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ENDIF &&THIS.__validate_json_format()
 	ENDFUNC
 
-	HIDDEN FUNCTION __parse_object
-		LOCAL oCurObj AS OBJECT, lcPropName AS STRING, lcType AS STRING, vNewVal AS VARIANT
+	HIDDEN FUNCTION __parse_object AS OBJECT
+		LOCAL oCurObj AS OBJECT, lcPropName AS STRING, lcType AS STRING, vNewVal AS Variant
 		oCurObj = CREATEOBJECT("__custom_object")
 		THIS.__eat_json(2)
 		DO WHILE .T.
@@ -333,7 +365,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		RETURN oCurObj
 	ENDFUNC
 
-	HIDDEN FUNCTION __parse_value
+	HIDDEN FUNCTION __parse_value AS Variant
 		LPARAMETERS tcType AS STRING
 		LOCAL cToken AS STRING
 		cToken = THIS.__get_Token()
@@ -376,7 +408,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ENDCASE
 	ENDFUNC
 
-	HIDDEN FUNCTION __parse_array
+	HIDDEN FUNCTION __parse_array AS OBJECT
 		LOCAL aCustomArr AS OBJECT
 		THIS.__eat_json(2)
 		aCustomArr = CREATEOBJECT("__custom_array")
@@ -403,7 +435,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		RETURN aCustomArr
 	ENDFUNC
 
-	HIDDEN FUNCTION __parse_number
+	HIDDEN FUNCTION __parse_number AS NUMBER
 		LOCAL cNumber AS STRING, bIsNegative AS boolean
 		bIsNegative = .F.
 
@@ -430,7 +462,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			RETURN nValNumber
 		ENDIF &&bIsNegative
 	ENDFUNC
-	HIDDEN FUNCTION __parse_expr
+	HIDDEN FUNCTION __parse_expr AS Variant
 		LPARAMETERS tcStr AS STRING
 		vNewVal 	= ""
 		lnLenExp 	= 0
@@ -476,10 +508,10 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		RETURN vNewVal
 	ENDFUNC
 
-	HIDDEN FUNCTION __parse_string
+	HIDDEN FUNCTION __parse_string AS MEMO
 		LPARAMETERS tlisNameAttr
-		
-		LOCAL lcValue AS STRING, dDate as Date
+
+		LOCAL lcValue AS STRING, dDate AS Variant
 		lcValue = ""
 		IF THIS.__get_Token() <> '"'
 			THIS.__setLastErrorText('Expected " - Got undefined')
@@ -488,16 +520,16 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ENDIF &&THIS.__get_Token() <> '"'
 		lcValue = STREXTRACT(THIS.cJsonStr, '"', '"', 1)
 
-		*-- Analyze date type in current value
-		IF OCCURS("-",lcValue) = 2 .AND. NOT tlisNameAttr
+*-- Analyze date/datetime in current value
+		IF OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
 			lDate = THIS.__checkDate(lcValue)
 			IF !ISNULL(lDate)
 				dDate = lDate
 			ELSE &&!ISNULL(lDate)
 			ENDIF &&!ISNULL(lDate)
-		ELSE &&OCCURS("-",lcValue) = 2 .AND. NOT tlisNameAttr
-		ENDIF &&OCCURS("-",lcValue) = 2 .AND. NOT tlisNameAttr
-		
+		ELSE &&OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
+		ENDIF &&OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
+
 		IF EMPTY(lcValue)
 			THIS.__setLastErrorText('Invalid string value')
 			RETURN ''
@@ -515,11 +547,11 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 				lcAlter = "L" && Logical by Default
 				lDate 	= NULL
 				DO CASE
-				CASE lcType = "C" AND OCCURS("-",tvNewVal) = 2
+				CASE lcType = "C" AND OCCURS("-", tvNewVal) == 2 && Date or DateTime
 					lDate 	= THIS.__checkDate(tvNewVal)
 					IF !ISNULL(lDate)
-						lcType 	 = "D"
-						lcAlter  = "D NULL"
+						lcType 	 = VARTYPE(lDate)
+						lcAlter  = lcType + " NULL"
 						tvNewVal = lDate
 					ELSE &&!ISNULL(lDate)
 					ENDIF &&!ISNULL(lDate)
@@ -531,6 +563,8 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 					lcAlter = "L NULL"
 				CASE lcType = "D"
 					lcAlter = "D NULL"
+				CASE lcType = "T"
+					lcAlter = "T NULL"
 				OTHERWISE
 				ENDCASE
 				THIS.nPosXML = THIS.nPosXML + 1
@@ -544,14 +578,14 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 				&lcMacro
 			ELSE &&!USED(ALLTRIM(tcColumn))
 			ENDIF &&!USED(ALLTRIM(tcColumn))
-			IF lcType == "C" AND (OCCURS("-",tvNewVal) == 2)
+			IF lcType == "C" AND OCCURS("-", tvNewVal) == 2
 				lDate 	= THIS.__checkDate(tvNewVal)
 				IF !ISNULL(lDate)
 					tvNewVal = lDate
 				ELSE &&!ISNULL(lDate)
 				ENDIF &&!ISNULL(lDate)
-			ELSE &&lcType = "C" AND OCCURS("-",tvNewVal) = 2
-			ENDIF &&lcType = "C" AND OCCURS("-",tvNewVal) = 2
+			ELSE &&lcType == "C" AND OCCURS("-", tvNewVal) == 2
+			ENDIF &&lcType == "C" AND OCCURS("-", tvNewVal) == 2
 			TRY
 				INSERT INTO &tcColumn (valor) VALUES(tvNewVal)
 			CATCH
@@ -560,9 +594,23 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ELSE &&THIS.lparseXML
 		ENDIF &&THIS.lparseXML
 	ENDFUNC
-	HIDDEN FUNCTION __checkDate
+	HIDDEN FUNCTION __checkDate AS Variant
 		LPARAMETERS tsDate AS STRING
-		cStr = STRTRAN(tsDate, "-")
+		LOCAL cStr AS STRING, lIsDateTime AS boolean, lDate AS Variant
+		cStr 		= ""
+		lIsDateTime = .F.
+		lDate		= NULL
+		cStr 		= STRTRAN(tsDate, "-")
+
+		IF OCCURS(":", tsDate) == 2 &&DateTime
+			lIsDateTime = .T.
+			cStr 		= STRTRAN(cStr, ":")
+			cStr 		= STRTRAN(UPPER(cStr), "AM")
+			cStr 		= STRTRAN(UPPER(cStr), "PM")
+			cStr 		= STRTRAN(UPPER(cStr), SPACE(1))
+		ELSE &&OCCURS(":", tsDate) == 2
+		ENDIF &&OCCURS(":", tsDate) == 2
+
 		FOR i=1 TO LEN(cStr) STEP 1
 			IF ISDIGIT(SUBSTR(cStr, i, 1))
 				LOOP
@@ -571,15 +619,25 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			ENDIF &&ISDIGIT(SUBSTR(cStr, i, 1))
 		ENDFOR &&i=1 TO LEN(cStr) STEP 1
 		IF VAL(LEFT(tsDate,4)) > 0 AND VAL(STREXTRACT(tsDate, "-", "-",1)) > 0 AND VAL(RIGHT(tsDate,2)) > 0
-			RETURN DATE(VAL(LEFT(tsDate,4)), VAL(STREXTRACT(tsDate, "-", "-",1)), VAL(RIGHT(tsDate,2)))
+			IF !lIsDateTime
+				lDate = DATE(VAL(LEFT(tsDate,4)), VAL(STREXTRACT(tsDate, "-", "-",1)), VAL(RIGHT(tsDate,2)))
+			ELSE &&!lIsDateTime
+*-- WARNING: Valid string datetime format is yyyy-mm-dd hh:mm:ss
+				lDate = DATETIME(VAL(LEFT(tsDate,4)), VAL(STREXTRACT(tsDate, "-", "-",1)), VAL(STREXTRACT(tsDate, "-", SPACE(1),2)), VAL(SUBSTR(tsDate, 12, 2)), VAL(STREXTRACT(tsDate, ":", ":",1)), VAL(RIGHT(tsDate,2)))
+			ENDIF &&!lIsDateTime
 		ELSE &&VAL(LEFT(tsDate,4)) > 0 AND VAL(STREXTRACT(tsDate, "-", "-",1)) > 0 AND VAL(RIGHT(tsDate,2)) > 0
-			RETURN CTOD('{}')
+			IF !lIsDateTime
+				lDate = {//}
+			ELSE &&!lIsDateTime
+				lDate = {//::}
+			ENDIF &&!lIsDateTime
 		ENDIF &&VAL(LEFT(tsDate,4)) > 0 AND VAL(STREXTRACT(tsDate, "-", "-",1)) > 0 AND VAL(RIGHT(tsDate,2)) > 0
+		RETURN lDate
 	ENDFUNC
 	HIDDEN PROCEDURE __eat_json(tnPosition AS INTEGER)
 		THIS.cJsonStr = ALLTRIM(SUBSTR(THIS.cJsonStr, tnPosition, LEN(THIS.cJsonStr)))
 	ENDPROC
-	HIDDEN FUNCTION __get_Token
+	HIDDEN FUNCTION __get_Token AS STRING
 		LOCAL cToken AS CHARACTER
 		cToken = ""
 		DO WHILE .T.
@@ -597,14 +655,14 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ENDDO
 	ENDFUNC
 
-	HIDDEN FUNCTION __validate_json_format
+	HIDDEN FUNCTION __validate_json_format AS boolean
 		IF LEFT(THIS.cJsonStr,1) == "{" AND RIGHT(THIS.cJsonStr, 1) == "}"
 			RETURN .T.
 		ELSE &&LEFT(THIS.cJsonStr,1) == "{" AND RIGHT(THIS.cJsonStr, 1) == "}"
 			RETURN .F.
 		ENDIF &&LEFT(THIS.cJsonStr,1) == "{" AND RIGHT(THIS.cJsonStr, 1) == "}"
 	ENDFUNC
-	
+
 	HIDDEN FUNCTION __cleanJsonString
 		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(9))
 		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(10))
@@ -612,7 +670,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		THIS.cJsonStr = ALLTRIM(THIS.__html_entity_decode(THIS.cJsonStr))
 	ENDFUNC
 
-	HIDDEN FUNCTION __html_entity_decode
+	HIDDEN FUNCTION __html_entity_decode AS MEMO
 		LPARAMETERS cText
 		cText = STRTRAN(cText, "\u00e1", "á")
 		cText = STRTRAN(cText, "\u00e9", "é")
@@ -656,18 +714,18 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
 	ENDPROC
-	
+
 	HIDDEN PROCEDURE Version_Assign
 		LPARAMETERS vNewVal
 		IF THIS.lValidCall
 			THIS.lValidCall = .F.
-			THIS.Version = m.vNewVal
+			THIS.VERSION = m.vNewVal
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
 	ENDPROC
-	
+
 	HIDDEN FUNCTION Version_Access
-		RETURN THIS.Version
+		RETURN THIS.VERSION
 	ENDFUNC
 
 	HIDDEN PROCEDURE LastUpdate_Assign
@@ -678,7 +736,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
 	ENDPROC
-	
+
 	HIDDEN FUNCTION LastUpdate_Access
 		RETURN THIS.LastUpdate
 	ENDFUNC
@@ -691,7 +749,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
 	ENDPROC
-	
+
 	HIDDEN FUNCTION Author_Access
 		RETURN THIS.Author
 	ENDFUNC
@@ -704,7 +762,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		ELSE &&THIS.lValidCall
 		ENDIF &&THIS.lValidCall
 	ENDPROC
-	
+
 	HIDDEN FUNCTION Email_Access
 		RETURN THIS.Email
 	ENDFUNC
@@ -732,22 +790,16 @@ DEFINE CLASS __custom_array AS CUSTOM
 		WHATSTHISHELPID, 	;
 		WIDTH,				;
 		CLASS
-
 	HIDDEN nArrLen
-
 	DIMENSION ARRAY[1]
-
 	PROCEDURE INIT
 		THIS.nArrLen = 0
 	ENDPROC
-
-	FUNCTION array_push(vNewVal AS VARIANT)
+	FUNCTION array_push(vNewVal AS Variant)
 		THIS.nArrLen = THIS.nArrLen + 1
 		DIMENSION THIS.ARRAY[THIS.nArrLen]
 		THIS.ARRAY[this.nArrLen] = vNewVal
-
 	ENDFUNC
-
 	FUNCTION getvalue(tnIndex AS INTEGER) HELPSTRING "Obtiene el contenido del array dado su índice."
 		TRY
 			nLen = THIS.ARRAY[tnIndex]
@@ -756,7 +808,6 @@ DEFINE CLASS __custom_array AS CUSTOM
 		ENDTRY
 		RETURN nLen
 	ENDFUNC
-
 	FUNCTION LEN
 		RETURN THIS.nArrLen
 	ENDFUNC
@@ -783,8 +834,7 @@ DEFINE CLASS __custom_object AS CUSTOM
 		WHATSTHISHELPID, 	;
 		WIDTH,				;
 		CLASS
-
-	PROCEDURE setProperty(tcName AS STRING, tvNewVal AS VARIANT, tcType AS STRING, vFlag AS OBJECT)
+	PROCEDURE setProperty(tcName AS STRING, tvNewVal AS Variant, tcType AS STRING, vFlag AS OBJECT)
 		IF vFlag.ACTIVE
 			vFlag.ACTIVE 	= .F.
 			tcName 			= "_" + tcName
@@ -796,7 +846,6 @@ DEFINE CLASS __custom_object AS CUSTOM
 		ELSE &&vFlag.ACTIVE
 		ENDIF &&vFlag.ACTIVE
 	ENDPROC
-
 	FUNCTION valueOf(tcName AS STRING) HELPSTRING "Obtiene el valor de una propiedad"
 		tcName = "_" + tcName
 		IF VARTYPE(THIS. &tcName) == "U"
@@ -808,7 +857,6 @@ DEFINE CLASS __custom_object AS CUSTOM
 		RETURN ""
 	ENDFUNC
 ENDDEFINE
-
 DEFINE CLASS FLAG AS CUSTOM
 	ACTIVE = .F.
 ENDDEFINE
