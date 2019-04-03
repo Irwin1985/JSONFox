@@ -87,7 +87,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		IF cType == "O"
 			tvArray = THIS.encode(tvArray)
 			IF LEFT(tvArray,1) = "{" .AND. SUBSTR(tvArray,2,1) <> "["
-				tvArray = "[" + THIS.encode(tvArray) + "]"
+				tvArray = "[" + tvArray + "]"
 			ELSE &&LEFT(tvArray,1) = "{" .AND. SUBSTR(tvArray,2,1) <> "["
 			ENDIF &&LEFT(tvArray,1) = "{" .AND. SUBSTR(tvArray,2,1) <> "["
 		ELSE &&cType == "O"
