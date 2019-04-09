@@ -21,7 +21,7 @@
 
 **JSONFox** adds an **underscore** before the attribute name for avoiding internal conflict with native object properties. That means you'll have to reference your deserialized object like: obj._attribute
 
-**JSONFox** Analyzer allows recognize and serialize **DATE** and **DATETIME** types. **(new)**
+**JSONFox** Analyzer recognize and serialize **DATE** and **DATETIME** types. **(new)**
 
 ## Properties
 * ![](images/prop.gif) **LastErrorText:** Stores the possible error generated in the current sentence.
