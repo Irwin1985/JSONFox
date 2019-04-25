@@ -1,13 +1,13 @@
 *---------------------------------------------------------------------------------------------------------------*
 *
-* @title:		LibrerÌa JsonFOX
-* @description:	LibrerÌa 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
-* 				ideal para el trabajo en capas y comunicaciÛn con interfaces desarrolladas en Visual FoxPro 9.0
-*				ya que mediante el mecanismo de serializaciÛn de XML la hace eficiente para el pase de cursores
+* @title:		Librer√≠a JsonFOX
+* @description:	Librer√≠a 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
+* 				ideal para el trabajo en capas y comunicaci√≥n con interfaces desarrolladas en Visual FoxPro 9.0
+*				ya que mediante el mecanismo de serializaci√≥n de XML la hace eficiente para el pase de cursores
 *				serializados.
 *
-* @version:		1.5 (beta)
-* @author:		Irwin RodrÌguez
+* @version:		1.6 (beta)
+* @author:		Irwin Rodr√≠guez
 * @email:		rodriguez.irwin@gmail.com
 * @license:		MIT
 * @inspired_by:	#VFPJSON JSON library for VFP
@@ -15,14 +15,15 @@
 *
 * -------------------------------------------------------------------------
 * Version Log:
+* Release 2019-04-25	v.1.6		- Permite parsear cadenas vac√≠as (parse_string).
 *
-* Release 2019-04-02	v.1.5		- Fix en mÈtodo ArrayToXML al pasar Array de objetos JSON.
+* Release 2019-04-02	v.1.5		- Fix en m√©todo ArrayToXML al pasar Array de objetos JSON.
 *
-* Release 2019-04-01	v.1.4		- El mÈtodo ArrayToXML recibe String y Array de objetos JSON como parametros.
+* Release 2019-04-01	v.1.4		- El m√©todo ArrayToXML recibe String y Array de objetos JSON como parametros.
 *
 * Release 2019-03-31	v.1.3		- Analizador inteligente para tipos de datos DATE y DATETIME
 *
-* Release 2019-03-30	v.1.2		- LiberaciÛn formal en https://github.com/Irwin1985/JSONFox
+* Release 2019-03-30	v.1.2		- Liberaci√≥n formal en https://github.com/Irwin1985/JSONFox
 *---------------------------------------------------------------------------------------------------------------*
 DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 
@@ -42,20 +43,20 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	FLAG = .F.
 
 	PROCEDURE INIT
-		THIS.nPos 		= 0
-		THIS.nLen 		= 0
+		THIS.nPos 	= 0
+		THIS.nLen 	= 0
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
 		THIS.lValidCall = .T.
-		THIS.VERSION	= "1.5 (beta)"
+		THIS.VERSION	= "1.6 (beta)"
 		THIS.lValidCall = .T.
-		THIS.LastUpdate	= "2019-04-02 06:22:45 PM"
+		THIS.LastUpdate	= "2019-04-25 18:09:45"
 		THIS.lValidCall = .T.
-		THIS.Author		= "Irwin RodrÌguez"
+		THIS.Author	= "Irwin Rodr√≠guez"
 		THIS.lValidCall = .T.
-		THIS.Email		= "rodriguez.irwin@gmail.com"
+		THIS.Email	= "rodriguez.irwin@gmail.com"
 *-- State Flag
-		THIS.FLAG 		= CREATEOBJECT("FLAG")
+		THIS.FLAG 	= CREATEOBJECT("FLAG")
 	ENDPROC
 
 *--	decode into an object using a JSON string valid format.
@@ -76,7 +77,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	ENDFUNC
 
 *-- Serialize XML from a valid JSON Array.
-	FUNCTION ArrayToXML(tvArray AS Variant) AS STRING HELPSTRING "Serializa una cadena u objeto JSON a una representaciÛn en XML"
+	FUNCTION ArrayToXML(tvArray AS Variant) AS STRING HELPSTRING "Serializa una cadena u objeto JSON a una representaci√≥n en XML"
 		cType = VARTYPE(tvArray)
 		IF NOT INLIST(cType, "O", "C")
 			THIS.__setLastErrorText("invalid param")
@@ -343,11 +344,6 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			THIS.__eat_json(2)
 			lcType  = ''
 			vNewVal = THIS.__parse_value(@lcType)
-			IF TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-				THIS.__setLastErrorText("Expecting 'STRING', 'NUMBER', 'NULL', 'TRUE', 'FALSE', '{', '[', Got undefined")
-				RETURN NULL
-			ELSE &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-			ENDIF &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
 			THIS.FLAG.ACTIVE = .T.
 			oCurObj.setProperty(lcPropName, vNewVal, lcType, THIS.FLAG)
 			THIS.__parse_XML(lcPropName, vNewVal)
@@ -492,7 +488,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			RETURN ''
 		ELSE &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
 		ENDIF &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-		lnLenExp = lnLenExp + 1 && El valor m·s el salto.
+		lnLenExp = lnLenExp + 1 && El valor m√°s el salto.
 		THIS.__eat_json(lnLenExp)
 		RETURN vNewVal
 	ENDFUNC
@@ -515,12 +511,7 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 			ENDIF &&!ISNULL(lDate)
 		ELSE &&OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
 		ENDIF &&OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
-		IF EMPTY(lcValue)
-			THIS.__setLastErrorText('Invalid string value')
-			RETURN ''
-		ELSE &&EMPTY(lcValue)
-		ENDIF &&EMPTY(lcValue)
-		THIS.__eat_json(LEN(lcValue) + 3) && El nombre m·s los delimitadores '"'/'"' y una posicion m·s para saltarse el ˙ltimo ".
+		THIS.__eat_json(LEN(lcValue) + 3) && El nombre m√°s los delimitadores '"'/'"' y una posicion m√°s para saltarse el √∫ltimo ".
 		RETURN IIF(EMPTY(dDate),lcValue,dDate)
 	ENDFUNC
 *-- PROCEDURE __parse_XML
@@ -653,101 +644,101 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 	ENDFUNC
 *-- FUNCTION __html_entity_decode(cText AS MEMO)
 	HIDDEN FUNCTION __html_entity_decode(cText AS MEMO) AS MEMO
-		cText = STRTRAN(cText, "\u00a0", "¬")
-		cText = STRTRAN(cText, "\u00a1", "°")
-		cText = STRTRAN(cText, "\u00a2", "¢")
-		cText = STRTRAN(cText, "\u00a3", "£")
-		cText = STRTRAN(cText, "\u00a4", "§")
-		cText = STRTRAN(cText, "\u00a5", "•")
-		cText = STRTRAN(cText, "\u00a6", "¶")
-		cText = STRTRAN(cText, "\u00a7", "ß")
-		cText = STRTRAN(cText, "\u00a8", "®")
-		cText = STRTRAN(cText, "\u00a9", "©")
-		cText = STRTRAN(cText, "\u00aa", "™")
-		cText = STRTRAN(cText, "\u00ab", "´")
-		cText = STRTRAN(cText, "\u00ac", "¨")
-		cText = STRTRAN(cText, "\u00ae", "Æ")
-		cText = STRTRAN(cText, "\u00af", "Ø")
-		cText = STRTRAN(cText, "\u00b0", "∞")
-		cText = STRTRAN(cText, "\u00b1", "±")
-		cText = STRTRAN(cText, "\u00b2", "≤")
-		cText = STRTRAN(cText, "\u00b3", "≥")
-		cText = STRTRAN(cText, "\u00b4", "¥")
-		cText = STRTRAN(cText, "\u00b5", "µ")
-		cText = STRTRAN(cText, "\u00b6", "∂")
-		cText = STRTRAN(cText, "\u00b7", "∑")
-		cText = STRTRAN(cText, "\u00b8", "∏")
-		cText = STRTRAN(cText, "\u00b9", "π")
-		cText = STRTRAN(cText, "\u00ba", "∫")
-		cText = STRTRAN(cText, "\u00bb", "ª")
-		cText = STRTRAN(cText, "\u00bc", "º")
-		cText = STRTRAN(cText, "\u00bd", "Ω")
-		cText = STRTRAN(cText, "\u00be", "æ")
-		cText = STRTRAN(cText, "\u00bf", "ø")
-		cText = STRTRAN(cText, "\u00c0", "¿")
-		cText = STRTRAN(cText, "\u00c1", "¡")
-		cText = STRTRAN(cText, "\u00c2", "¬")
-		cText = STRTRAN(cText, "\u00c3", "√")
-		cText = STRTRAN(cText, "\u00c4", "ƒ")
-		cText = STRTRAN(cText, "\u00c5", "≈")
-		cText = STRTRAN(cText, "\u00c6", "∆")
-		cText = STRTRAN(cText, "\u00c7", "«")
-		cText = STRTRAN(cText, "\u00c8", "»")
-		cText = STRTRAN(cText, "\u00c9", "…")
-		cText = STRTRAN(cText, "\u00ca", " ")
-		cText = STRTRAN(cText, "\u00cb", "À")
-		cText = STRTRAN(cText, "\u00cc", "Ã")
-		cText = STRTRAN(cText, "\u00cd", "Õ")
-		cText = STRTRAN(cText, "\u00ce", "Œ")
-		cText = STRTRAN(cText, "\u00cf", "œ")
-		cText = STRTRAN(cText, "\u00d0", "–")
-		cText = STRTRAN(cText, "\u00d1", "—")
-		cText = STRTRAN(cText, "\u00d2", "“")
-		cText = STRTRAN(cText, "\u00d3", "”")
-		cText = STRTRAN(cText, "\u00d4", "‘")
-		cText = STRTRAN(cText, "\u00d5", "’")
-		cText = STRTRAN(cText, "\u00d6", "÷")
-		cText = STRTRAN(cText, "\u00d7", "◊")
-		cText = STRTRAN(cText, "\u00d8", "ÿ")
-		cText = STRTRAN(cText, "\u00d9", "Ÿ")
-		cText = STRTRAN(cText, "\u00da", "⁄")
-		cText = STRTRAN(cText, "\u00db", "€")
-		cText = STRTRAN(cText, "\u00dc", "‹")
-		cText = STRTRAN(cText, "\u00dd", "›")
-		cText = STRTRAN(cText, "\u00de", "ﬁ")
-		cText = STRTRAN(cText, "\u00df", "ﬂ")
-		cText = STRTRAN(cText, "\u00e0", "‡")
-		cText = STRTRAN(cText, "\u00e1", "·")
-		cText = STRTRAN(cText, "\u00e2", "‚")
-		cText = STRTRAN(cText, "\u00e3", "„")
-		cText = STRTRAN(cText, "\u00e4", "‰")
-		cText = STRTRAN(cText, "\u00e5", "Â")
-		cText = STRTRAN(cText, "\u00e6", "Ê")
-		cText = STRTRAN(cText, "\u00e7", "Á")
-		cText = STRTRAN(cText, "\u00e8", "Ë")
-		cText = STRTRAN(cText, "\u00e9", "È")
-		cText = STRTRAN(cText, "\u00ea", "Í")
-		cText = STRTRAN(cText, "\u00eb", "Î")
-		cText = STRTRAN(cText, "\u00ec", "Ï")
-		cText = STRTRAN(cText, "\u00ed", "Ì")
-		cText = STRTRAN(cText, "\u00ee", "Ó")
-		cText = STRTRAN(cText, "\u00ef", "Ô")
-		cText = STRTRAN(cText, "\u00f0", "")
-		cText = STRTRAN(cText, "\u00f1", "Ò")
-		cText = STRTRAN(cText, "\u00f2", "Ú")
-		cText = STRTRAN(cText, "\u00f3", "Û")
-		cText = STRTRAN(cText, "\u00f4", "Ù")
-		cText = STRTRAN(cText, "\u00f5", "ı")
-		cText = STRTRAN(cText, "\u00f6", "ˆ")
-		cText = STRTRAN(cText, "\u00f7", "˜")
-		cText = STRTRAN(cText, "\u00f8", "¯")
-		cText = STRTRAN(cText, "\u00f9", "˘")
-		cText = STRTRAN(cText, "\u00fa", "˙")
-		cText = STRTRAN(cText, "\u00fb", "˚")
-		cText = STRTRAN(cText, "\u00fc", "¸")
-		cText = STRTRAN(cText, "\u00fd", "˝")
-		cText = STRTRAN(cText, "\u00fe", "˛")
-		cText = STRTRAN(cText, "\u00ff", "ˇ")
+		cText = STRTRAN(cText, "\u00a0", "√Ç")
+		cText = STRTRAN(cText, "\u00a1", "¬°")
+		cText = STRTRAN(cText, "\u00a2", "¬¢")
+		cText = STRTRAN(cText, "\u00a3", "¬£")
+		cText = STRTRAN(cText, "\u00a4", "¬§")
+		cText = STRTRAN(cText, "\u00a5", "¬•")
+		cText = STRTRAN(cText, "\u00a6", "¬¶")
+		cText = STRTRAN(cText, "\u00a7", "¬ß")
+		cText = STRTRAN(cText, "\u00a8", "¬®")
+		cText = STRTRAN(cText, "\u00a9", "¬©")
+		cText = STRTRAN(cText, "\u00aa", "¬™")
+		cText = STRTRAN(cText, "\u00ab", "¬´")
+		cText = STRTRAN(cText, "\u00ac", "¬¨")
+		cText = STRTRAN(cText, "\u00ae", "¬Æ")
+		cText = STRTRAN(cText, "\u00af", "¬Ø")
+		cText = STRTRAN(cText, "\u00b0", "¬∞")
+		cText = STRTRAN(cText, "\u00b1", "¬±")
+		cText = STRTRAN(cText, "\u00b2", "¬≤")
+		cText = STRTRAN(cText, "\u00b3", "¬≥")
+		cText = STRTRAN(cText, "\u00b4", "¬¥")
+		cText = STRTRAN(cText, "\u00b5", "¬µ")
+		cText = STRTRAN(cText, "\u00b6", "¬∂")
+		cText = STRTRAN(cText, "\u00b7", "¬∑")
+		cText = STRTRAN(cText, "\u00b8", "¬∏")
+		cText = STRTRAN(cText, "\u00b9", "¬π")
+		cText = STRTRAN(cText, "\u00ba", "¬∫")
+		cText = STRTRAN(cText, "\u00bb", "¬ª")
+		cText = STRTRAN(cText, "\u00bc", "¬º")
+		cText = STRTRAN(cText, "\u00bd", "¬Ω")
+		cText = STRTRAN(cText, "\u00be", "¬æ")
+		cText = STRTRAN(cText, "\u00bf", "¬ø")
+		cText = STRTRAN(cText, "\u00c0", "√Ä")
+		cText = STRTRAN(cText, "\u00c1", "√Å")
+		cText = STRTRAN(cText, "\u00c2", "√Ç")
+		cText = STRTRAN(cText, "\u00c3", "√É")
+		cText = STRTRAN(cText, "\u00c4", "√Ñ")
+		cText = STRTRAN(cText, "\u00c5", "√Ö")
+		cText = STRTRAN(cText, "\u00c6", "√Ü")
+		cText = STRTRAN(cText, "\u00c7", "√á")
+		cText = STRTRAN(cText, "\u00c8", "√à")
+		cText = STRTRAN(cText, "\u00c9", "√â")
+		cText = STRTRAN(cText, "\u00ca", "√ä")
+		cText = STRTRAN(cText, "\u00cb", "√ã")
+		cText = STRTRAN(cText, "\u00cc", "√å")
+		cText = STRTRAN(cText, "\u00cd", "√ç")
+		cText = STRTRAN(cText, "\u00ce", "√é")
+		cText = STRTRAN(cText, "\u00cf", "√è")
+		cText = STRTRAN(cText, "\u00d0", "√ê")
+		cText = STRTRAN(cText, "\u00d1", "√ë")
+		cText = STRTRAN(cText, "\u00d2", "√í")
+		cText = STRTRAN(cText, "\u00d3", "√ì")
+		cText = STRTRAN(cText, "\u00d4", "√î")
+		cText = STRTRAN(cText, "\u00d5", "√ï")
+		cText = STRTRAN(cText, "\u00d6", "√ñ")
+		cText = STRTRAN(cText, "\u00d7", "√ó")
+		cText = STRTRAN(cText, "\u00d8", "√ò")
+		cText = STRTRAN(cText, "\u00d9", "√ô")
+		cText = STRTRAN(cText, "\u00da", "√ö")
+		cText = STRTRAN(cText, "\u00db", "√õ")
+		cText = STRTRAN(cText, "\u00dc", "√ú")
+		cText = STRTRAN(cText, "\u00dd", "√ù")
+		cText = STRTRAN(cText, "\u00de", "√û")
+		cText = STRTRAN(cText, "\u00df", "√ü")
+		cText = STRTRAN(cText, "\u00e0", "√†")
+		cText = STRTRAN(cText, "\u00e1", "√°")
+		cText = STRTRAN(cText, "\u00e2", "√¢")
+		cText = STRTRAN(cText, "\u00e3", "√£")
+		cText = STRTRAN(cText, "\u00e4", "√§")
+		cText = STRTRAN(cText, "\u00e5", "√•")
+		cText = STRTRAN(cText, "\u00e6", "√¶")
+		cText = STRTRAN(cText, "\u00e7", "√ß")
+		cText = STRTRAN(cText, "\u00e8", "√®")
+		cText = STRTRAN(cText, "\u00e9", "√©")
+		cText = STRTRAN(cText, "\u00ea", "√™")
+		cText = STRTRAN(cText, "\u00eb", "√´")
+		cText = STRTRAN(cText, "\u00ec", "√¨")
+		cText = STRTRAN(cText, "\u00ed", "√≠")
+		cText = STRTRAN(cText, "\u00ee", "√Æ")
+		cText = STRTRAN(cText, "\u00ef", "√Ø")
+		cText = STRTRAN(cText, "\u00f0", "√∞")
+		cText = STRTRAN(cText, "\u00f1", "√±")
+		cText = STRTRAN(cText, "\u00f2", "√≤")
+		cText = STRTRAN(cText, "\u00f3", "√≥")
+		cText = STRTRAN(cText, "\u00f4", "√¥")
+		cText = STRTRAN(cText, "\u00f5", "√µ")
+		cText = STRTRAN(cText, "\u00f6", "√∂")
+		cText = STRTRAN(cText, "\u00f7", "√∑")
+		cText = STRTRAN(cText, "\u00f8", "√∏")
+		cText = STRTRAN(cText, "\u00f9", "√π")
+		cText = STRTRAN(cText, "\u00fa", "√∫")
+		cText = STRTRAN(cText, "\u00fb", "√ª")
+		cText = STRTRAN(cText, "\u00fc", "√º")
+		cText = STRTRAN(cText, "\u00fd", "√Ω")
+		cText = STRTRAN(cText, "\u00fe", "√æ")
+		cText = STRTRAN(cText, "\u00ff", "√ø")
 		cText = STRTRAN(cText, "\u0026", "&")
 		cText = STRTRAN(cText, "\u2019", "'")
 		cText = STRTRAN(cText, "\u003A", ":")
@@ -863,7 +854,7 @@ DEFINE CLASS __custom_array AS CUSTOM
 		THIS.ARRAY[this.nArrLen] = vNewVal
 	ENDFUNC
 *-- getvalue(tnIndex AS INTEGER)
-	FUNCTION getvalue(tnIndex AS INTEGER) HELPSTRING "Obtiene el contenido del array dado su Ìndice."
+	FUNCTION getvalue(tnIndex AS INTEGER) HELPSTRING "Obtiene el contenido del array dado su √≠ndice."
 		TRY
 			nLen = THIS.ARRAY[tnIndex]
 		CATCH
