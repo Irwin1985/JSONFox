@@ -6,7 +6,7 @@
 *				ya que mediante el mecanismo de serialización de XML la hace eficiente para el pase de cursores
 *				serializados.
 *
-* @version:		1.6 (beta)
+* @version:		1.7 (beta)
 * @author:		Irwin Rodríguez
 * @email:		rodriguez.irwin@gmail.com
 * @license:		MIT
@@ -15,6 +15,8 @@
 *
 * -------------------------------------------------------------------------
 * Version Log:
+* Release 2019-04-26	v.1.7		- Error controlado al parsear a XML con nombres inválidos en el JSON.
+*
 * Release 2019-04-25	v.1.6		- Permite parsear cadenas vacías (parse_string/parse_array).
 *
 * Release 2019-04-02	v.1.5		- Fix en método ArrayToXML al pasar Array de objetos JSON.
@@ -48,9 +50,9 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
 		THIS.lValidCall = .T.
-		THIS.VERSION	= "1.6 (beta)"
+		THIS.VERSION	= "1.7 (beta)"
 		THIS.lValidCall = .T.
-		THIS.LastUpdate	= "2019-04-25 18:09:45"
+		THIS.LastUpdate	= "2019-04-26 08:48:16 AM"
 		THIS.lValidCall = .T.
 		THIS.Author	= "Irwin Rodríguez"
 		THIS.lValidCall = .T.
@@ -103,6 +105,10 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		THIS.cJsonStr 	= tvArray
 		THIS.lparseXML 	= .T.
 		THIS.__parse_value()
+		IF !EMPTY(THIS.LastErrorText)
+			RETURN ''
+		ELSE &&!EMPTY(THIS.LastErrorText)
+		ENDIF &&!EMPTY(THIS.LastErrorText)		
 		THIS.lparseXML 	= .F.
 		THIS.nPosXML	= 0
 
@@ -512,6 +518,8 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 *-- PROCEDURE __parse_XML
 	HIDDEN PROCEDURE __parse_XML
 		LPARAMETERS tcColumn, tvNewVal
+		LOCAL lContinue as boolean
+		lContinue = .T.		
 		IF THIS.lparseXML
 			lcType = VARTYPE(tvNewVal)
 			IF !USED(ALLTRIM(tcColumn))
@@ -546,9 +554,18 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 				DIMENSION aColumns[THIS.nPosXML]
 				aColumns[THIS.nPosXML] = tcColumn
 				lcMacro = "CREATE CURSOR " + ALLTRIM(tcColumn) + " (valor " + lcAlter + ")"
-				&lcMacro
+				TRY
+					&lcMacro
+				CATCH TO oErr
+					lContinue = .F.
+					THIS.__setLastErrorText('Invalid cursor name or field')
+				ENDTRY
 			ELSE &&!USED(ALLTRIM(tcColumn))
 			ENDIF &&!USED(ALLTRIM(tcColumn))
+			IF !lContinue
+				RETURN ''
+			ELSE &&!lContinue
+			ENDIF &&!lContinue
 			IF lcType == "C" AND OCCURS("-", tvNewVal) == 2
 				lDate 	= THIS.__checkDate(tvNewVal)
 				IF !ISNULL(lDate)
