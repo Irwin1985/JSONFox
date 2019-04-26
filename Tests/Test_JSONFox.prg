@@ -150,6 +150,36 @@ DEFINE CLASS Test_JSONFox AS FxuTestCase OF FxuTestCase.prg
 		THIS.MessageOut("El array contiene " + TRANSFORM(lnGot) + " elementos")
 		THIS.AssertEquals(lnExpected, lnGot, "Los valores no coinciden!")
 	ENDFUNC
+
+	FUNCTION deberia_generar_error_al_enviar_nombres_invalidos_de_columnas_o_campos
+		LOCAL lcJson AS STRING, loObj AS OBJECT
+		TEXT TO lcJson noshow
+			{
+				"estado":"1",
+				"fecha":
+					{
+						"0":1556277466,
+						"seconds":46,
+						"minutes":17,
+						"hours":6,
+						"mday":26,
+						"wday":5,
+						"mon":4,
+						"year":2019,
+						"yday":115,
+						"weekday":"Friday",
+						"month":"April"
+					}
+			}
+		ENDTEXT
+		loObj = THIS.oJson.decode(lcJson)
+		THIS.AssertIsObject(loObj, "No se pudo convertir el objeto [loObj]")
+		lcXML = this.oJson.ArrayToXML(loObj._fecha)
+		IF !EMPTY(THIS.oJson.LastErrorText)
+			THIS.messageOut("Ha ocurrido un error: " + THIS.oJson.LastErrorText)
+		ELSE
+		ENDIF
+	ENDFUNC
 *----------------------------------------------------------------------------Test End-----------------------------------------------------------------*
 
 	FUNCTION TearDown
