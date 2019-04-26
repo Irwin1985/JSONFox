@@ -122,6 +122,34 @@ DEFINE CLASS Test_JSONFox AS FxuTestCase OF FxuTestCase.prg
 		THIS.MessageOut("Valor esperado: " + TRANSFORM(lcExpected))
 		THIS.MessageOut("Valor obtenido: " + TRANSFORM(loObj._fecha))
 	ENDFUNC
+
+	FUNCTION test_deberia_parsear_un_array
+		LOCAL lcJson AS STRING, loObj AS OBJECT
+		TEXT TO lcJson noshow
+			{
+				"estado": "1",
+				"tabla":
+				[
+					"valor1",
+					"valor2",
+					"valor3",
+					"",
+					"valor5"
+				]
+			}
+		ENDTEXT
+		loObj = THIS.oJson.decode(lcJson)
+		THIS.AssertIsObject(loObj)
+		THIS.AssertNotNull(loObj, "No se pudo convertir el objeto [loObj]")
+		IF !EMPTY(THIS.oJson.LastErrorText)
+			THIS.messageOut("Ha ocurrido un error: " + THIS.oJson.LastErrorText)
+		ELSE
+		ENDIF
+		lnExpected 	= 5
+		lnGot 		= loObj._tabla.LEN()
+		THIS.MessageOut("El array contiene " + TRANSFORM(lnGot) + " elementos")
+		THIS.AssertEquals(lnExpected, lnGot, "Los valores no coinciden!")
+	ENDFUNC
 *----------------------------------------------------------------------------Test End-----------------------------------------------------------------*
 
 	FUNCTION TearDown
