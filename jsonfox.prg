@@ -15,7 +15,7 @@
 *
 * -------------------------------------------------------------------------
 * Version Log:
-* Release 2019-04-25	v.1.6		- Permite parsear cadenas vacías (parse_string).
+* Release 2019-04-25	v.1.6		- Permite parsear cadenas vacías (parse_string/parse_array).
 *
 * Release 2019-04-02	v.1.5		- Fix en método ArrayToXML al pasar Array de objetos JSON.
 *
@@ -404,11 +404,6 @@ DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
 		DO WHILE .T.
 			lcType  = ''
 			vNewVal = THIS.__parse_value(@lcType)
-			IF TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-				THIS.__setLastErrorText("Expecting 'STRING', 'NUMBER', 'NULL', 'TRUE', 'FALSE', '{', '[', Got undefined")
-				RETURN NULL
-			ELSE &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-			ENDIF &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
 			aCustomArr.array_push(vNewVal)
 			cToken = THIS.__get_Token()
 			DO CASE
