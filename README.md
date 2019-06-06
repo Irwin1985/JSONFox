@@ -45,7 +45,7 @@
   
 ### Examples
 
-<pre>
+```xBase
  * Serialize JSON String
  SET PROCEDURE TO "JSONFox.prg" ADDITIVE
  loJSON = NEWOBJECT("JSONFox", "JSONFox.prg")
@@ -155,4 +155,4 @@ ENDIF &&!EMPTY(loJson.LastErrorText)
 ?cJson
 
 RELEASE loJson, obj
-</pre>
+```
