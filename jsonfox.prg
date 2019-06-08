@@ -1,932 +1,861 @@
-*---------------------------------------------------------------------------------------------------------------*
-*
-* @title:		Librería JsonFOX
-* @description:	Librería 100% desarrollada en Visual FoxPro 9.0 para serializar/deserializar objetos JSON y XML.
-* 				ideal para el trabajo en capas y comunicación con interfaces desarrolladas en Visual FoxPro 9.0
-*				ya que mediante el mecanismo de serialización de XML la hace eficiente para el pase de cursores
-*				serializados.
-*
-* @version:		1.7 (beta)
-* @author:		Irwin Rodríguez
-* @email:		rodriguez.irwin@gmail.com
-* @license:		MIT
-* @inspired_by:	#VFPJSON JSON library for VFP
-*
-*
-* -------------------------------------------------------------------------
-* Version Log:
-* Release 2019-04-26	v.1.7		- Error controlado al parsear a XML con nombres inválidos en el JSON.
-*
-* Release 2019-04-25	v.1.6		- Permite parsear cadenas vacías (parse_string/parse_array).
-*
-* Release 2019-04-02	v.1.5		- Fix en método ArrayToXML al pasar Array de objetos JSON.
-*
-* Release 2019-04-01	v.1.4		- El método ArrayToXML recibe String y Array de objetos JSON como parametros.
-*
-* Release 2019-03-31	v.1.3		- Analizador inteligente para tipos de datos DATE y DATETIME
-*
-* Release 2019-03-30	v.1.2		- Liberación formal en https://github.com/Irwin1985/JSONFox
-*---------------------------------------------------------------------------------------------------------------*
-DEFINE CLASS jsonfox AS CUSTOM OLEPUBLIC
+*====================================================================
+* JSONFox
+*====================================================================
+Define Class JsonFox As Custom
 
-	HIDDEN cJsonOri
-	HIDDEN cJsonStr
-	HIDDEN nPos
-	HIDDEN nLen
-	HIDDEN lValidCall
-	HIDDEN lparseXML
-	HIDDEN nPosXML
+	Hidden cJsonOri
+	Hidden cJsonStr
+	Hidden nPos
+	Hidden nLen
+	Hidden lValidCall
+	Hidden lparseXML
+	Hidden nPosXML
 
-	VERSION			= ""
-	LastUpdate		= ""
-	Author			= ""
-	Email			= ""
-	LastErrorText 	= ""
-	FLAG = .F.
+	Version			= ''
+	LastUpdate		= ''
+	Author			= ''
+	Email			= ''
+	LastErrorText 	= ''
+	Flag 			= .F.
+	#Define True 	.T.
+	#Define False	.F.
 
-	PROCEDURE INIT
-		THIS.nPos 	= 0
-		THIS.nLen 	= 0
-		THIS.lparseXML 	= .F.
-		THIS.nPosXML	= 0
-		THIS.lValidCall = .T.
-		THIS.VERSION	= "1.7 (beta)"
-		THIS.lValidCall = .T.
-		THIS.LastUpdate	= "2019-04-26 08:48:16 AM"
-		THIS.lValidCall = .T.
-		THIS.Author	= "Irwin Rodríguez"
-		THIS.lValidCall = .T.
-		THIS.Email	= "rodriguez.irwin@gmail.com"
-*-- State Flag
-		THIS.FLAG 	= CREATEOBJECT("FLAG")
-	ENDPROC
+	Procedure Init
+		With This
+			.nPos 		= 0
+			.nLen 		= 0
+			.lparseXML 	= .F.
+			.nPosXML	= 0
+			.lValidCall = True
+			.Version	= '1.8 (beta)'
+			.lValidCall = True
+			.LastUpdate	= '2019-04-26 08:48:16 AM'
+			.lValidCall = True
+			.Author		= 'Irwin Rodr�guez'
+			.lValidCall = True
+			.Email		= 'rodriguez.irwin@gmail.com'
+			.Flag 		= Createobject('FLAG')
+		Endwith
 
-*--	decode into an object using a JSON string valid format.
-	FUNCTION decode(tcJsonStr AS MEMO) AS OBJECT HELPSTRING "Decodifica una cadena en formato JSON."
-		THIS.cJsonStr = tcJsonStr
-		RETURN THIS.__decode()
-	ENDFUNC
+*====================================================================
+	Procedure decode(tcJsonStr As Memo) As Object
+		This.cJsonStr = tcJsonStr
+		Return This.__decode()
 
-*-- loads a file with a JSON valid format and decodes it into an object.
-	FUNCTION loadFile(tcJsonFile AS STRING) AS OBJECT HELPSTRING "Decodifica un archivo con formato JSON."
-		IF !FILE(tcJsonFile)
-			THIS.__setLastErrorText("File not found")
-			RETURN NULL
-		ELSE &&!FILE(tcJsonFile)
-			THIS.cJsonStr = FILETOSTR(tcJsonFile)
-		ENDIF &&!FILE(tcJsonFile)
-		RETURN THIS.__decode()
-	ENDFUNC
+*====================================================================
+	Procedure loadFile(tcJsonFile As String) As Object
+		If !File(tcJsonFile)
+			This.__setLastErrorText('File not found')
+			Return Null
+		Else
+			This.cJsonStr = Filetostr(tcJsonFile)
+		Endif
+		Return This.__decode()
 
-*-- Serialize XML from a valid JSON Array.
-	FUNCTION ArrayToXML(tvArray AS Variant) AS STRING HELPSTRING "Serializa una cadena u objeto JSON a una representación en XML"
-		cType = VARTYPE(tvArray)
-		IF NOT INLIST(cType, "O", "C")
-			THIS.__setLastErrorText("invalid param")
-			RETURN ''
-		ELSE && NOT INLIST(cType, "O", "C")
-		ENDIF && NOT INLIST(cType, "O", "C")
+*====================================================================
+	Procedure ArrayToXML(tvArray As Variant) As String
+		cType = Vartype(tvArray)
+		If Not Inlist(cType, 'O', 'C')
+			This.__setLastErrorText('invalid param')
+			Return ''
+		Endif
 
-		IF cType == "O"
-			tvArray = THIS.encode(tvArray)
-			IF LEFT(tvArray,1) = "{" .AND. SUBSTR(tvArray,2,1) <> "["
-				tvArray = "[" + tvArray + "]"
-			ELSE &&LEFT(tvArray,1) = "{" .AND. SUBSTR(tvArray,2,1) <> "["
-			ENDIF &&LEFT(tvArray,1) = "{" .AND. SUBSTR(tvArray,2,1) <> "["
-		ELSE &&cType == "O"
-		ENDIF &&cType == "O"
+		If cType == 'O'
+			tvArray = This.encode(tvArray)
+			If Left(tvArray,1) = '{' .And. Substr(tvArray,2,1) <> '['
+				tvArray = '[' + tvArray + ']'
+			Endif
+		Endif
 
-		IF LEFT(tvArray,1) == "{" AND RIGHT(tvArray,1) == "}"
-			tvArray = "??" + tvArray + "??"
-			tvArray = STREXTRACT(tvArray, "??{", "}??")
-		ELSE &&LEFT(tvArray,1) == "{" AND RIGHT(tvArray,1) == "}"
-		ENDIF &&LEFT(tvArray,1) == "{" AND RIGHT(tvArray,1) == "}"
+		If Left(tvArray,1) == '{' And Right(tvArray,1) == '}'
+			tvArray = '??' + tvArray + '??'
+			tvArray = Strextract(tvArray, '??{', '}??')
+		Endif
 
-		THIS.cJsonStr 	= tvArray
-		THIS.lparseXML 	= .T.
-		THIS.__parse_value()
-		IF !EMPTY(THIS.LastErrorText)
-			RETURN ''
-		ELSE &&!EMPTY(THIS.LastErrorText)
-		ENDIF &&!EMPTY(THIS.LastErrorText)		
-		THIS.lparseXML 	= .F.
-		THIS.nPosXML	= 0
+		This.cJsonStr 	= tvArray
+		This.lparseXML 	= True
+		This.__parse_value()
+		If !Empty(This.LastErrorText)
+			Return ''
+		Endif
+		This.lparseXML 	= .F.
+		This.nPosXML	= 0
 
-		IF TYPE("aColumns") = "U"
-			THIS.__setLastErrorText("could not parse XML. Aux var was not created")
-			RETURN ''
-		ELSE &&TYPE("aColumns") = "U"
-		ENDIF &&TYPE("aColumns") = "U"
+		If Type('aColumns') = 'U'
+			This.__setLastErrorText('could not parse XML. Aux var was not created')
+			Return ''
+		Endif
 
-		cSelect = ""
-		cFrom	= ""
-		cPiloto = ""
+		cSelect = ''
+		cFrom	= ''
+		cPiloto = ''
 
-		FOR i=1 TO ALEN(aColumns)
-			IF !EMPTY(cSelect)
-				cSelect = cSelect + ","
-			ELSE &&!EMPTY(cSelect)
-			ENDIF &&!EMPTY(cSelect)
-			cSelect = cSelect + aColumns[i] + ".valor as " + aColumns[i]
-			IF i = 1
-				cFrom = cFrom + " (SELECT valor, RECNO() rn FROM " + aColumns[i] + ") " + aColumns[i]
-			ELSE &&i = 1
-				cFrom = cFrom + " FULL JOIN (SELECT valor, RECNO() rn FROM " + aColumns[i] + ") " + aColumns[i] + " ON " + aColumns[i] + ".rn = " + cPiloto + ".rn"
-			ENDIF &&i = 1
+		For i=1 To Alen(aColumns)
+			If !Empty(cSelect)
+				cSelect = cSelect + ','
+			Endif
+			cSelect = cSelect + aColumns[i] + '.valor as ' + aColumns[i]
+			If i = 1
+				cFrom = cFrom + ' (SELECT valor, RECNO() rn FROM ' + aColumns[i] + ') ' + aColumns[i]
+			Else
+				cFrom = cFrom + ' FULL JOIN (SELECT valor, RECNO() rn FROM ' + aColumns[i] + ') ' + aColumns[i] + ' ON ' + aColumns[i] + '.rn = ' + cPiloto + '.rn'
+			Endif
 			cPiloto = aColumns[i]
-		ENDFOR &&i=1 TO ALEN(aColumns)
-		lcMacro = "SELECT " + cSelect + " FROM " + cFrom + " INTO CURSOR qResult"
+		Endfor
+		lcMacro = 'SELECT ' + cSelect + ' FROM ' + cFrom + ' INTO CURSOR qResult'
 		&lcMacro
-		LOCAL lcOut AS STRING
-		lcOut = ""
-		=CURSORTOXML("qResult","lcOut",1,0,0,"1")
-		CLOSE DATABASES ALL
-		RELEASE aColumns
-		RETURN lcOut
-	ENDFUNC
+		Local lcOut As String
+		lcOut = ''
+		=Cursortoxml('qResult','lcOut',1,0,0,'1')
+		Close Databases All
+		Release aColumns
+		Return lcOut
 
-*-- Deserialize a XML format into a JSON string.
-	FUNCTION XMLToJson(tcXML AS MEMO) AS MEMO HELPSTRING "Convierte un XML a una representacion JSON"
-		IF EMPTY(tcXML)
-			THIS.__setLastErrorText("invalid XML format")
-			RETURN ""
-		ELSE &&EMPTY(tcXML)
-		ENDIF &&EMPTY(tcXML)
-		LOCAL lcJsonXML AS MEMO, nCount AS INTEGER
-		lcJsonXML 	= ""
+*====================================================================
+	Procedure XMLToJson(tcXML As Memo) As Memo
+		If Empty(tcXML)
+			This.__setLastErrorText('invalid XML format')
+			Return ''
+		Endif
+		Local lcJsonXML As Memo, nCount As Integer
+		lcJsonXML 	= ''
 		nCount 		= 0
-		=XMLTOCURSOR(tcXML, "qXML")
-		SELECT qXML
-		SCAN
+		=Xmltocursor(tcXML, 'qXML')
+		Select qXML
+		Scan
 			nCount = nCount + 1
-			IF !EMPTY(lcJsonXML)
-				lcJsonXML = lcJsonXML + ","
-			ELSE &&!EMPTY(lcJsonXML)
-			ENDIF &&!EMPTY(lcJsonXML)
+			If !Empty(lcJsonXML)
+				lcJsonXML = lcJsonXML + ','
+			Endif
 
-			SCATTER NAME loXML MEMO
-			lcJsonXML = lcJsonXML + THIS.encode(loXML)
-			SELECT qXML
-		ENDSCAN
-		IF nCount > 1
-			lcJsonXML = "[" + lcJsonXML + "]"
-		ELSE &&nCount > 1
-		ENDIF &&nCount > 1
-		CLOSE DATABASES ALL
-		RETURN lcJsonXML
-	ENDFUNC
+			Scatter Name loXML Memo
+			lcJsonXML = lcJsonXML + This.encode(loXML)
+			Select qXML
+		Endscan
+		If nCount > 1
+			lcJsonXML = '[' + lcJsonXML + ']'
+		Endif
+		Close Databases All
+		Return lcJsonXML
 
-*-- deserialize a JSON object.
-	FUNCTION encode(vNewProp AS Variant) AS MEMO
-		LOCAL lcVarType AS CHARACTER
-		lcVarType = VARTYPE(vNewProp)
-		DO CASE
-		CASE lcVarType == "C"
-			vNewProp = ALLTRIM(vNewProp)
-			vNewProp = STRTRAN(vNewProp, '\', '\\' )
-			vNewProp = STRTRAN(vNewProp, '/', '\/' )
-			vNewProp = STRTRAN(vNewProp, CHR(9),  '\t' )
-			vNewProp = STRTRAN(vNewProp, CHR(10), '\n' )
-			vNewProp = STRTRAN(vNewProp, CHR(13), '\r' )
-			vNewProp = STRTRAN(vNewProp, '"', '\"' )
-			RETURN '"' + vNewProp + '"'
+*====================================================================
+	Procedure encode(vNewProp As Variant) As Memo
+		Local lcVarType As Character
+		lcVarType = Vartype(vNewProp)
+		Do Case
+		Case lcVarType == 'C'
+			vNewProp = Alltrim(vNewProp)
+			vNewProp = Strtran(vNewProp, '\', '\\' )
+			vNewProp = Strtran(vNewProp, '/', '\/' )
+			vNewProp = Strtran(vNewProp, Chr(9),  '\t' )
+			vNewProp = Strtran(vNewProp, Chr(10), '\n' )
+			vNewProp = Strtran(vNewProp, Chr(13), '\r' )
+			vNewProp = Strtran(vNewProp, '"', '\"' )
+			Return '"' + vNewProp + '"'
 
-		CASE lcVarType == "N"
-			RETURN TRANSFORM(vNewProp)
+		Case lcVarType == 'N'
+			Return Transform(vNewProp)
 
-		CASE lcVarType == "L"
-			RETURN IIF(vNewProp, "true", "false")
+		Case lcVarType == 'L'
+			Return Iif(vNewProp, 'true', 'false')
 
-		CASE lcVarType == "X"
-			RETURN "null"
+		Case lcVarType == 'X'
+			Return 'null'
 
-		CASE lcVarType == "D"
-			cCenturyAct = SET("Century")
-			SET CENTURY ON
-			lcDate = '"' + ALLTRIM(STR(YEAR(vNewProp))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewProp))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewProp))),2,'0') + '"'
-			SET CENTURY &cCenturyAct
-			RETURN lcDate
+		Case lcVarType == 'D'
+			cCenturyAct = Set('Century')
+			Set Century On
+			lcDate = '"' + Alltrim(Str(Year(vNewProp))) + '-' + Padl(Alltrim(Str(Month(vNewProp))),2,'0') + '-' + Padl(Alltrim(Str(Day(vNewProp))),2,'0') + '"'
+			Set Century &cCenturyAct
+			Return lcDate
 
-		CASE lcVarType == "T"
-			cCenturyAct = SET("Century")
-			cHourAct 	= SET("Hours")
-			SET CENTURY ON
-			SET HOURS TO 24
-			lcDate = '"' + ALLTRIM(STR(YEAR(vNewVal))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewVal))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewVal))),2,'0') + SPACE(1) + PADL(ALLTRIM(STR(HOUR(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(MINUTE(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(SEC(vNewVal))),2,'0') + '"'
-			SET CENTURY  &cCenturyAct
-			SET HOURS TO &cHourAct
-			RETURN lcDate
+		Case lcVarType == 'T'
+			cCenturyAct = Set('Century')
+			cHourAct 	= Set('Hours')
+			Set Century On
+			Set Hours To 24
+			lcDate = '"' + Alltrim(Str(Year(vNewVal))) + '-' + Padl(Alltrim(Str(Month(vNewVal))),2,'0') + '-' + Padl(Alltrim(Str(Day(vNewVal))),2,'0') + Space(1) + Padl(Alltrim(Str(Hour(vNewVal))),2,'0') + ':' + Padl(Alltrim(Str(Minute(vNewVal))),2,'0') + ':' + Padl(Alltrim(Str(Sec(vNewVal))),2,'0') + '"'
+			Set Century  &cCenturyAct
+			Set Hours To &cHourAct
+			Return lcDate
 
-		CASE lcVarType == "O"
-			RETURN "{" + EXECSCRIPT(THIS.load_script(), vNewProp, THIS.load_script()) + "}"
-		OTHERWISE
-		ENDCASE
-	ENDFUNC
+		Case lcVarType == 'O'
+			Return '{' + Execscript(This.load_script(), vNewProp, This.load_script()) + '}'
+		Otherwise
+		Endcase
 
-*-- WARNING: Internal usage only.
-	HIDDEN FUNCTION load_script AS MEMO
-		TEXT TO lcLoad NOSHOW TEXTMERGE PRETEXT 7
-			LPARAMETERS toObj, tcExecScript
-			LOCAL vNewVal
+*====================================================================
+	Hidden Procedure load_script As Memo
+		TEXT To lcLoad NoShow TextMerge PreText 7
+			Lparameters toObj, tcExecScript
+			Local vNewVal
 			vNewVal = toObj
-			LOCAL lcPtyName, lcJsonStr, cReturn, arrPty[1]
-			=AMEMBERS(arrPty,vNewVal)
-			cReturn = ""
-			FOR EACH lcPtyName IN arrPty
-				IF TYPE("ALEN(vNewVal." + lcPtyName + ")") == "N"
-					LOCAL i,lnSize
+			Local lcPtyName, lcJsonStr, cReturn, arrPty[1]
+			=Amembers(arrPty,vNewVal)
+			cReturn = ''
+			For Each lcPtyName In arrPty
+				If Type('Alen(vNewVal.' + lcPtyName + ')') == 'N'
+					Local i,lnSize
 					lcJsonStr 	= ''
-					lnSize 	= EVAL('ALen(vNewVal.'+lcPtyName+')')
-					FOR i=1 TO lnSize
-						lcMacro = 'lcJsonStr = lcJsonStr + "," + ENCODE(vNewVal.' + lcPtyName + '[i], tcExecScript)'
+					lnSize 	= Eval('Alen(vNewVal.'+lcPtyName+')')
+					For i=1 To lnSize
+						lcMacro = 'lcJsonStr = lcJsonStr + "," + Encode(vNewVal.' + lcPtyName + '[i], tcExecScript)'
 						&lcMacro
-					NEXT &&i=1 TO lnSize
-					lcJsonStr = "[" + SUBSTR(lcJsonStr,2) + "]"
-				ELSE &&TYPE("ALEN(vNewVal." + lcPtyName + ")") == "N"
-					lcJsonStr = ENCODE(EVALUATE("vNewVal." + lcPtyName), tcExecScript)
-				ENDIF &&TYPE("ALEN(vNewVal." + lcPtyName + ")") == "N"
-				IF UPPER(lcPtyName) <> "ARRAY"
-					IF LEFT(lcPtyName,1) == "_"
-						lcPtyName = SUBSTR(lcPtyName,2)
-					ELSE &&LEFT(lcPtyName,1) == "_"
-					ENDIF &&LEFT(lcPtyName,1) == "_"
-					cReturn = cReturn + ',' + '"' + LOWER(lcPtyName) + '":' + lcJsonStr
-				ELSE &&UPPER(lcPtyName) <> "ARRAY"
+					Next
+					lcJsonStr = '[' + Substr(lcJsonStr,2) + ']'
+				Else
+					lcJsonStr = Encode(Evaluate('vNewVal.' + lcPtyName), tcExecScript)
+				Endif
+				If Lower(lcPtyName) <> 'array'
+					If Left(lcPtyName,1) == '_'
+						lcPtyName = Substr(lcPtyName,2)
+					Endif
+					cReturn = cReturn + ',' + '"' + Lower(lcPtyName) + '":' + lcJsonStr
+				Else
 					cReturn = cReturn + ',' + lcJsonStr
-				ENDIF &&UPPER(lcPtyName) <> "ARRAY"
-			NEXT &&EACH lcPtyName IN arrPty
-			lcRet = SUBSTR(cReturn,2)
-			RETURN lcRet
+				Endif
+			Next
+			lcRet = Substr(cReturn,2)
+			Return lcRet
 
-			*-- WARNING: Internal usage only.
-			FUNCTION encode AS MEMO
-				LPARAMETERS vNewVal, tcExecScript
-				LOCAL cTipo AS CHARACTER
-				IF TYPE('ALen(vNewVal)') == "N"
-					cTipo = "A"
-				ELSE &&TYPE('ALen(vNewVal)') == "N"
-					cTipo = VARTYPE(vNewVal)
-				ENDIF &&TYPE('ALen(vNewVal)') == "N"
-				DO CASE
-				CASE cTipo == "D"
-					cCenturyAct = SET("Century")
-					SET CENTURY ON
-					lcDate = '"' + ALLTRIM(STR(YEAR(vNewVal))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewVal))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewVal))),2,'0') + '"'
-					SET CENTURY &cCenturyAct
-					RETURN lcDate
-				CASE cTipo == "T"
-					cCenturyAct = SET("Century")
-					cHourAct 	= SET("Hours")
-					SET CENTURY ON
-					SET HOURS TO 24
-					lcDate = '"' + ALLTRIM(STR(YEAR(vNewVal))) + '-' + PADL(ALLTRIM(STR(MONTH(vNewVal))),2,'0') + '-' + PADL(ALLTRIM(STR(DAY(vNewVal))),2,'0') + SPACE(1) + PADL(ALLTRIM(STR(HOUR(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(MINUTE(vNewVal))),2,'0') + ':' + PADL(ALLTRIM(STR(SEC(vNewVal))),2,'0') + '"'
-					SET CENTURY  &cCenturyAct
-					SET HOURS TO &cHourAct
-					RETURN lcDate
-				CASE cTipo == "N"
-					RETURN TRANSFORM(vNewVal)
-				CASE cTipo == "L"
-					RETURN IIF(vNewVal, "true", "false")
-				CASE cTipo == "X"
-					RETURN "null"
-				CASE cTipo == "C"
-					vNewVal = ALLT(vNewVal)
-					vNewVal = STRTRAN(vNewVal, '\', '\\' )
-					vNewVal = STRTRAN(vNewVal, '/', '\/' )
-					vNewVal = STRTRAN(vNewVal, CHR(9),  '\t' )
-					vNewVal = STRTRAN(vNewVal, CHR(10), '\n' )
-					vNewVal = STRTRAN(vNewVal, CHR(13), '\r' )
-					vNewVal = STRTRAN(vNewVal, '"', '\"' )
-					RETURN '"' + vNewVal + '"'
-				CASE cTipo == "A"
-					LOCAL valor, cReturn
+			*====================================================================
+			Procedure encode As Memo
+				Lparameters vNewVal, tcExecScript
+				Local cTipo As Character
+				If Type('ALen(vNewVal)') == 'N'
+					cTipo = 'A'
+				Else
+					cTipo = Vartype(vNewVal)
+				Endif
+				Do Case
+				Case cTipo == 'D'
+					cCenturyAct = Set('Century')
+					Set Century On
+					lcDate = '"' + Alltrim(Str(Year(vNewVal))) + '-' + Padl(Alltrim(Str(Month(vNewVal))),2,'0') + '-' + Padl(Alltrim(Str(Day(vNewVal))),2,'0') + '"'
+					Set Century &cCenturyAct
+					Return lcDate
+				Case cTipo == 'T'
+					cCenturyAct = Set('Century')
+					cHourAct 	= Set('Hours')
+					Set Century On
+					Set Hours To 24
+					lcDate = '"' + Alltrim(Str(Year(vNewVal))) + '-' + Padl(Alltrim(Str(Month(vNewVal))),2,'0') + '-' + Padl(Alltrim(Str(Day(vNewVal))),2,'0') + Space(1) + Padl(Alltrim(Str(Hour(vNewVal))),2,'0') + ':' + Padl(Alltrim(Str(Minute(vNewVal))),2,'0') + ':' + Padl(Alltrim(Str(Sec(vNewVal))),2,'0') + '"'
+					Set Century  &cCenturyAct
+					Set Hours To &cHourAct
+					Return lcDate
+				Case cTipo == 'N'
+					Return Transform(vNewVal)
+				Case cTipo == 'L'
+					Return Iif(vNewVal, 'true', 'false')
+				Case cTipo == 'X'
+					Return 'null'
+				Case cTipo == 'C'
+					vNewVal = Allt(vNewVal)
+					vNewVal = Strtran(vNewVal, '\', '\\' )
+					vNewVal = Strtran(vNewVal, '/', '\/' )
+					vNewVal = Strtran(vNewVal, Chr(9),  '\t' )
+					vNewVal = Strtran(vNewVal, Chr(10), '\n' )
+					vNewVal = Strtran(vNewVal, Chr(13), '\r' )
+					vNewVal = Strtran(vNewVal, '"', '\"' )
+					Return '"' + vNewVal + '"'
+				Case cTipo == 'A'
+					Local valor, cReturn
 					cReturn = ''
-					FOR EACH valor IN vNewVal
-						cReturn = cReturn + ',' +  THIS.encode( valor )
-					NEXT &&EACH valor IN vNewVal
-					RETURN  "[" + SUBSTR(cReturn,2) + "]"
-				CASE cTipo == "O"
-					lcRet = EXECSCRIPT(tcExecScript, vNewVal, tcExecScript)
-					IF LEFT(lcRet,1) <> "["
-						lcRet = "{" + lcRet + "}"
-					ELSE &&LEFT(lcRet,1) <> "["
-					ENDIF &&LEFT(lcRet,1) <> "["
-					RETURN lcRet
-				OTHERWISE
-				ENDCASE
-			ENDFUNC
-		ENDTEXT
-		RETURN lcLoad
-	ENDFUNC
-*-- FUNCTION __decode
-	HIDDEN FUNCTION __decode AS OBJECT
-		THIS.cJsonOri = THIS.cJsonStr
-		THIS.__cleanJsonString()
-		THIS.nPos = 1
-		THIS.nLen = LEN(THIS.cJsonOri)
-		IF THIS.__validate_json_format()
-			RETURN THIS.__parse_object()
-		ELSE &&THIS.__validate_json_format()
-			THIS.__setLastErrorText("invalid JSON format")
-			RETURN NULL
-		ENDIF &&THIS.__validate_json_format()
-	ENDFUNC
-*-- FUNCTION __parse_object
-	HIDDEN FUNCTION __parse_object AS OBJECT
-		LOCAL oCurObj AS OBJECT, lcPropName AS STRING, lcType AS STRING, vNewVal AS Variant
-		oCurObj = CREATEOBJECT("__custom_object")
-		THIS.__eat_json(2)
-		DO WHILE .T.
-			lcPropName = THIS.__parse_string(.T.)
-			IF EMPTY(lcPropName)
-				RETURN NULL
-			ELSE &&EMPTY(lcPropName)
-			ENDIF &&EMPTY(lcPropName)
-			IF THIS.__get_Token() <> ':'
-				THIS.__setLastErrorText("Expected ':' - Got undefined")
-				RETURN NULL
-			ELSE &&THIS.__get_Token() <> ':'
-			ENDIF &&THIS.__get_Token() <> ':'
-			THIS.__eat_json(2)
-			lcType  = ''
-			vNewVal = THIS.__parse_value(@lcType)
-			THIS.FLAG.ACTIVE = .T.
-			oCurObj.setProperty(lcPropName, vNewVal, lcType, THIS.FLAG)
-			THIS.__parse_XML(lcPropName, vNewVal)
-			cToken = THIS.__get_Token()
-			DO CASE
-			CASE cToken == ','
-				THIS.__eat_json(2)
-				LOOP
-			CASE cToken == '}'
-				THIS.__eat_json(2)
-				EXIT
-			OTHERWISE
-			ENDCASE
-		ENDDO &&WHILE .T.
-		RETURN oCurObj
-	ENDFUNC
-*-- FUNCTION __parse_value
-	HIDDEN FUNCTION __parse_value AS Variant
-		LPARAMETERS tcType AS STRING
-		LOCAL cToken AS STRING
-		cToken = THIS.__get_Token()
-		IF !INLIST(cToken, '{', '[', '"', 't', 'f', '-', 'n') AND !ISDIGIT(cToken)
-			THIS.__setLastErrorText("Expecting 'STRING', 'NUMBER', 'NULL', 'TRUE', 'FALSE', '{', '[', Got undefined")
-			RETURN NULL
-		ELSE &&!INLIST(cToken, '{', '[', '"', 't', 'f', '-', 'n') AND !ISDIGIT(cToken)
-		ENDIF &&!INLIST(cToken, '{', '[', '"', 't', 'f', '-', 'n') AND !ISDIGIT(cToken)
+					For Each valor In vNewVal
+						cReturn = cReturn + ',' +  This.encode( valor )
+					Next
+					Return  '[' + Substr(cReturn,2) + ']'
+				Case cTipo == 'O'
+					lcRet = Execscript(tcExecScript, vNewVal, tcExecScript)
+					If Left(lcRet,1) <> '['
+						lcRet = '{' + lcRet + '}'
+					Endif
+					Return lcRet
+				Otherwise
+				Endcase
 
-		DO CASE
-		CASE cToken == '{'
-			tcType = "O"
-			RETURN THIS.__parse_object()
-		CASE cToken == '['
-			tcType = "A"
-			RETURN THIS.__parse_array()
-		CASE cToken == '"'
-			tcType = "S"
-			RETURN THIS.__parse_string()
-		CASE cToken == 't'
-			tcType = "B"
-			RETURN THIS.__parse_expr("true")
-		CASE cToken == 'f'
-			tcType = "B"
-			RETURN THIS.__parse_expr("false")
-		CASE cToken == 'n'
-			tcType = "N"
-			RETURN THIS.__parse_expr("null")
-		CASE ISDIGIT(cToken) OR cToken == '-'
-			tcType = "I"
-			RETURN THIS.__parse_number()
-		OTHERWISE
-		ENDCASE
-	ENDFUNC
-*-- FUNCTION __parse_array
-	HIDDEN FUNCTION __parse_array AS OBJECT
-		LOCAL aCustomArr AS OBJECT
-		THIS.__eat_json(2)
-		aCustomArr = CREATEOBJECT("__custom_array")
-		DO WHILE .T.
+			*====================================================================
+		EndText
+		Return lcLoad
+
+*====================================================================
+	Hidden Procedure __decode As Object
+		This.cJsonOri = This.cJsonStr
+		This.__cleanJsonString()
+		This.nPos = 1
+		This.nLen = Len(This.cJsonOri)
+		If This.__validate_json_format()
+			Return This.__parse_object()
+		Else
+			This.__setLastErrorText('invalid JSON format')
+			Return Null
+		Endif
+
+*====================================================================
+	Hidden Procedure __parse_object As Object
+		Local oCurObj As Object, lcPropName As String, lcType As String, vNewVal As Variant
+		oCurObj = Createobject('__custom_object')
+		This.__eat_json(2)
+		Do While True
+			lcPropName = This.__parse_string(True)
+			If Empty(lcPropName)
+				Return Null
+			Endif
+			If This.__get_Token() <> ':'
+				This.__setLastErrorText("Expected ':' - Got undefined")
+				Return Null
+			Endif
+			This.__eat_json(2)
 			lcType  = ''
-			vNewVal = THIS.__parse_value(@lcType)
+			vNewVal = This.__parse_value(@lcType)
+			This.Flag.Active = True
+			oCurObj.setProperty(lcPropName, vNewVal, lcType, This.Flag)
+			This.__parse_XML(lcPropName, vNewVal)
+			cToken = This.__get_Token()
+			Do Case
+			Case cToken == ','
+				This.__eat_json(2)
+				Loop
+			Case cToken == '}'
+				This.__eat_json(2)
+				Exit
+			Otherwise
+			Endcase
+		Enddo
+		Return oCurObj
+
+*====================================================================
+	Hidden Procedure __parse_value As Variant
+		Lparameters tcType As String
+		Local cToken As String
+		cToken = This.__get_Token()
+		If !Inlist(cToken, '{', '[', '"', 't', 'f', '-', 'n') And !Isdigit(cToken)
+			This.__setLastErrorText("Expecting 'STRING', 'NUMBER', 'NULL', 'TRUE', 'FALSE', '{', '[', Got undefined")
+			Return Null
+		Endif
+
+		Do Case
+		Case cToken == '{'
+			tcType = 'O'
+			Return This.__parse_object()
+		Case cToken == '['
+			tcType = 'A'
+			Return This.__parse_array()
+		Case cToken == '"'
+			tcType = 'S'
+			Return This.__parse_string()
+		Case cToken == 't'
+			tcType = 'B'
+			Return This.__parse_expr('true')
+		Case cToken == 'f'
+			tcType = 'B'
+			Return This.__parse_expr('false')
+		Case cToken == 'n'
+			tcType = 'N'
+			Return This.__parse_expr('null')
+		Case Isdigit(cToken) Or cToken == '-'
+			tcType = 'I'
+			Return This.__parse_number()
+		Otherwise
+		Endcase
+
+*====================================================================
+	Hidden Procedure __parse_array As Object
+		Local aCustomArr As Object
+		This.__eat_json(2)
+		aCustomArr = Createobject('__custom_array')
+		Do While True
+			lcType  = ''
+			vNewVal = This.__parse_value(@lcType)
 			aCustomArr.array_push(vNewVal)
-			cToken = THIS.__get_Token()
-			DO CASE
-			CASE cToken == ',' && Nos comemos el Token e Iteramos el siguiente valor.
-				THIS.__eat_json(2)
-				LOOP
-			CASE cToken == ']' && Nos comemos el Token y retornamos el flujo.
-				THIS.__eat_json(2)
-				EXIT
-			OTHERWISE
-			ENDCASE
-		ENDDO &&WHILE .T.
-		RETURN aCustomArr
-	ENDFUNC
-*-- FUNCTION __parse_number
-	HIDDEN FUNCTION __parse_number AS NUMBER
-		LOCAL cNumber AS STRING, bIsNegative AS boolean
+			cToken = This.__get_Token()
+			Do Case
+			Case cToken == ','
+				This.__eat_json(2)
+				Loop
+			Case cToken == ']'
+				This.__eat_json(2)
+				Exit
+			Otherwise
+			Endcase
+		Enddo
+		Return aCustomArr
+
+*====================================================================
+	Hidden Procedure __parse_number As Number
+		Local cNumber As String, bIsNegative As boolean
 		bIsNegative = .F.
-		IF THIS.__get_Token() == '-'
-			bIsNegative = .T.
-		ELSE &&THIS.__get_token() == '-'
-		ENDIF &&THIS.__get_token() == '-'
-		cNumber = ""
-		DO WHILE .T.
-			cValue 	= THIS.__get_Token()
-			IF INLIST(cValue, ',', '}', ']')
-				EXIT
-			ELSE &&INLIST(cValue, ',', '}', ']')
-			ENDIF &&INLIST(cValue, ',', '}', ']')
+		If This.__get_Token() == '-'
+			bIsNegative = True
+		Endif
+		cNumber = ''
+		Do While True
+			cValue 	= This.__get_Token()
+			If Inlist(cValue, ',', '}', ']')
+				Exit
+			Endif
 			cNumber = cNumber + cValue
-			THIS.__eat_json(2)
-		ENDDO &&WHILE .T.
-		SET DECIMALS TO 10
-		nValNumber = VAL(cNumber)
-		IF bIsNegative
-			RETURN nValNumber * -1
-		ELSE &&bIsNegative
-			RETURN nValNumber
-		ENDIF &&bIsNegative
-	ENDFUNC
-*-- FUNCTION __parse_expr
-	HIDDEN FUNCTION __parse_expr AS Variant
-		LPARAMETERS tcStr AS STRING
-		vNewVal 	= ""
+			This.__eat_json(2)
+		Enddo
+		Set Decimals To 10
+		nValNumber = Val(cNumber)
+		Return Iif(bIsNegative, nValNumber * -1, nValNumber)
+
+*====================================================================
+	Hidden Procedure __parse_expr As Variant
+		Lparameters tcStr As String
+		vNewVal 	= ''
 		lnLenExp 	= 0
-		DO CASE
-		CASE tcStr == 'true'
+		Do Case
+		Case tcStr == 'true'
 			lnLenExp = 4
-			IF LEFT(THIS.cJsonStr, lnLenExp) == 'true'
-				vNewVal = .T.
-			ELSE &&LEFT(THIS.cJsonStr, lnLenExp) == 'true'
+			If Left(This.cJsonStr, lnLenExp) == 'true'
+				vNewVal = True
+			Else
 				vNewVal = ''
-			ENDIF &&LEFT(THIS.cJsonStr, lnLenExp) == 'true'
-		CASE tcStr == 'false'
+			Endif
+		Case tcStr == 'false'
 			lnLenExp = 5
-			IF LEFT(THIS.cJsonStr, lnLenExp) == 'false'
+			If Left(This.cJsonStr, lnLenExp) == 'false'
 				vNewVal = .F.
-			ELSE &&LEFT(THIS.cJsonStr, lnLenExp) == 'false'
+			Else
 				vNewVal = ''
-			ENDIF &&LEFT(THIS.cJsonStr, lnLenExp) == 'false'
-		CASE tcStr == 'null'
+			Endif
+		Case tcStr == 'null'
 			lnLenExp = 4
-			IF LEFT(THIS.cJsonStr, lnLenExp) == 'null'
-				vNewVal = NULL
-			ELSE &&LEFT(THIS.cJsonStr, lnLenExp) == 'null'
+			If Left(This.cJsonStr, lnLenExp) == 'null'
+				vNewVal = Null
+			Else
 				vNewVal = ''
-			ENDIF &&LEFT(THIS.cJsonStr, lnLenExp) == 'null'
-		OTHERWISE
-		ENDCASE
-		IF TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-			IF INLIST(tcStr, 'true', 'false')
+			Endif
+		Otherwise
+		Endcase
+		If Type('vNewVal') == 'C' And Empty(vNewVal)
+			If Inlist(tcStr, 'true', 'false')
 				cMsg = "Expecting 'TRUE', 'FALSE', Got undefined"
-			ELSE &&INLIST(tcStr, 'true', 'false')
+			Else
 				cMsg = "Expecting 'NULL', Got undefined"
-			ENDIF &&INLIST(tcStr, 'true', 'false')
-			THIS.__setLastErrorText(cMsg)
-			RETURN ''
-		ELSE &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-		ENDIF &&TYPE("vNewVal") == "C" AND EMPTY(vNewVal)
-		lnLenExp = lnLenExp + 1 && El valor más el salto.
-		THIS.__eat_json(lnLenExp)
-		RETURN vNewVal
-	ENDFUNC
-*-- FUNCTION __parse_string
-	HIDDEN FUNCTION __parse_string AS MEMO
-		LPARAMETERS tlisNameAttr
-		LOCAL lcValue AS STRING, dDate AS Variant
-		lcValue = ""
-		IF THIS.__get_Token() <> '"'
-			THIS.__setLastErrorText('Expected " - Got undefined')
-			RETURN ''
-		ELSE &&THIS.__get_Token() <> '"'
-		ENDIF &&THIS.__get_Token() <> '"'
-		lcValue = STREXTRACT(THIS.cJsonStr, '"', '"', 1)
-		IF OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
-			lDate = THIS.__checkDate(lcValue)
-			IF !ISNULL(lDate)
+			Endif
+			This.__setLastErrorText(cMsg)
+			Return ''
+		Endif
+		lnLenExp = lnLenExp + 1
+		This.__eat_json(lnLenExp)
+		Return vNewVal
+
+*====================================================================
+	Hidden Procedure __parse_string As Memo
+		Lparameters tlisNameAttr
+		Local lcValue As String, dDate As Variant
+		lcValue = ''
+		If This.__get_Token() <> '"'
+			This.__setLastErrorText('Expected " - Got undefined')
+			Return ''
+		Endif
+		lcValue = Strextract(This.cJsonStr, '"', '"', 1)
+		If Occurs('-', lcValue) == 2 .And. Not tlisNameAttr
+			lDate = This.__checkDate(lcValue)
+			If !Isnull(lDate)
 				dDate = lDate
-			ELSE &&!ISNULL(lDate)
-			ENDIF &&!ISNULL(lDate)
-		ELSE &&OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
-		ENDIF &&OCCURS("-", lcValue) == 2 .AND. NOT tlisNameAttr
-		THIS.__eat_json(LEN(lcValue) + 3) && El nombre más los delimitadores '"'/'"' y una posicion más para saltarse el último ".
-		RETURN IIF(EMPTY(dDate),lcValue,dDate)
-	ENDFUNC
-*-- PROCEDURE __parse_XML
-	HIDDEN PROCEDURE __parse_XML
-		LPARAMETERS tcColumn, tvNewVal
-		LOCAL lContinue as boolean
-		lContinue = .T.		
-		IF THIS.lparseXML
-			lcType = VARTYPE(tvNewVal)
-			IF !USED(ALLTRIM(tcColumn))
-				lcAlter = "L" && Logical by Default
-				lDate 	= NULL
-				DO CASE
-				CASE lcType = "C" AND OCCURS("-", tvNewVal) == 2 && Date or DateTime
-					lDate 	= THIS.__checkDate(tvNewVal)
-					IF !ISNULL(lDate)
-						lcType 	 = VARTYPE(lDate)
-						lcAlter  = lcType + " NULL"
+			Endif
+		Endif
+		This.__eat_json(Len(lcValue) + 3)
+		Return Iif(Empty(dDate),lcValue,dDate)
+
+*====================================================================
+	Hidden Procedure __parse_XML
+		Lparameters tcColumn, tvNewVal
+		Local lContinue As boolean
+		lContinue = True
+		If This.lparseXML
+			lcType = Vartype(tvNewVal)
+			If !Used(Alltrim(tcColumn))
+				lcAlter = 'L'
+				lDate 	= Null
+				Do Case
+				Case lcType = 'C' And Occurs('-', tvNewVal) == 2
+					lDate 	= This.__checkDate(tvNewVal)
+					If !Isnull(lDate)
+						lcType 	 = Vartype(lDate)
+						lcAlter  = lcType + ' NULL'
 						tvNewVal = lDate
-					ELSE &&!ISNULL(lDate)
-					ENDIF &&!ISNULL(lDate)
-				CASE lcType = "C"
-					lcAlter = "C(100) NULL"
-				CASE lcType = "N"
-					lcAlter = "N(20,10) NULL"
-				CASE lcType = "L"
-					lcAlter = "L NULL"
-				CASE lcType = "D"
-					lcAlter = "D NULL"
-				CASE lcType = "T"
-					lcAlter = "T NULL"
-				OTHERWISE
-				ENDCASE
-				THIS.nPosXML = THIS.nPosXML + 1
-				IF TYPE("aColumns") == "U"
-					PUBLIC aColumns
-				ELSE &&TYPE("aColumns") == "U"
-				ENDIF &&TYPE("aColumns") == "U"
-				DIMENSION aColumns[THIS.nPosXML]
+					Endif
+				Case lcType = 'C'
+					lcAlter = 'C(100) NULL'
+				Case lcType = 'N'
+					lcAlter = 'N(20,10) NULL'
+				Case lcType = 'L'
+					lcAlter = 'L NULL'
+				Case lcType = 'D'
+					lcAlter = 'D NULL'
+				Case lcType = 'T'
+					lcAlter = 'T NULL'
+				Otherwise
+				Endcase
+				This.nPosXML = This.nPosXML + 1
+				If Type('aColumns') == 'U'
+					Public aColumns
+				Endif
+				Dimension aColumns[THIS.nPosXML]
 				aColumns[THIS.nPosXML] = tcColumn
-				lcMacro = "CREATE CURSOR " + ALLTRIM(tcColumn) + " (valor " + lcAlter + ")"
-				TRY
+				lcMacro = 'CREATE CURSOR ' + Alltrim(tcColumn) + ' (valor ' + lcAlter + ')'
+				Try
 					&lcMacro
-				CATCH TO oErr
+				Catch To oErr
 					lContinue = .F.
-					THIS.__setLastErrorText('Invalid cursor name or field')
-				ENDTRY
-			ELSE &&!USED(ALLTRIM(tcColumn))
-			ENDIF &&!USED(ALLTRIM(tcColumn))
-			IF !lContinue
-				RETURN ''
-			ELSE &&!lContinue
-			ENDIF &&!lContinue
-			IF lcType == "C" AND OCCURS("-", tvNewVal) == 2
-				lDate 	= THIS.__checkDate(tvNewVal)
-				IF !ISNULL(lDate)
+					This.__setLastErrorText('Invalid cursor name or field')
+				Endtry
+			Endif
+			If !lContinue
+				Return ''
+			Endif
+			If lcType == 'C' And Occurs('-', tvNewVal) == 2
+				lDate 	= This.__checkDate(tvNewVal)
+				If !Isnull(lDate)
 					tvNewVal = lDate
-				ELSE &&!ISNULL(lDate)
-				ENDIF &&!ISNULL(lDate)
-			ELSE &&lcType == "C" AND OCCURS("-", tvNewVal) == 2
-			ENDIF &&lcType == "C" AND OCCURS("-", tvNewVal) == 2
-			TRY
-				INSERT INTO &tcColumn (valor) VALUES(tvNewVal)
-			CATCH
-				INSERT INTO &tcColumn (valor) VALUES(NULL)
-			ENDTRY
-		ELSE &&THIS.lparseXML
-		ENDIF &&THIS.lparseXML
-	ENDFUNC
-*-- FUNCTION __checkDate
-	HIDDEN FUNCTION __checkDate AS Variant
-		LPARAMETERS tsDate AS STRING
-		LOCAL cStr AS STRING, lIsDateTime AS boolean, lDate AS Variant
-		cStr 		= ""
+				Endif
+			Endif
+			Try
+				Insert Into &tcColumn (valor) Values(tvNewVal)
+			Catch
+				Insert Into &tcColumn (valor) Values(Null)
+			Endtry
+		Endif
+
+*====================================================================
+	Hidden Procedure __checkDate As Variant
+		Lparameters tsDate As String
+		Local cStr As String, lIsDateTime As boolean, lDate As Variant
+		cStr 		= ''
 		lIsDateTime = .F.
-		lDate		= NULL
-		cStr 		= STRTRAN(tsDate, "-")
-		IF OCCURS(":", tsDate) == 2
-			lIsDateTime = .T.
-			cStr 		= STRTRAN(cStr, ":")
-			cStr 		= STRTRAN(UPPER(cStr), "AM")
-			cStr 		= STRTRAN(UPPER(cStr), "PM")
-			cStr 		= STRTRAN(UPPER(cStr), SPACE(1))
-		ELSE &&OCCURS(":", tsDate) == 2
-		ENDIF &&OCCURS(":", tsDate) == 2
-		FOR i=1 TO LEN(cStr) STEP 1
-			IF ISDIGIT(SUBSTR(cStr, i, 1))
-				LOOP
-			ELSE &&ISDIGIT(SUBSTR(cStr, i, 1))
-				RETURN NULL
-			ENDIF &&ISDIGIT(SUBSTR(cStr, i, 1))
-		ENDFOR &&i=1 TO LEN(cStr) STEP 1
-		IF VAL(LEFT(tsDate,4)) > 0 AND VAL(STREXTRACT(tsDate, "-", "-",1)) > 0 AND VAL(RIGHT(tsDate,2)) > 0
-			IF !lIsDateTime
-				lDate = DATE(VAL(LEFT(tsDate,4)), VAL(STREXTRACT(tsDate, "-", "-",1)), VAL(RIGHT(tsDate,2)))
-			ELSE &&!lIsDateTime
-*-- WARNING: Valid string datetime format is yyyy-mm-dd hh:mm:ss
-				lDate = DATETIME(VAL(LEFT(tsDate,4)), VAL(STREXTRACT(tsDate, "-", "-",1)), VAL(STREXTRACT(tsDate, "-", SPACE(1),2)), VAL(SUBSTR(tsDate, 12, 2)), VAL(STREXTRACT(tsDate, ":", ":",1)), VAL(RIGHT(tsDate,2)))
-			ENDIF &&!lIsDateTime
-		ELSE &&VAL(LEFT(tsDate,4)) > 0 AND VAL(STREXTRACT(tsDate, "-", "-",1)) > 0 AND VAL(RIGHT(tsDate,2)) > 0
-			IF !lIsDateTime
-				lDate = {//}
-			ELSE &&!lIsDateTime
-				lDate = {//::}
-			ENDIF &&!lIsDateTime
-		ENDIF &&VAL(LEFT(tsDate,4)) > 0 AND VAL(STREXTRACT(tsDate, "-", "-",1)) > 0 AND VAL(RIGHT(tsDate,2)) > 0
-		RETURN lDate
-	ENDFUNC
-*-- PROCEDURE __eat_json
-	HIDDEN PROCEDURE __eat_json(tnPosition AS INTEGER)
-		THIS.cJsonStr = ALLTRIM(SUBSTR(THIS.cJsonStr, tnPosition, LEN(THIS.cJsonStr)))
-	ENDPROC
-*-- FUNCTION __get_Token
-	HIDDEN FUNCTION __get_Token AS STRING
-		LOCAL cToken AS CHARACTER
-		cToken = ""
-		DO WHILE .T.
-			IF THIS.nPos > THIS.nLen
-				RETURN NULL
-			ELSE &&THIS.nPos > THIS.nLen
-			ENDIF &&THIS.nPos > THIS.nLen
-			cToken = LEFT(THIS.cJsonStr, 1)
-			IF EMPTY(cToken)
-				THIS.nPos = THIS.nPos + 1
-				LOOP
-			ELSE &&EMPTY(cToken)
-			ENDIF &&EMPTY(cToken)
-			RETURN cToken
-		ENDDO &&WHILE .T.
-	ENDFUNC
-*-- FUNCTION __validate_json_format
-	HIDDEN FUNCTION __validate_json_format AS boolean
-		RETURN (LEFT(THIS.cJsonStr,1) == "{" AND RIGHT(THIS.cJsonStr, 1) == "}")
-	ENDFUNC
-*-- FUNCTION __cleanJsonString
-	HIDDEN FUNCTION __cleanJsonString
-		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(9))
-		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(10))
-		THIS.cJsonStr = STRTRAN(THIS.cJsonStr, CHR(13))
-		THIS.cJsonStr = ALLTRIM(THIS.__html_entity_decode(THIS.cJsonStr))
-	ENDFUNC
-*-- FUNCTION __html_entity_decode(cText AS MEMO)
-	HIDDEN FUNCTION __html_entity_decode(cText AS MEMO) AS MEMO
-		cText = STRTRAN(cText, "\u00a0", "Â")
-		cText = STRTRAN(cText, "\u00a1", "¡")
-		cText = STRTRAN(cText, "\u00a2", "¢")
-		cText = STRTRAN(cText, "\u00a3", "£")
-		cText = STRTRAN(cText, "\u00a4", "¤")
-		cText = STRTRAN(cText, "\u00a5", "¥")
-		cText = STRTRAN(cText, "\u00a6", "¦")
-		cText = STRTRAN(cText, "\u00a7", "§")
-		cText = STRTRAN(cText, "\u00a8", "¨")
-		cText = STRTRAN(cText, "\u00a9", "©")
-		cText = STRTRAN(cText, "\u00aa", "ª")
-		cText = STRTRAN(cText, "\u00ab", "«")
-		cText = STRTRAN(cText, "\u00ac", "¬")
-		cText = STRTRAN(cText, "\u00ae", "®")
-		cText = STRTRAN(cText, "\u00af", "¯")
-		cText = STRTRAN(cText, "\u00b0", "°")
-		cText = STRTRAN(cText, "\u00b1", "±")
-		cText = STRTRAN(cText, "\u00b2", "²")
-		cText = STRTRAN(cText, "\u00b3", "³")
-		cText = STRTRAN(cText, "\u00b4", "´")
-		cText = STRTRAN(cText, "\u00b5", "µ")
-		cText = STRTRAN(cText, "\u00b6", "¶")
-		cText = STRTRAN(cText, "\u00b7", "·")
-		cText = STRTRAN(cText, "\u00b8", "¸")
-		cText = STRTRAN(cText, "\u00b9", "¹")
-		cText = STRTRAN(cText, "\u00ba", "º")
-		cText = STRTRAN(cText, "\u00bb", "»")
-		cText = STRTRAN(cText, "\u00bc", "¼")
-		cText = STRTRAN(cText, "\u00bd", "½")
-		cText = STRTRAN(cText, "\u00be", "¾")
-		cText = STRTRAN(cText, "\u00bf", "¿")
-		cText = STRTRAN(cText, "\u00c0", "À")
-		cText = STRTRAN(cText, "\u00c1", "Á")
-		cText = STRTRAN(cText, "\u00c2", "Â")
-		cText = STRTRAN(cText, "\u00c3", "Ã")
-		cText = STRTRAN(cText, "\u00c4", "Ä")
-		cText = STRTRAN(cText, "\u00c5", "Å")
-		cText = STRTRAN(cText, "\u00c6", "Æ")
-		cText = STRTRAN(cText, "\u00c7", "Ç")
-		cText = STRTRAN(cText, "\u00c8", "È")
-		cText = STRTRAN(cText, "\u00c9", "É")
-		cText = STRTRAN(cText, "\u00ca", "Ê")
-		cText = STRTRAN(cText, "\u00cb", "Ë")
-		cText = STRTRAN(cText, "\u00cc", "Ì")
-		cText = STRTRAN(cText, "\u00cd", "Í")
-		cText = STRTRAN(cText, "\u00ce", "Î")
-		cText = STRTRAN(cText, "\u00cf", "Ï")
-		cText = STRTRAN(cText, "\u00d0", "Ð")
-		cText = STRTRAN(cText, "\u00d1", "Ñ")
-		cText = STRTRAN(cText, "\u00d2", "Ò")
-		cText = STRTRAN(cText, "\u00d3", "Ó")
-		cText = STRTRAN(cText, "\u00d4", "Ô")
-		cText = STRTRAN(cText, "\u00d5", "Õ")
-		cText = STRTRAN(cText, "\u00d6", "Ö")
-		cText = STRTRAN(cText, "\u00d7", "×")
-		cText = STRTRAN(cText, "\u00d8", "Ø")
-		cText = STRTRAN(cText, "\u00d9", "Ù")
-		cText = STRTRAN(cText, "\u00da", "Ú")
-		cText = STRTRAN(cText, "\u00db", "Û")
-		cText = STRTRAN(cText, "\u00dc", "Ü")
-		cText = STRTRAN(cText, "\u00dd", "Ý")
-		cText = STRTRAN(cText, "\u00de", "Þ")
-		cText = STRTRAN(cText, "\u00df", "ß")
-		cText = STRTRAN(cText, "\u00e0", "à")
-		cText = STRTRAN(cText, "\u00e1", "á")
-		cText = STRTRAN(cText, "\u00e2", "â")
-		cText = STRTRAN(cText, "\u00e3", "ã")
-		cText = STRTRAN(cText, "\u00e4", "ä")
-		cText = STRTRAN(cText, "\u00e5", "å")
-		cText = STRTRAN(cText, "\u00e6", "æ")
-		cText = STRTRAN(cText, "\u00e7", "ç")
-		cText = STRTRAN(cText, "\u00e8", "è")
-		cText = STRTRAN(cText, "\u00e9", "é")
-		cText = STRTRAN(cText, "\u00ea", "ê")
-		cText = STRTRAN(cText, "\u00eb", "ë")
-		cText = STRTRAN(cText, "\u00ec", "ì")
-		cText = STRTRAN(cText, "\u00ed", "í")
-		cText = STRTRAN(cText, "\u00ee", "î")
-		cText = STRTRAN(cText, "\u00ef", "ï")
-		cText = STRTRAN(cText, "\u00f0", "ð")
-		cText = STRTRAN(cText, "\u00f1", "ñ")
-		cText = STRTRAN(cText, "\u00f2", "ò")
-		cText = STRTRAN(cText, "\u00f3", "ó")
-		cText = STRTRAN(cText, "\u00f4", "ô")
-		cText = STRTRAN(cText, "\u00f5", "õ")
-		cText = STRTRAN(cText, "\u00f6", "ö")
-		cText = STRTRAN(cText, "\u00f7", "÷")
-		cText = STRTRAN(cText, "\u00f8", "ø")
-		cText = STRTRAN(cText, "\u00f9", "ù")
-		cText = STRTRAN(cText, "\u00fa", "ú")
-		cText = STRTRAN(cText, "\u00fb", "û")
-		cText = STRTRAN(cText, "\u00fc", "ü")
-		cText = STRTRAN(cText, "\u00fd", "ý")
-		cText = STRTRAN(cText, "\u00fe", "þ")
-		cText = STRTRAN(cText, "\u00ff", "ÿ")
-		cText = STRTRAN(cText, "\u0026", "&")
-		cText = STRTRAN(cText, "\u2019", "'")
-		cText = STRTRAN(cText, "\u003A", ":")
-		cText = STRTRAN(cText, "\u002B", "+")
-		cText = STRTRAN(cText, "\u002D", "-")
-		cText = STRTRAN(cText, "\u0023", "#")
-		cText = STRTRAN(cText, "\u0025", "%")
-		RETURN cText
-	ENDFUNC
-*-- PROCEDURE __setLastErrorText(tcErrorText AS STRING)
-	HIDDEN PROCEDURE __setLastErrorText(tcErrorText AS STRING)
-		THIS.lValidCall = .T.
-		IF !EMPTY(tcErrorText)
-			THIS.LastErrorText = "Error: parse error on line " + ALLTRIM(STR(THIS.nPos,6,0)) + ": " + tcErrorText
-		ELSE &&!EMPTY(tcErrorText)
-			THIS.LastErrorText = ""
-		ENDIF &&!EMPTY(tcErrorText)
-	ENDPROC
-*-- PROCEDURE LastErrorText_Assign
-	HIDDEN PROCEDURE LastErrorText_Assign
-		LPARAMETERS vNewVal
-		IF THIS.lValidCall
-			THIS.lValidCall = .F.
-			THIS.LastErrorText = m.vNewVal
-		ELSE &&THIS.lValidCall
-		ENDIF &&THIS.lValidCall
-	ENDPROC
-*-- PROCEDURE Version_Assign
-	HIDDEN PROCEDURE Version_Assign
-		LPARAMETERS vNewVal
-		IF THIS.lValidCall
-			THIS.lValidCall = .F.
-			THIS.VERSION = m.vNewVal
-		ELSE &&THIS.lValidCall
-		ENDIF &&THIS.lValidCall
-	ENDPROC
-*-- FUNCTION Version_Access
-	HIDDEN FUNCTION Version_Access
-		RETURN THIS.VERSION
-	ENDFUNC
-*-- PROCEDURE LastUpdate_Assign
-	HIDDEN PROCEDURE LastUpdate_Assign
-		LPARAMETERS vNewVal
-		IF THIS.lValidCall
-			THIS.lValidCall = .F.
-			THIS.LastUpdate = m.vNewVal
-		ELSE &&THIS.lValidCall
-		ENDIF &&THIS.lValidCall
-	ENDPROC
-*-- FUNCTION LastUpdate_Access
-	HIDDEN FUNCTION LastUpdate_Access
-		RETURN THIS.LastUpdate
-	ENDFUNC
-*-- PROCEDURE Author_Assign
-	HIDDEN PROCEDURE Author_Assign
-		LPARAMETERS vNewVal
-		IF THIS.lValidCall
-			THIS.lValidCall = .F.
-			THIS.Author = m.vNewVal
-		ELSE &&THIS.lValidCall
-		ENDIF &&THIS.lValidCall
-	ENDPROC
-*-- FUNCTION Author_Access
-	HIDDEN FUNCTION Author_Access
-		RETURN THIS.Author
-	ENDFUNC
-*-- PROCEDURE Email_Assign
-	HIDDEN PROCEDURE Email_Assign
-		LPARAMETERS vNewVal
-		IF THIS.lValidCall
-			THIS.lValidCall = .F.
-			THIS.Email = m.vNewVal
-		ELSE &&THIS.lValidCall
-		ENDIF &&THIS.lValidCall
-	ENDPROC
-*-- FUNCTION Email_Access
-	HIDDEN FUNCTION Email_Access
-		RETURN THIS.Email
-	ENDFUNC
-ENDDEFINE
-*-- DEFINE CLASS __custom_array AS CUSTOM
-DEFINE CLASS __custom_array AS CUSTOM
-	HIDDEN 					;
-		CLASSLIBRARY, 		;
-		COMMENT, 			;
-		BASECLASS, 			;
-		CONTROLCOUNT, 		;
-		CONTROLS, 			;
-		OBJECT, 			;
-		OBJECTS,			;
-		HEIGHT, 			;
-		HELPCONTEXTID, 		;
-		LEFT, 				;
-		NAME, 				;
-		PARENT, 			;
-		PARENTCLASS, 		;
-		PICTURE, 			;
-		TAG, 				;
-		TOP, 				;
-		WHATSTHISHELPID, 	;
-		WIDTH,				;
-		CLASS
-	HIDDEN nArrLen
-	DIMENSION ARRAY[1]
-*-- PROCEDURE INIT
-	PROCEDURE INIT
-		THIS.nArrLen = 0
-	ENDPROC
-*-- FUNCTION array_push(vNewVal AS Variant)
-	FUNCTION array_push(vNewVal AS Variant)
-		THIS.nArrLen = THIS.nArrLen + 1
-		DIMENSION THIS.ARRAY[THIS.nArrLen]
-		THIS.ARRAY[this.nArrLen] = vNewVal
-	ENDFUNC
-*-- getvalue(tnIndex AS INTEGER)
-	FUNCTION getvalue(tnIndex AS INTEGER) HELPSTRING "Obtiene el contenido del array dado su índice."
-		TRY
-			nLen = THIS.ARRAY[tnIndex]
-		CATCH
-			nLen = NULL
-		ENDTRY
-		RETURN nLen
-	ENDFUNC
-*-- FUNCTION LEN
-	FUNCTION LEN
-		RETURN THIS.nArrLen
-	ENDFUNC
-ENDDEFINE
-*-- DEFINE CLASS __custom_object AS CUSTOM
-DEFINE CLASS __custom_object AS CUSTOM
-	HIDDEN 					;
-		CLASSLIBRARY, 		;
-		COMMENT, 			;
-		BASECLASS, 			;
-		CONTROLCOUNT, 		;
-		CONTROLS, 			;
-		OBJECTS, 			;
-		OBJECT, 			;
-		HEIGHT, 			;
-		HELPCONTEXTID, 		;
-		LEFT, 				;
-		NAME, 				;
-		PARENT, 			;
-		PARENTCLASS, 		;
-		PICTURE, 			;
-		TAG, 				;
-		TOP, 				;
-		WHATSTHISHELPID, 	;
-		WIDTH,				;
-		CLASS
-*-- PROCEDURE setProperty(tcName AS STRING, tvNewVal AS Variant, tcType AS STRING, vFlag AS OBJECT)
-	PROCEDURE setProperty(tcName AS STRING, tvNewVal AS Variant, tcType AS STRING, vFlag AS OBJECT)
-		IF vFlag.ACTIVE
-			vFlag.ACTIVE 	= .F.
-			tcName 			= "_" + tcName
-			IF VARTYPE(THIS. tcName) = "U"
-				THIS.ADDPROPERTY(tcName, tvNewVal)
-			ELSE &&VARTYPE(THIS. tcName) = "U"
-				THIS. tcName = tvNewVal
-			ENDIF &&VARTYPE(THIS. tcName) = "U"
-		ELSE &&vFlag.ACTIVE
-		ENDIF &&vFlag.ACTIVE
-	ENDPROC
-*-- FUNCTION valueOf(tcName AS STRING)
-	FUNCTION valueOf(tcName AS STRING) HELPSTRING "Obtiene el valor de una propiedad"
-		tcName = "_" + tcName
-		IF VARTYPE(THIS. &tcName) == "U"
-			RETURN ""
-		ELSE &&VARTYPE(THIS. &tcName) == "U"
-			lcMacro = "RETURN THIS." + tcName
+		lDate		= Null
+		cStr 		= Strtran(tsDate, '-')
+		If Occurs(':', tsDate) == 2
+			lIsDateTime = True
+			cStr 		= Strtran(cStr, ':')
+			cStr 		= Strtran(Lower(cStr), 'am')
+			cStr 		= Strtran(Lower(cStr), 'pm')
+			cStr 		= Strtran(cStr, Space(1))
+		Endif
+		For i=1 To Len(cStr) Step 1
+			If Isdigit(Substr(cStr, i, 1))
+				Loop
+			Else
+				Return Null
+			Endif
+		Endfor
+		If Val(Left(tsDate,4)) > 0 And Val(Strextract(tsDate, '-', '-',1)) > 0 And Val(Right(tsDate,2)) > 0
+			If !lIsDateTime
+				lDate = Date(Val(Left(tsDate,4)), Val(Strextract(tsDate, '-', '-',1)), Val(Right(tsDate,2)))
+			Else
+				lDate = Datetime(Val(Left(tsDate,4)), Val(Strextract(tsDate, '-', '-',1)), Val(Strextract(tsDate, '-', Space(1),2)), Val(Substr(tsDate, 12, 2)), Val(Strextract(tsDate, ':', ':',1)), Val(Right(tsDate,2)))
+			Endif
+		Else
+			lDate = Iif(!lIsDateTime, {//}, {//::})
+		Endif
+		Return lDate
+
+*====================================================================
+	Hidden Procedure __eat_json(tnPosition As Integer)
+		This.cJsonStr = Alltrim(Substr(This.cJsonStr, tnPosition, Len(This.cJsonStr)))
+
+*====================================================================
+	Hidden Procedure __get_Token As String
+		Local cToken As Character
+		cToken = ''
+		Do While True
+			If This.nPos > This.nLen
+				Return Null
+			Endif
+			cToken = Left(This.cJsonStr, 1)
+			If Empty(cToken)
+				This.nPos = This.nPos + 1
+				Loop
+			Endif
+			Return cToken
+		Enddo
+
+*====================================================================
+	Hidden Procedure __validate_json_format As boolean
+		Return (Left(This.cJsonStr,1) == '{' And Right(This.cJsonStr, 1) == '}')
+
+*====================================================================
+	Hidden Procedure __cleanJsonString
+		With this
+			.cJsonStr = Strtran(.cJsonStr, Chr(9))
+			.cJsonStr = Strtran(.cJsonStr, Chr(10))
+			.cJsonStr = Strtran(.cJsonStr, Chr(13))
+			.cJsonStr = Alltrim(.__html_entity_decode(.cJsonStr))
+		EndWith
+
+*====================================================================
+	Hidden Procedure __html_entity_decode(cText As Memo) As Memo
+		cText = Strtran(cText, "\u00a0", "Â")
+		cText = Strtran(cText, "\u00a1", "¡")
+		cText = Strtran(cText, "\u00a2", "¢")
+		cText = Strtran(cText, "\u00a3", "£")
+		cText = Strtran(cText, "\u00a4", "¤")
+		cText = Strtran(cText, "\u00a5", "¥")
+		cText = Strtran(cText, "\u00a6", "¦")
+		cText = Strtran(cText, "\u00a7", "§")
+		cText = Strtran(cText, "\u00a8", "¨")
+		cText = Strtran(cText, "\u00a9", "©")
+		cText = Strtran(cText, "\u00aa", "ª")
+		cText = Strtran(cText, "\u00ab", "«")
+		cText = Strtran(cText, "\u00ac", "¬")
+		cText = Strtran(cText, "\u00ae", "®")
+		cText = Strtran(cText, "\u00af", "¯")
+		cText = Strtran(cText, "\u00b0", "°")
+		cText = Strtran(cText, "\u00b1", "±")
+		cText = Strtran(cText, "\u00b2", "²")
+		cText = Strtran(cText, "\u00b3", "³")
+		cText = Strtran(cText, "\u00b4", "´")
+		cText = Strtran(cText, "\u00b5", "µ")
+		cText = Strtran(cText, "\u00b6", "¶")
+		cText = Strtran(cText, "\u00b7", "·")
+		cText = Strtran(cText, "\u00b8", "¸")
+		cText = Strtran(cText, "\u00b9", "¹")
+		cText = Strtran(cText, "\u00ba", "º")
+		cText = Strtran(cText, "\u00bb", "»")
+		cText = Strtran(cText, "\u00bc", "¼")
+		cText = Strtran(cText, "\u00bd", "½")
+		cText = Strtran(cText, "\u00be", "¾")
+		cText = Strtran(cText, "\u00bf", "¿")
+		cText = Strtran(cText, "\u00c0", "À")
+		cText = Strtran(cText, "\u00c1", "Á")
+		cText = Strtran(cText, "\u00c2", "Â")
+		cText = Strtran(cText, "\u00c3", "Ã")
+		cText = Strtran(cText, "\u00c4", "Ä")
+		cText = Strtran(cText, "\u00c5", "Å")
+		cText = Strtran(cText, "\u00c6", "Æ")
+		cText = Strtran(cText, "\u00c7", "Ç")
+		cText = Strtran(cText, "\u00c8", "È")
+		cText = Strtran(cText, "\u00c9", "É")
+		cText = Strtran(cText, "\u00ca", "Ê")
+		cText = Strtran(cText, "\u00cb", "Ë")
+		cText = Strtran(cText, "\u00cc", "Ì")
+		cText = Strtran(cText, "\u00cd", "Í")
+		cText = Strtran(cText, "\u00ce", "Î")
+		cText = Strtran(cText, "\u00cf", "Ï")
+		cText = Strtran(cText, "\u00d0", "Ð")
+		cText = Strtran(cText, "\u00d1", "Ñ")
+		cText = Strtran(cText, "\u00d2", "Ò")
+		cText = Strtran(cText, "\u00d3", "Ó")
+		cText = Strtran(cText, "\u00d4", "Ô")
+		cText = Strtran(cText, "\u00d5", "Õ")
+		cText = Strtran(cText, "\u00d6", "Ö")
+		cText = Strtran(cText, "\u00d7", "×")
+		cText = Strtran(cText, "\u00d8", "Ø")
+		cText = Strtran(cText, "\u00d9", "Ù")
+		cText = Strtran(cText, "\u00da", "Ú")
+		cText = Strtran(cText, "\u00db", "Û")
+		cText = Strtran(cText, "\u00dc", "Ü")
+		cText = Strtran(cText, "\u00dd", "Ý")
+		cText = Strtran(cText, "\u00de", "Þ")
+		cText = Strtran(cText, "\u00df", "ß")
+		cText = Strtran(cText, "\u00e0", "à")
+		cText = Strtran(cText, "\u00e1", "á")
+		cText = Strtran(cText, "\u00e2", "â")
+		cText = Strtran(cText, "\u00e3", "ã")
+		cText = Strtran(cText, "\u00e4", "ä")
+		cText = Strtran(cText, "\u00e5", "å")
+		cText = Strtran(cText, "\u00e6", "æ")
+		cText = Strtran(cText, "\u00e7", "ç")
+		cText = Strtran(cText, "\u00e8", "è")
+		cText = Strtran(cText, "\u00e9", "é")
+		cText = Strtran(cText, "\u00ea", "ê")
+		cText = Strtran(cText, "\u00eb", "ë")
+		cText = Strtran(cText, "\u00ec", "ì")
+		cText = Strtran(cText, "\u00ed", "í")
+		cText = Strtran(cText, "\u00ee", "î")
+		cText = Strtran(cText, "\u00ef", "ï")
+		cText = Strtran(cText, "\u00f0", "ð")
+		cText = Strtran(cText, "\u00f1", "ñ")
+		cText = Strtran(cText, "\u00f2", "ò")
+		cText = Strtran(cText, "\u00f3", "ó")
+		cText = Strtran(cText, "\u00f4", "ô")
+		cText = Strtran(cText, "\u00f5", "õ")
+		cText = Strtran(cText, "\u00f6", "ö")
+		cText = Strtran(cText, "\u00f7", "÷")
+		cText = Strtran(cText, "\u00f8", "ø")
+		cText = Strtran(cText, "\u00f9", "ù")
+		cText = Strtran(cText, "\u00fa", "ú")
+		cText = Strtran(cText, "\u00fb", "û")
+		cText = Strtran(cText, "\u00fc", "ü")
+		cText = Strtran(cText, "\u00fd", "ý")
+		cText = Strtran(cText, "\u00fe", "þ")
+		cText = Strtran(cText, "\u00ff", "ÿ")
+		cText = Strtran(cText, "\u0026", "&")
+		cText = Strtran(cText, "\u2019", "'")
+		cText = Strtran(cText, "\u003A", ":")
+		cText = Strtran(cText, "\u002B", "+")
+		cText = Strtran(cText, "\u002D", "-")
+		cText = Strtran(cText, "\u0023", "#")
+		cText = Strtran(cText, "\u0025", "%")
+		Return cText
+
+*====================================================================
+	Hidden Procedure __setLastErrorText(tcErrorText As String)
+		This.lValidCall = True
+		This.LastErrorText = Iif(!Empty(tcErrorText), 'Error: parse error on line ' + Alltrim(Str(This.nPos,6,0)) + ': ' + tcErrorText, '')
+
+*====================================================================
+	Hidden Procedure LastErrorText_Assign(vNewVal)
+		If This.lValidCall
+			This.lValidCall = .F.
+			This.LastErrorText = m.vNewVal
+		Endif
+
+*====================================================================
+	Hidden Procedure Version_Assign(vNewVal)
+		If This.lValidCall
+			This.lValidCall = .F.
+			This.Version = m.vNewVal
+		Endif
+
+*====================================================================
+	Hidden Procedure Version_Access
+		Return This.Version
+
+*====================================================================
+	Hidden Procedure LastUpdate_Assign(vNewVal)
+		If This.lValidCall
+			This.lValidCall = .F.
+			This.LastUpdate = m.vNewVal
+		Endif
+
+*====================================================================
+	Hidden Procedure LastUpdate_Access
+		Return This.LastUpdate
+
+*====================================================================
+	Hidden Procedure Author_Assign(vNewVal)
+		If This.lValidCall
+			This.lValidCall = .F.
+			This.Author = m.vNewVal
+		Endif
+
+*====================================================================
+	Hidden Procedure Author_Access
+		Return This.Author
+
+*====================================================================
+	Hidden Procedure Email_Assign(vNewVal)
+		If This.lValidCall
+			This.lValidCall = .F.
+			This.Email = m.vNewVal
+		Endif
+
+*====================================================================
+	Hidden Procedure Email_Access
+		Return This.Email
+
+*====================================================================
+Enddefine
+*====================================================================
+* This class is used as Array Helper
+*====================================================================
+Define Class __custom_array As Custom
+	Hidden 				;
+	Classlibrary, 		;
+	Comment, 			;
+	Baseclass, 			;
+	Controlcount, 		;
+	Controls, 			;
+	Object, 			;
+	Objects,			;
+	Height, 			;
+	Helpcontextid, 		;
+	Left, 				;
+	Name, 				;
+	Parent, 			;
+	Parentclass, 		;
+	Picture, 			;
+	Tag, 				;
+	Top, 				;
+	Whatsthishelpid, 	;
+	Width,				;
+	Class
+	Hidden nArrLen
+	Dimension Array[1]
+
+	Procedure Init
+		This.nArrLen = 0
+
+*====================================================================
+	Procedure array_push(vNewVal As Variant)
+		This.nArrLen = This.nArrLen + 1
+		Dimension This.Array[THIS.nArrLen]
+		This.Array[this.nArrLen] = vNewVal
+
+*====================================================================
+	Procedure getvalue(tnIndex As Integer)
+		Try
+			nLen = This.Array[tnIndex]
+		Catch
+			nLen = Null
+		Endtry
+		Return nLen
+
+*====================================================================
+	Procedure Len
+		Return This.nArrLen
+
+*====================================================================
+Enddefine
+*====================================================================
+* This class is used as object helper
+*====================================================================
+Define Class __custom_object As Custom
+	Hidden 					;
+	Classlibrary, 		;
+	Comment, 			;
+	Baseclass, 			;
+	Controlcount, 		;
+	Controls, 			;
+	Objects, 			;
+	Object, 			;
+	Height, 			;
+	Helpcontextid, 		;
+	Left, 				;
+	Name, 				;
+	Parent, 			;
+	Parentclass, 		;
+	Picture, 			;
+	Tag, 				;
+	Top, 				;
+	Whatsthishelpid, 	;
+	Width,				;
+	Class
+
+*====================================================================
+	Procedure setProperty(tcName As String, tvNewVal As Variant, tcType As String, vFlag As Object)
+		If vFlag.Active
+			vFlag.Active 	= .F.
+			tcName 			= '_' + tcName
+			If Vartype(This. tcName) = 'U'
+				This.AddProperty(tcName, tvNewVal)
+			Else
+				This. tcName = tvNewVal
+			Endif
+		Endif
+
+*====================================================================
+	Procedure valueOf(tcName As String)
+		tcName = '_' + tcName
+		If Vartype(This. &tcName) == 'U'
+			Return ''
+		Else
+			lcMacro = 'Return This.' + tcName
 			&lcMacro
-		ENDIF &&VARTYPE(THIS. &tcName) == "U"
-		RETURN ""
-	ENDFUNC
-ENDDEFINE
-*-- DEFINE CLASS FLAG AS CUSTOM
-DEFINE CLASS FLAG AS CUSTOM
-	ACTIVE = .F.
-ENDDEFINE
+		Endif
+		Return ''
+
+*====================================================================
+Enddefine
+*====================================================================
+* This class is used internally
+*====================================================================
+Define Class Flag As Custom
+	Active = .F.
+Enddefine

@@ -1,0 +1,64 @@
+# Ignore project
+*.pjx
+*.PJX
+*.pjt
+*.PJT
+
+# Ignore compiled files
+*.scx
+*.sct
+*.SCX
+*.SCT
+*.mnt
+*.MNT
+*.mnx
+*.MNX
+*.mpr
+*.MPR
+*.vct
+*.VCT
+*.vcx
+*.VCX
+*.fxp
+*.FXP
+
+# Ignore database and related files.
+Tests/FXUResults.*
+Tests/*.XML
+Tests/*.xml
+Tests/*.BAK
+Tests/*.bak
+Tests/*.FXP
+Tests/*.fxp
+Tests/*.DBF
+Tests/*.dbf
+Tests/*.FPT
+Tests/*.fpt
+Tests/*.CDX
+Tests/*.cdx
+
+Tools/FxuClassFactory.dbf
+faker.dbf
+FAKER.DBF
+*.cdx
+*.CDX
+*.dbc
+*.DBC
+*.dct
+*.DCT
+*.dcx
+*.DCX
+*.irt
+*.IRT
+*.tbk
+*.TBK
+
+# Ignore Reports
+*.frx
+*.FRX
+*.frt
+*.FRT
+# Temporary Files
+*.bak
+*.BAK
+*.exe
