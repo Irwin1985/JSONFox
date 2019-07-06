@@ -453,7 +453,6 @@ Define Class JsonFox As Custom
 			Return ''
 		Endif
 		lcValue = Strextract(This.cJsonStr, '"', '"', 1)
-		MessageBox("policia parse_string: " + lcValue)
 		If Occurs('-', lcValue) == 2 .And. Not tlisNameAttr
 			lDate = This.__checkDate(lcValue)
 			If !Isnull(lDate)
