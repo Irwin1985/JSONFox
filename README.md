@@ -47,9 +47,9 @@
 
 ```xBase
  * Serialize JSON String
- SET PROCEDURE TO "JSONFox.prg" ADDITIVE
- loJSON = NEWOBJECT("JSONFox", "JSONFox.prg")
- TEXT TO lcJsonStr NOSHOW
+ Set Procedure To "JSONFox.prg" Additive
+ loJSON = NewObject("JSONFox", "JSONFox.prg")
+ Text To lcJsonStr NoShow
    {
     "name":"Irwin",
     "surname": "Rodriguez",
@@ -62,62 +62,59 @@
     "isProgrammer": true, 
     "hasCar": null
    }
- ENDTEXT
+ EndText
  obj = loJSON.decode(lcJsonStr)
  
  * Don't forget check the LastErrorText
- IF !EMPTY(loJson.LastErrorText) 
- 	MESSAGEBOX(loJson.LastErrorText, 0+48, "Something went wrong")
-	RELEASE loJson
-	RETURN
- ELSE &&!EMPTY(loJson.LastErrorText)
- ENDIF &&!EMPTY(loJson.LastErrorText)
+ If !Empty(loJson.LastErrorText) 
+ 	MessageBox(loJson.LastErrorText, 0+48, "Something went wrong")
+	Release loJson
+	Return
+ EndIf
  
  ?obj._name
  ?obj._size
  
- DISPLAY OBJECTS LIKE obj
+ Display Object Like obj
  
  * Deserialize Object
  cJSONStr = loJSON.encode(obj)
- IF !EMPTY(loJson.LastErrorText) 
- 	MESSAGEBOX(loJson.LastErrorText, 0+48, "Something went wrong")
-	RELEASE loJson
-	RETURN
- ELSE &&!EMPTY(loJson.LastErrorText)
- ENDIF &&!EMPTY(loJson.LastErrorText)
+ If !Empty(loJson.LastErrorText) 
+ 	MessageBox(loJson.LastErrorText, 0+48, "Something went wrong")
+	Release loJson
+	Return
+ EndIf
  ?cJSONStr
  
  * Serialize XML from JSON Array
- TEXT TO lcStr NOSHOW
+ Text To lcStr NoShow
 	 {
 	  "status": "success",
 	  "data": [
 	    {
 	      "id": 2,
-	      "correo": "rodriguez.irwin@gmail.com",
-	      "nombre": "Irwin1985",
-	      "apellido": "Rodriguez",
-	      "sexo": "1",
-	      "sueldo": 2278.45,
+	      "email": "rodriguez.irwin@gmail.com",
+	      "name": "Irwin1985",
+	      "lastName": "Rodriguez",
+	      "sex": "1",
+	      "salary": 2278.45,
 	      "profesion_id": 1,
-	      "fechanacimiento": "1985-11-15",
-	      "fecharegistro": "2019-03-31",
-	      "soltero": true
+	      "birthDate": "1985-11-15",
+	      "createdAt": "2019-03-31",
+	      "single": true
 	    }
 	  ],
 	  "code": 200,
-	  "message": "empleados consultados"
+	  "message": "success"
 	}
 ENDTEXT
 
 obj = loJSON.Decode(lcStr)
-IF !EMPTY(loJson.LastErrorText) 
-	MESSAGEBOX(loJson.LastErrorText, 0+48, "Something went wrong")
-	RELEASE loJson
-	RETURN
-ELSE &&!EMPTY(loJson.LastErrorText)
-ENDIF &&!EMPTY(loJson.LastErrorText)
+IF !Empty(loJson.LastErrorText) 
+	MessageBox(loJson.LastErrorText, 0+48, "Something went wrong")
+	Release loJson
+	Return
+EndIf
 
 * Encode just the Array attribute called (_data)*
 
@@ -126,33 +123,31 @@ lcJson = loJson.Encode(obj._data)
 * Serialize the JSON string to XML string
 lcXML = loJson.ArrayToXML(lcJson)
 
-IF !EMPTY(loJson.LastErrorText)
-	MESSAGEBOX(loJson.LastErrorText, 0+48, "Error")
-	RELEASE loJson, obj, lcJsonIni
-	RETURN
-ELSE &&!EMPTY(loJson.LastErrorText)
-ENDIF &&!EMPTY(loJson.LastErrorText)
+If !Empty(loJson.LastErrorText)
+	MessageBox(loJson.LastErrorText, 0+48, "Error")
+	Release loJson, obj, lcJsonIni
+	Return
+EndIf
 
 * Serialize the XML document to VFP CURSOR **(this is cool)**
-=XMLTOCURSOR(lcXML, "qEmpleados")
+=XMLToCursor(lcXML, "qEmployees")
 
 * Modifies some fields
-SELECT qEmpleados
-REPLACE sueldo WITH 5.000 IN qEmpleados
+Select qEmployees
+Replace salary With 5.000 In qEmployees
 
-* Serialize CURSOR to XML stream data **(in memory)**
+* Serialize Cursor to XML stream data **(in memory)**
 LOCAL cStrXML
-=CURSORTOXML("qEmpleados","cStrXML",1,0,0,"1")
+=CursorToXML("qEmployees","cStrXML",1,0,0,"1")
 
 * Now serialize the modified XML to JSON
 cJson = loJson.XMLToJson(cStrXML)
-IF !EMPTY(loJson.LastErrorText)
-	MESSAGEBOX(loJson.LastErrorText, 0+48, "Error")
-	RELEASE loJson, obj, lcJsonIni
-	RETURN
-ELSE &&!EMPTY(loJson.LastErrorText)
-ENDIF &&!EMPTY(loJson.LastErrorText)
+If !Empty(loJson.LastErrorText)
+	MessageBox(loJson.LastErrorText, 0+48, "Error")
+	Release loJson, obj, lcJsonIni
+	Return
+EndIf
 ?cJson
 
-RELEASE loJson, obj
+Release loJson, obj
 ```
