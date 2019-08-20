@@ -39,7 +39,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ?loJSON.CursorToJson('cGames')
 ```
 ## Function Signature
-CursorToJSON(tcCursor As String [, tbCurrentRow As Boolean [, tnDataSession As Integer]])
+CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As Integer]]**)
 
 * ![](images/prop.gif) **tcCursor:** the name of your in memory cursor.
 * ![](images/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
