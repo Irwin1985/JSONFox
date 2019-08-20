@@ -11,7 +11,7 @@
 
 ### Latest Release
 
-**[JSONFox](/README.md)** - v.1.2 (beta) - Release 2019-03-30 01:47:31
+**[JSONFox](/README.md)** - 1.9 (beta) - Release 2019-08-20 08:33:42 AM
 
 <hr>
 
@@ -19,10 +19,33 @@
 
 **JSONFox** supports XML serialization using a JSON Array as parameters. This is useful for CURSORS serialization between layers.
 
-**JSONFox** adds an **underscore** before the attribute name for avoiding internal conflict with native object properties. That means you'll have to reference your deserialized object like: obj._attribute
+**JSONFox** adds an **underscore** before the attribute name to avoid internal conflict with native object properties name. That means you'll have to reference your deserialized object like: obj._attribute
 
-**JSONFox** Analyzer recognize and serialize **DATE** and **DATETIME** types. **(new)**
+**JSONFox** Analyzer recognize and serialize **DATE** and **DATETIME** types.
 
+**JSONFox** now supports Cursor Serialization using the CursorToJSON() function. **(new)**
+### Example
+```xBase
+* Serialize JSON String
+ Set Procedure To "JSONFox.prg" Additive
+ loJSON = NewObject("JSONFox", "JSONFox.prg")
+ 
+Create Cursor cGames (game c(25), launched i(4))
+Insert into cGames Values('Pac-Man', 1980)
+Insert into cGames Values('Super Mario Bros', 1985)
+Insert into cGames Values('Space Invaders', 1978)
+Insert into cGames Values('The Legend of Zelda', 1986)
+
+?loJSON.CursorToJson('cGames')
+```
+## Function Signature
+CursorToJSON(tcCursor As String [, tbCurrentRow As Boolean [, tnDataSession As Integer]])
+
+* ![](images/prop.gif) **tcCursor:** the name of your in memory cursor.
+* ![](images/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
+* ![](images/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private environment.
+
+<hr>
 ## Properties
 * ![](images/prop.gif) **LastErrorText:** Stores the possible error generated in the current sentence.
 
