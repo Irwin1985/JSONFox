@@ -46,6 +46,7 @@ CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As
 * ![](images/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private environment.
 
 <hr>
+
 ## Properties
 * ![](images/prop.gif) **LastErrorText:** Stores the possible error generated in the current sentence.
 
