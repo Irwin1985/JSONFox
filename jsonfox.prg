@@ -27,22 +27,22 @@ Define Class JsonFox As Custom
 			.lparseXML 	= .F.
 			.nPosXML	= 0
 			.lValidCall = True
-			.Version	= '1.8 (beta)'
+			.Version	= '1.9 (beta)'
 			.lValidCall = True
-			.LastUpdate	= '2019-04-26 08:48:16 AM'
+			.LastUpdate	= '2019-08-20 08:33:42 AM'
 			.lValidCall = True
 			.Author		= 'Irwin Rodríguez'
 			.lValidCall = True
 			.Email		= 'rodriguez.irwin@gmail.com'
 			.Flag 		= Createobject('FLAG')
 		Endwith
+	Endproc
 
-*====================================================================
 	Procedure decode(tcJsonStr As Memo) As Object
 		This.cJsonStr = tcJsonStr
 		Return This.__decode()
+	Endproc
 
-*====================================================================
 	Procedure loadFile(tcJsonFile As String) As Object
 		If !File(tcJsonFile)
 			This.__setLastErrorText('File not found')
@@ -51,15 +51,14 @@ Define Class JsonFox As Custom
 			This.cJsonStr = Filetostr(tcJsonFile)
 		Endif
 		Return This.__decode()
+	Endproc
 
-*====================================================================
 	Procedure ArrayToXML(tvArray As Variant) As String
 		cType = Vartype(tvArray)
 		If Not Inlist(cType, 'O', 'C')
 			This.__setLastErrorText('invalid param')
 			Return ''
 		Endif
-
 		If cType == 'O'
 			tvArray = This.encode(tvArray)
 			If Left(tvArray,1) = '{' .And. Substr(tvArray,2,1) <> '['
@@ -107,11 +106,10 @@ Define Class JsonFox As Custom
 		Local lcOut As String
 		lcOut = ''
 		=Cursortoxml('qResult','lcOut',1,0,0,'1')
-		Close Databases All
 		Release aColumns
 		Return lcOut
-
-*====================================================================
+	EndProc
+	
 	Procedure XMLToJson(tcXML As Memo) As Memo
 		If Empty(tcXML)
 			This.__setLastErrorText('invalid XML format')
@@ -130,15 +128,15 @@ Define Class JsonFox As Custom
 
 			Scatter Name loXML Memo
 			lcJsonXML = lcJsonXML + This.encode(loXML)
+			Release loXML
 			Select qXML
 		Endscan
 		If nCount > 1
 			lcJsonXML = '[' + lcJsonXML + ']'
 		Endif
-		Close Databases All
 		Return lcJsonXML
+	Endproc
 
-*====================================================================
 	Procedure encode(vNewProp As Variant) As Memo
 		Local lcVarType As Character
 		lcVarType = Vartype(vNewProp)
@@ -183,8 +181,87 @@ Define Class JsonFox As Custom
 			Return '{' + Execscript(This.load_script(), vNewProp, This.load_script()) + '}'
 		Otherwise
 		Endcase
+	Endproc
 
-*====================================================================
+	Function CursorToJson(tcCursor As String, tbCurrentRow As Boolean, tnDataSession As Integer) As Memo
+		lnOldSession = Set("Datasession")
+		If !Empty(tnDataSession)
+			Set DataSession To tnDataSession
+		Endif
+		If !Used(tcCursor)
+			This.__setLastErrorText('cursor is not open')
+			Return ''
+		Endif
+
+		cJsonString = '{"' + tcCursor + '":['
+
+		Local loTherm, lcTask, lnPercent, lnSeconds, nDuration
+		Try
+			loTherm = Newobject("_thermometer",Home()+"ffc\_therm","", "Serializing " + Proper(tcCursor) + " To JSON")
+		Catch
+			loTherm = .Null.
+		Endtry
+
+		lcTask  	= "This process may take a while:"
+		nDuration	= Reccount(tcCursor)
+		If !Isnull(loTherm)
+			loTherm.BackColor 				= Rgb(246, 246, 246)
+			loTherm.Shape1.BorderColor 		= Rgb(120, 120, 120)
+
+			loTherm.lblTask.FontName 		= "Trebuchet MS"
+			loTherm.lblTask.ForeColor 		= Rgb(76, 76, 76)
+
+			loTherm.lblTitle.FontName 		= "Trebuchet MS"
+			loTherm.lblTask.ForeColor 		= Rgb(76, 76, 76)
+
+			loTherm.Shape5.BorderColor  	= Rgb(120,120,120)
+			loTherm.Shape5.FillColor  		= Rgb(255, 255, 255)
+
+			loTherm.shpThermBar.FillColor 	= Rgb(46,201,113)
+
+			loTherm.Show()
+		Endif
+		Select (tcCursor)
+		If !tbCurrentRow
+			nPos = 0
+			Scan
+				nPos = nPos + 1
+				lnPercent = nPos/nDuration*100
+				If !Isnull(loTherm)
+					loTherm.Update(lnPercent, lcTask + " " + Alltrim(Str(lnPercent)))
+				Else
+					Wait lcTask + " " + Alltrim(Str(lnPercent)) Window Nowait
+				Endif
+				Scatter Name loRow Memo
+				If nPos = 1
+					cJsonString = cJsonString + This.encode(loRow)
+				Else
+					cJsonString = cJsonString + "," + This.encode(loRow)
+				Endif
+				Release loRow
+				If Isnull(loTherm)
+					Wait Clear
+				Endif
+			Endscan
+			If !Isnull(loTherm)
+				loTherm.Complete()
+			Endif
+		Else
+			Scatter Name loRow Memo
+			cJsonString = this.Encode(loRow)
+			Release loRow
+		Endif
+		If !tbCurrentRow
+			cJsonString = cJsonString + ']}'
+		EndIf
+		
+		Set DataSession To lnOldSession
+		Return cJsonString
+	Endfunc
+
+*-------------------------------------------------------------------------------------------*
+* Internal Procedures
+*-------------------------------------------------------------------------------------------*
 	Hidden Procedure load_script As Memo
 		TEXT To lcLoad NoShow TextMerge PreText 7
 			Lparameters toObj, tcExecScript
@@ -218,7 +295,6 @@ Define Class JsonFox As Custom
 			lcRet = Substr(cReturn,2)
 			Return lcRet
 
-			*====================================================================
 			Procedure encode As Memo
 				Lparameters vNewVal, tcExecScript
 				Local cTipo As Character
@@ -273,12 +349,11 @@ Define Class JsonFox As Custom
 					Return lcRet
 				Otherwise
 				Endcase
-
-			*====================================================================
-		EndText
+			EndProc
+		ENDTEXT
 		Return lcLoad
+	Endproc
 
-*====================================================================
 	Hidden Procedure __decode As Object
 		This.cJsonOri = This.cJsonStr
 		This.__cleanJsonString()
@@ -290,8 +365,8 @@ Define Class JsonFox As Custom
 			This.__setLastErrorText('invalid JSON format')
 			Return Null
 		Endif
+	Endproc
 
-*====================================================================
 	Hidden Procedure __parse_object As Object
 		Local oCurObj As Object, lcPropName As String, lcType As String, vNewVal As Variant
 		oCurObj = Createobject('__custom_object')
@@ -323,8 +398,8 @@ Define Class JsonFox As Custom
 			Endcase
 		Enddo
 		Return oCurObj
+	Endproc
 
-*====================================================================
 	Hidden Procedure __parse_value As Variant
 		Lparameters tcType As String
 		Local cToken As String
@@ -358,8 +433,8 @@ Define Class JsonFox As Custom
 			Return This.__parse_number()
 		Otherwise
 		Endcase
+	Endproc
 
-*====================================================================
 	Hidden Procedure __parse_array As Object
 		Local aCustomArr As Object
 		This.__eat_json(2)
@@ -380,10 +455,10 @@ Define Class JsonFox As Custom
 			Endcase
 		Enddo
 		Return aCustomArr
+	Endproc
 
-*====================================================================
 	Hidden Procedure __parse_number As Number
-		Local cNumber As String, bIsNegative As boolean
+		Local cNumber As String, bIsNegative As Boolean
 		bIsNegative = .F.
 		If This.__get_Token() == '-'
 			bIsNegative = True
@@ -400,8 +475,8 @@ Define Class JsonFox As Custom
 		Set Decimals To 10
 		nValNumber = Val(cNumber)
 		Return Iif(bIsNegative, nValNumber * -1, nValNumber)
+	Endproc
 
-*====================================================================
 	Hidden Procedure __parse_expr As Variant
 		Lparameters tcStr As String
 		vNewVal 	= ''
@@ -442,8 +517,8 @@ Define Class JsonFox As Custom
 		lnLenExp = lnLenExp + 1
 		This.__eat_json(lnLenExp)
 		Return vNewVal
+	Endproc
 
-*====================================================================
 	Hidden Procedure __parse_string As Memo
 		Lparameters tlisNameAttr
 		Local lcValue As String, dDate As Variant
@@ -461,11 +536,11 @@ Define Class JsonFox As Custom
 		Endif
 		This.__eat_json(Len(lcValue) + 3)
 		Return Iif(Empty(dDate),lcValue,dDate)
+	Endproc
 
-*====================================================================
 	Hidden Procedure __parse_XML
 		Lparameters tcColumn, tvNewVal
-		Local lContinue As boolean
+		Local lContinue As Boolean
 		lContinue = True
 		If This.lparseXML
 			lcType = Vartype(tvNewVal)
@@ -521,11 +596,11 @@ Define Class JsonFox As Custom
 				Insert Into &tcColumn (valor) Values(Null)
 			Endtry
 		Endif
+	Endproc
 
-*====================================================================
 	Hidden Procedure __checkDate As Variant
 		Lparameters tsDate As String
-		Local cStr As String, lIsDateTime As boolean, lDate As Variant
+		Local cStr As String, lIsDateTime As Boolean, lDate As Variant
 		cStr 		= ''
 		lIsDateTime = .F.
 		lDate		= Null
@@ -554,12 +629,12 @@ Define Class JsonFox As Custom
 			lDate = Iif(!lIsDateTime, {//}, {//::})
 		Endif
 		Return lDate
+	Endproc
 
-*====================================================================
 	Hidden Procedure __eat_json(tnPosition As Integer)
 		This.cJsonStr = Alltrim(Substr(This.cJsonStr, tnPosition, Len(This.cJsonStr)))
+	Endproc
 
-*====================================================================
 	Hidden Procedure __get_Token As String
 		Local cToken As Character
 		cToken = ''
@@ -574,21 +649,21 @@ Define Class JsonFox As Custom
 			Endif
 			Return cToken
 		Enddo
+	Endproc
 
-*====================================================================
-	Hidden Procedure __validate_json_format As boolean
+	Hidden Procedure __validate_json_format As Boolean
 		Return (Left(This.cJsonStr,1) == '{' And Right(This.cJsonStr, 1) == '}')
+	Endproc
 
-*====================================================================
 	Hidden Procedure __cleanJsonString
-		With this
+		With This
 			.cJsonStr = Strtran(.cJsonStr, Chr(9))
 			.cJsonStr = Strtran(.cJsonStr, Chr(10))
 			.cJsonStr = Strtran(.cJsonStr, Chr(13))
 			.cJsonStr = Alltrim(.__html_entity_decode(.cJsonStr))
-		EndWith
+		Endwith
+	Endproc
 
-*====================================================================
 	Hidden Procedure __html_entity_decode(cText As Memo) As Memo
 		cText = Strtran(cText, "\u00e1", "á")
 		cText = Strtran(cText, "\u00e9", "é")
@@ -623,102 +698,103 @@ Define Class JsonFox As Custom
 		cText = Strtran(cText, "Ãº", "ú")
 		cText = Strtran(cText, "Ãš", "Ú")
 		Return cText
+	Endproc
 
-*====================================================================
 	Hidden Procedure __setLastErrorText(tcErrorText As String)
 		This.lValidCall = True
 		This.LastErrorText = Iif(!Empty(tcErrorText), 'Error: parse error on line ' + Alltrim(Str(This.nPos,6,0)) + ': ' + tcErrorText, '')
+	Endproc
 
-*====================================================================
 	Hidden Procedure LastErrorText_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.LastErrorText = m.vNewVal
 		Endif
+	Endproc
 
-*====================================================================
 	Hidden Procedure Version_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.Version = m.vNewVal
 		Endif
+	Endproc
 
-*====================================================================
 	Hidden Procedure Version_Access
 		Return This.Version
+	Endproc
 
-*====================================================================
 	Hidden Procedure LastUpdate_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.LastUpdate = m.vNewVal
 		Endif
+	Endproc
 
-*====================================================================
 	Hidden Procedure LastUpdate_Access
 		Return This.LastUpdate
+	Endproc
 
-*====================================================================
 	Hidden Procedure Author_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.Author = m.vNewVal
 		Endif
+	Endproc
 
-*====================================================================
 	Hidden Procedure Author_Access
 		Return This.Author
+	Endproc
 
-*====================================================================
 	Hidden Procedure Email_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.Email = m.vNewVal
 		Endif
+	Endproc
 
-*====================================================================
 	Hidden Procedure Email_Access
 		Return This.Email
+	Endproc
+Enddefine
 
 *====================================================================
-Enddefine
-*====================================================================
-* This class is used as Array Helper
+* This class is used as an Array Helper class.
 *====================================================================
 Define Class __custom_array As Custom
 	Hidden 				;
-	Classlibrary, 		;
-	Comment, 			;
-	Baseclass, 			;
-	Controlcount, 		;
-	Controls, 			;
-	Object, 			;
-	Objects,			;
-	Height, 			;
-	Helpcontextid, 		;
-	Left, 				;
-	Name, 				;
-	Parent, 			;
-	Parentclass, 		;
-	Picture, 			;
-	Tag, 				;
-	Top, 				;
-	Whatsthishelpid, 	;
-	Width,				;
-	Class
+		Classlibrary, 		;
+		Comment, 			;
+		Baseclass, 			;
+		Controlcount, 		;
+		Controls, 			;
+		Object, 			;
+		Objects,			;
+		Height, 			;
+		Helpcontextid, 		;
+		Left, 				;
+		Name, 				;
+		Parent, 			;
+		Parentclass, 		;
+		Picture, 			;
+		Tag, 				;
+		Top, 				;
+		Whatsthishelpid, 	;
+		Width,				;
+		Class
+
 	Hidden nArrLen
 	Dimension Array[1]
 
 	Procedure Init
 		This.nArrLen = 0
+	Endproc
 
-*====================================================================
 	Procedure array_push(vNewVal As Variant)
 		This.nArrLen = This.nArrLen + 1
 		Dimension This.Array[THIS.nArrLen]
 		This.Array[this.nArrLen] = vNewVal
+	Endproc
 
-*====================================================================
 	Procedure getvalue(tnIndex As Integer)
 		Try
 			nLen = This.Array[tnIndex]
@@ -726,39 +802,38 @@ Define Class __custom_array As Custom
 			nLen = Null
 		Endtry
 		Return nLen
+	Endproc
 
-*====================================================================
 	Procedure Len
 		Return This.nArrLen
+	Endproc
+Enddefine
 
 *====================================================================
-Enddefine
-*====================================================================
-* This class is used as object helper
+* This class is used as object helper class.
 *====================================================================
 Define Class __custom_object As Custom
 	Hidden 					;
-	Classlibrary, 		;
-	Comment, 			;
-	Baseclass, 			;
-	Controlcount, 		;
-	Controls, 			;
-	Objects, 			;
-	Object, 			;
-	Height, 			;
-	Helpcontextid, 		;
-	Left, 				;
-	Name, 				;
-	Parent, 			;
-	Parentclass, 		;
-	Picture, 			;
-	Tag, 				;
-	Top, 				;
-	Whatsthishelpid, 	;
-	Width,				;
-	Class
+		Classlibrary, 		;
+		Comment, 			;
+		Baseclass, 			;
+		Controlcount, 		;
+		Controls, 			;
+		Objects, 			;
+		Object, 			;
+		Height, 			;
+		Helpcontextid, 		;
+		Left, 				;
+		Name, 				;
+		Parent, 			;
+		Parentclass, 		;
+		Picture, 			;
+		Tag, 				;
+		Top, 				;
+		Whatsthishelpid, 	;
+		Width,				;
+		Class
 
-*====================================================================
 	Procedure setProperty(tcName As String, tvNewVal As Variant, tcType As String, vFlag As Object)
 		If vFlag.Active
 			vFlag.Active 	= .F.
@@ -769,8 +844,8 @@ Define Class __custom_object As Custom
 				This. tcName = tvNewVal
 			Endif
 		Endif
+	Endproc
 
-*====================================================================
 	Procedure valueOf(tcName As String)
 		tcName = '_' + tcName
 		If Vartype(This. &tcName) == 'U'
@@ -780,11 +855,10 @@ Define Class __custom_object As Custom
 			&lcMacro
 		Endif
 		Return ''
-
-*====================================================================
+	Endproc
 Enddefine
 *====================================================================
-* This class is used internally
+* This class is used as a helper class.
 *====================================================================
 Define Class Flag As Custom
 	Active = .F.
