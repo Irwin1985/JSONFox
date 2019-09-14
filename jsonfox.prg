@@ -103,6 +103,12 @@ Define Class JsonFox As Custom
 		Endfor
 		lcMacro = 'SELECT ' + cSelect + ' FROM ' + cFrom + ' INTO CURSOR qResult'
 		&lcMacro
+		For i=1 To Alen(aColumns)
+			Try
+				Use in (Select(aColumns[i]))
+			Catch
+			endtry
+		Endfor
 		Local lcOut As String
 		lcOut = ''
 		=Cursortoxml('qResult','lcOut',1,0,0,'1')
