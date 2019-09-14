@@ -27,9 +27,9 @@ Define Class JsonFox As Custom
 			.lparseXML 	= .F.
 			.nPosXML	= 0
 			.lValidCall = True
-			.Version	= '1.9 (beta)'
+			.Version	= '1.10 (beta)'
 			.lValidCall = True
-			.LastUpdate	= '2019-08-20 08:33:42 AM'
+			.LastUpdate	= '2019-09-14 21:35:25'
 			.lValidCall = True
 			.Author		= 'Irwin Rodríguez'
 			.lValidCall = True
@@ -528,7 +528,7 @@ Define Class JsonFox As Custom
 			Return ''
 		Endif
 		lcValue = Strextract(This.cJsonStr, '"', '"', 1)
-		If Occurs('-', lcValue) == 2 .And. Not tlisNameAttr
+		If Occurs('-', lcValue) == 2 .And. Len(Alltrim(lcValue)) = 10 .And. Not tlisNameAttr
 			lDate = This.__checkDate(lcValue)
 			If !Isnull(lDate)
 				dDate = lDate
@@ -548,7 +548,7 @@ Define Class JsonFox As Custom
 				lcAlter = 'L'
 				lDate 	= Null
 				Do Case
-				Case lcType = 'C' And Occurs('-', tvNewVal) == 2
+				Case lcType = 'C' And Occurs('-', tvNewVal) == 2 and Len(Alltrim(tvNewVal)) = 10
 					lDate 	= This.__checkDate(tvNewVal)
 					If !Isnull(lDate)
 						lcType 	 = Vartype(lDate)
@@ -584,7 +584,7 @@ Define Class JsonFox As Custom
 			If !lContinue
 				Return ''
 			Endif
-			If lcType == 'C' And Occurs('-', tvNewVal) == 2
+			If lcType == 'C' And Occurs('-', tvNewVal) == 2 .And. Len(Alltrim(tvNewVal)) = 10
 				lDate 	= This.__checkDate(tvNewVal)
 				If !Isnull(lDate)
 					tvNewVal = lDate
@@ -605,7 +605,7 @@ Define Class JsonFox As Custom
 		lIsDateTime = .F.
 		lDate		= Null
 		cStr 		= Strtran(tsDate, '-')
-		If Occurs(':', tsDate) == 2
+		If Occurs(':', tsDate) == 2 .And. Len(Alltrim(tsDate)) <= 22
 			lIsDateTime = True
 			cStr 		= Strtran(cStr, ':')
 			cStr 		= Strtran(Lower(cStr), 'am')
