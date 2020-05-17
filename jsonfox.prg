@@ -19,8 +19,10 @@ Define Class JsonFox As Custom
 	Flag 			= .F.
 	#Define True 	.T.
 	#Define False	.F.
-
-	Procedure Init
+&& ======================================================================== &&
+&& Function Init
+&& ======================================================================== &&
+	Function Init
 		With This
 			.nPos 		= 0
 			.nLen 		= 0
@@ -36,14 +38,18 @@ Define Class JsonFox As Custom
 			.Email		= 'rodriguez.irwin@gmail.com'
 			.Flag 		= Createobject('FLAG')
 		Endwith
-	Endproc
-
-	Procedure decode(tcJsonStr As Memo) As Object
+	EndFunc
+&& ======================================================================== &&
+&& Function Decode
+&& ======================================================================== &&
+	Function Decode(tcJsonStr As Memo) As Object
 		This.cJsonStr = tcJsonStr
 		Return This.__decode()
-	Endproc
-
-	Procedure loadFile(tcJsonFile As String) As Object
+	EndFunc
+&& ======================================================================== &&
+&& Function LoadFile
+&& ======================================================================== &&
+	Function LoadFile(tcJsonFile As String) As Object
 		If !File(tcJsonFile)
 			This.__setLastErrorText('File not found')
 			Return Null
@@ -51,9 +57,11 @@ Define Class JsonFox As Custom
 			This.cJsonStr = Filetostr(tcJsonFile)
 		Endif
 		Return This.__decode()
-	Endproc
-
-	Procedure ArrayToXML(tvArray As Variant) As String
+	EndFunc
+&& ======================================================================== &&
+&& Function ArrayToXML
+&& ======================================================================== &&
+	Function ArrayToXML(tvArray As Variant) As String
 		cType = Vartype(tvArray)
 		If Not Inlist(cType, 'O', 'C')
 			This.__setLastErrorText('invalid param')
@@ -114,9 +122,11 @@ Define Class JsonFox As Custom
 		=Cursortoxml('qResult','lcOut',1,0,0,'1')
 		Release aColumns
 		Return lcOut
-	EndProc
-	
-	Procedure XMLToJson(tcXML As Memo) As Memo
+	EndFunc
+&& ======================================================================== &&
+&& Function XMLToJson
+&& ======================================================================== &&	
+	Function XMLToJson(tcXML As Memo) As Memo
 		If Empty(tcXML)
 			This.__setLastErrorText('invalid XML format')
 			Return ''
@@ -141,9 +151,11 @@ Define Class JsonFox As Custom
 			lcJsonXML = '[' + lcJsonXML + ']'
 		Endif
 		Return lcJsonXML
-	Endproc
-
-	Procedure encode(vNewProp As Variant) As Memo
+	EndFunc
+&& ======================================================================== &&
+&& Function Encode
+&& ======================================================================== &&	
+	Function Encode(vNewProp As Variant) As Memo
 		Local lcVarType As Character
 		lcVarType = Vartype(vNewProp)
 		Do Case
@@ -184,11 +196,13 @@ Define Class JsonFox As Custom
 			Return lcDate
 
 		Case lcVarType == 'O'
-			Return '{' + Execscript(This.load_script(), vNewProp, This.load_script()) + '}'
+			Return '{' + Execscript(This.LoadScript(), vNewProp, This.LoadScript()) + '}'
 		Otherwise
 		Endcase
-	Endproc
-
+	EndFunc
+&& ======================================================================== &&
+&& Function CursorToJson
+&& ======================================================================== &&	
 	Function CursorToJson(tcCursor As String, tbCurrentRow As Boolean, tnDataSession As Integer) As Memo
 		lnOldSession = Set("Datasession")
 		If !Empty(tnDataSession)
@@ -264,11 +278,10 @@ Define Class JsonFox As Custom
 		Set DataSession To lnOldSession
 		Return cJsonString
 	Endfunc
-
-*-------------------------------------------------------------------------------------------*
-* Internal Procedures
-*-------------------------------------------------------------------------------------------*
-	Hidden Procedure load_script As Memo
+&& ======================================================================== &&
+&& Hidden Function LoadScript
+&& ======================================================================== &&	
+	Hidden Function LoadScript As Memo
 		TEXT To lcLoad NoShow TextMerge PreText 7
 			Lparameters toObj, tcExecScript
 			Local vNewVal
@@ -301,7 +314,7 @@ Define Class JsonFox As Custom
 			lcRet = Substr(cReturn,2)
 			Return lcRet
 
-			Procedure encode As Memo
+			Function encode As Memo
 				Lparameters vNewVal, tcExecScript
 				Local cTipo As Character
 				If Type('ALen(vNewVal)') == 'N'
@@ -355,12 +368,14 @@ Define Class JsonFox As Custom
 					Return lcRet
 				Otherwise
 				Endcase
-			EndProc
+			EndFunc
 		ENDTEXT
 		Return lcLoad
-	Endproc
-
-	Hidden Procedure __decode As Object
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __decode
+&& ======================================================================== &&	
+	Hidden Function __decode As Object
 		This.cJsonOri = This.cJsonStr
 		This.__cleanJsonString()
 		This.nPos = 1
@@ -371,9 +386,11 @@ Define Class JsonFox As Custom
 			This.__setLastErrorText('invalid JSON format')
 			Return Null
 		Endif
-	Endproc
-
-	Hidden Procedure __parse_object As Object
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __parse_object
+&& ======================================================================== &&
+	Hidden Function __parse_object As Object
 		Local oCurObj As Object, lcPropName As String, lcType As String, vNewVal As Variant
 		oCurObj = Createobject('__custom_object')
 		This.__eat_json(2)
@@ -404,9 +421,11 @@ Define Class JsonFox As Custom
 			Endcase
 		Enddo
 		Return oCurObj
-	Endproc
-
-	Hidden Procedure __parse_value As Variant
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __parse_value
+&& ======================================================================== &&
+	Hidden Function __parse_value As Variant
 		Lparameters tcType As String
 		Local cToken As String
 		cToken = This.__get_Token()
@@ -439,9 +458,11 @@ Define Class JsonFox As Custom
 			Return This.__parse_number()
 		Otherwise
 		Endcase
-	Endproc
-
-	Hidden Procedure __parse_array As Object
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __parse_array
+&& ======================================================================== &&
+	Hidden Function __parse_array As Object
 		Local aCustomArr As Object
 		This.__eat_json(2)
 		aCustomArr = Createobject('__custom_array')
@@ -461,9 +482,11 @@ Define Class JsonFox As Custom
 			Endcase
 		Enddo
 		Return aCustomArr
-	Endproc
-
-	Hidden Procedure __parse_number As Number
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __parse_number
+&& ======================================================================== &&
+	Hidden Function __parse_number As Number
 		Local cNumber As String, bIsNegative As Boolean
 		bIsNegative = .F.
 		If This.__get_Token() == '-'
@@ -481,9 +504,11 @@ Define Class JsonFox As Custom
 		Set Decimals To 10
 		nValNumber = Val(cNumber)
 		Return Iif(bIsNegative, nValNumber * -1, nValNumber)
-	Endproc
-
-	Hidden Procedure __parse_expr As Variant
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __parse_expr
+&& ======================================================================== &&
+	Hidden Function __parse_expr As Variant
 		Lparameters tcStr As String
 		vNewVal 	= ''
 		lnLenExp 	= 0
@@ -523,9 +548,11 @@ Define Class JsonFox As Custom
 		lnLenExp = lnLenExp + 1
 		This.__eat_json(lnLenExp)
 		Return vNewVal
-	Endproc
-
-	Hidden Procedure __parse_string As Memo
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __parse_string
+&& ======================================================================== &&
+	Hidden Function __parse_string As Memo
 		Lparameters tlisNameAttr
 		Local lcValue As String, dDate As Variant
 		lcValue = ''
@@ -542,9 +569,11 @@ Define Class JsonFox As Custom
 		Endif
 		This.__eat_json(Len(lcValue) + 3)
 		Return Iif(Empty(dDate),lcValue,dDate)
-	Endproc
-
-	Hidden Procedure __parse_XML
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __parse_XML
+&& ======================================================================== &&
+	Hidden Function __parse_XML
 		Lparameters tcColumn, tvNewVal
 		Local lContinue As Boolean
 		lContinue = True
@@ -602,9 +631,11 @@ Define Class JsonFox As Custom
 				Insert Into &tcColumn (valor) Values(Null)
 			Endtry
 		Endif
-	Endproc
-
-	Hidden Procedure __checkDate As Variant
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __checkDate
+&& ======================================================================== &&
+	Hidden Function __checkDate As Variant
 		Lparameters tsDate As String
 		Local cStr As String, lIsDateTime As Boolean, lDate As Variant
 		cStr 		= ''
@@ -635,13 +666,17 @@ Define Class JsonFox As Custom
 			lDate = Iif(!lIsDateTime, {//}, {//::})
 		Endif
 		Return lDate
-	Endproc
-
-	Hidden Procedure __eat_json(tnPosition As Integer)
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __eat_json
+&& ======================================================================== &&
+	Hidden Function __eat_json(tnPosition As Integer)
 		This.cJsonStr = Alltrim(Substr(This.cJsonStr, tnPosition, Len(This.cJsonStr)))
-	Endproc
-
-	Hidden Procedure __get_Token As String
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __get_Token
+&& ======================================================================== &&
+	Hidden Function __get_Token As String
 		Local cToken As Character
 		cToken = ''
 		Do While True
@@ -655,22 +690,28 @@ Define Class JsonFox As Custom
 			Endif
 			Return cToken
 		Enddo
-	Endproc
-
-	Hidden Procedure __validate_json_format As Boolean
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __validate_json_format
+&& ======================================================================== &&
+	Hidden Function __validate_json_format As Boolean
 		Return (Left(This.cJsonStr,1) == '{' And Right(This.cJsonStr, 1) == '}')
-	Endproc
-
-	Hidden Procedure __cleanJsonString
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __cleanJsonString
+&& ======================================================================== &&
+	Hidden Function __cleanJsonString
 		With This
 			.cJsonStr = Strtran(.cJsonStr, Chr(9))
 			.cJsonStr = Strtran(.cJsonStr, Chr(10))
 			.cJsonStr = Strtran(.cJsonStr, Chr(13))
 			.cJsonStr = Alltrim(.__html_entity_decode(.cJsonStr))
 		Endwith
-	Endproc
-
-	Hidden Procedure __html_entity_decode(cText As Memo) As Memo
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __html_entity_decode
+&& ======================================================================== &&
+	Hidden Function __html_entity_decode(cText As Memo) As Memo
 		cText = Strtran(cText, "\u00e1", "á")
 		cText = Strtran(cText, "\u00e9", "é")
 		cText = Strtran(cText, "\u00ed", "í")
@@ -704,68 +745,88 @@ Define Class JsonFox As Custom
 		cText = Strtran(cText, "Ãº", "ú")
 		cText = Strtran(cText, "Ãš", "Ú")
 		Return cText
-	Endproc
-
-	Hidden Procedure __setLastErrorText(tcErrorText As String)
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function __setLastErrorText
+&& ======================================================================== &&
+	Hidden Function __setLastErrorText(tcErrorText As String)
 		This.lValidCall = True
 		This.LastErrorText = Iif(!Empty(tcErrorText), 'Error: parse error on line ' + Alltrim(Str(This.nPos,6,0)) + ': ' + tcErrorText, '')
-	Endproc
-
-	Hidden Procedure LastErrorText_Assign(vNewVal)
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function LastErrorText_Assign
+&& ======================================================================== &&
+	Hidden Function LastErrorText_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.LastErrorText = m.vNewVal
 		Endif
-	Endproc
-
-	Hidden Procedure Version_Assign(vNewVal)
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function Version_Assign
+&& ======================================================================== &&
+	Hidden Function Version_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.Version = m.vNewVal
 		Endif
-	Endproc
-
-	Hidden Procedure Version_Access
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function Version_Access
+&& ======================================================================== &&
+	Hidden Function Version_Access
 		Return This.Version
-	Endproc
-
-	Hidden Procedure LastUpdate_Assign(vNewVal)
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function LastUpdate_Assign
+&& ======================================================================== &&
+	Hidden Function LastUpdate_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.LastUpdate = m.vNewVal
 		Endif
-	Endproc
-
-	Hidden Procedure LastUpdate_Access
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function LastUpdate_Access
+&& ======================================================================== &&
+	Hidden Function LastUpdate_Access
 		Return This.LastUpdate
-	Endproc
-
-	Hidden Procedure Author_Assign(vNewVal)
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function Author_Assign
+&& ======================================================================== &&
+	Hidden Function Author_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.Author = m.vNewVal
 		Endif
-	Endproc
-
-	Hidden Procedure Author_Access
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function Author_Access
+&& ======================================================================== &&
+	Hidden Function Author_Access
 		Return This.Author
-	Endproc
-
-	Hidden Procedure Email_Assign(vNewVal)
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function Email_Assign
+&& ======================================================================== &&
+	Hidden Function Email_Assign(vNewVal)
 		If This.lValidCall
 			This.lValidCall = .F.
 			This.Email = m.vNewVal
 		Endif
-	Endproc
-
-	Hidden Procedure Email_Access
+	EndFunc
+&& ======================================================================== &&
+&& Hidden Function Email_Access
+&& ======================================================================== &&
+	Hidden Function Email_Access
 		Return This.Email
-	Endproc
+	EndFunc
 Enddefine
-
-*====================================================================
-* This class is used as an Array Helper class.
-*====================================================================
+&& ======================================================================== &&
+&& Hidden Function Email_Access
+&& This class is used as an Array Helper class.
+&& ======================================================================== &&
 Define Class __custom_array As Custom
 	Hidden 				;
 		Classlibrary, 		;
@@ -790,34 +851,42 @@ Define Class __custom_array As Custom
 
 	Hidden nArrLen
 	Dimension Array[1]
-
-	Procedure Init
+&& ======================================================================== &&
+&& Function Init
+&& ======================================================================== &&
+	Function Init
 		This.nArrLen = 0
-	Endproc
-
-	Procedure array_push(vNewVal As Variant)
+	EndFunc
+&& ======================================================================== &&
+&& Function array_push
+&& ======================================================================== &&
+	Function array_push(vNewVal As Variant)
 		This.nArrLen = This.nArrLen + 1
 		Dimension This.Array[THIS.nArrLen]
 		This.Array[this.nArrLen] = vNewVal
-	Endproc
-
-	Procedure getvalue(tnIndex As Integer)
+	EndFunc
+&& ======================================================================== &&
+&& Function GetValue
+&& ======================================================================== &&
+	Function GetValue(tnIndex As Integer)
 		Try
 			nLen = This.Array[tnIndex]
 		Catch
 			nLen = Null
 		Endtry
 		Return nLen
-	Endproc
-
-	Procedure Len
+	EndFunc
+&& ======================================================================== &&
+&& Function Len
+&& ======================================================================== &&
+	Function Len
 		Return This.nArrLen
-	Endproc
+	EndFunc
 Enddefine
-
-*====================================================================
-* This class is used as object helper class.
-*====================================================================
+&& ======================================================================== &&
+&& Function Len
+&& This class is used as object helper class.
+&& ======================================================================== &&
 Define Class __custom_object As Custom
 	Hidden 					;
 		Classlibrary, 		;
@@ -839,8 +908,10 @@ Define Class __custom_object As Custom
 		Whatsthishelpid, 	;
 		Width,				;
 		Class
-
-	Procedure setProperty(tcName As String, tvNewVal As Variant, tcType As String, vFlag As Object)
+&& ======================================================================== &&
+&& Function setProperty
+&& ======================================================================== &&
+	Function setProperty(tcName As String, tvNewVal As Variant, tcType As String, vFlag As Object)
 		If vFlag.Active
 			vFlag.Active 	= .F.
 			tcName 			= '_' + tcName
@@ -850,9 +921,11 @@ Define Class __custom_object As Custom
 				This. tcName = tvNewVal
 			Endif
 		Endif
-	Endproc
-
-	Procedure valueOf(tcName As String)
+	EndFunc
+&& ======================================================================== &&
+&& Function valueOf
+&& ======================================================================== &&
+	Function valueOf(tcName As String)
 		tcName = '_' + tcName
 		If Vartype(This. &tcName) == 'U'
 			Return ''
@@ -861,11 +934,11 @@ Define Class __custom_object As Custom
 			&lcMacro
 		Endif
 		Return ''
-	Endproc
+	EndFunc
 Enddefine
-*====================================================================
-* This class is used as a helper class.
-*====================================================================
+&& ======================================================================== &&
+&& Class Flag
+&& ======================================================================== &&
 Define Class Flag As Custom
 	Active = .F.
 Enddefine
