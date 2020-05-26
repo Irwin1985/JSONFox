@@ -631,7 +631,6 @@ Define Class JsonFox As Custom
 			Try
 				Insert Into &tcColumn (valor) Values(tvNewVal)
 			Catch to loEx
-				MessageBox(Type("&tcColumn..valor") + " vs " + Type("tvNewVal"))
 				Insert Into &tcColumn (valor) Values(Null)
 			Endtry
 		Endif
