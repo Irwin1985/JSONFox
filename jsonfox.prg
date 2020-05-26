@@ -554,8 +554,9 @@ Define Class JsonFox As Custom
 && ======================================================================== &&
 	Hidden Function __parse_string As Memo
 		Lparameters tlisNameAttr
-		Local lcValue As String, dDate As Variant
-		lcValue = ''
+		Local lcValue As String, ldDate As Variant
+		lcValue = ""
+		ldDate  = ""
 		If This.__get_Token() <> '"'
 			This.__setLastErrorText('Expected " - Got undefined')
 			Return ''
@@ -564,11 +565,11 @@ Define Class JsonFox As Custom
 		If Occurs('-', lcValue) == 2 .And. Len(Alltrim(lcValue)) = 10 .And. Not tlisNameAttr
 			lDate = This.__checkDate(lcValue)
 			If !Isnull(lDate)
-				dDate = lDate
+				ldDate = lDate
 			Endif
 		Endif
 		This.__eat_json(Len(lcValue) + 3)
-		Return Iif(Empty(dDate),lcValue,dDate)
+		Return Iif(Empty(ldDate), lcValue, ldDate)
 	EndFunc
 && ======================================================================== &&
 && Hidden Function __parse_XML
@@ -584,22 +585,24 @@ Define Class JsonFox As Custom
 				lDate 	= Null
 				Do Case
 				Case lcType = 'C' And Occurs('-', tvNewVal) == 2 and Len(Alltrim(tvNewVal)) = 10
-					lDate 	= This.__checkDate(tvNewVal)
+					lDate = This.__checkDate(tvNewVal)
 					If !Isnull(lDate)
 						lcType 	 = Vartype(lDate)
-						lcAlter  = lcType + ' NULL'
+						lcAlter  = lcType
 						tvNewVal = lDate
+					Else
+						lcAlter  = "C"
 					Endif
 				Case lcType = 'C'
-					lcAlter = 'C(100) NULL'
+					lcAlter = 'C(100)'
 				Case lcType = 'N'
-					lcAlter = 'N(20,10) NULL'
+					lcAlter = 'N(20,10)'
 				Case lcType = 'L'
-					lcAlter = 'L NULL'
+					lcAlter = 'L'
 				Case lcType = 'D'
-					lcAlter = 'D NULL'
+					lcAlter = 'D'
 				Case lcType = 'T'
-					lcAlter = 'T NULL'
+					lcAlter = 'T'
 				Otherwise
 				Endcase
 				This.nPosXML = This.nPosXML + 1
@@ -608,7 +611,7 @@ Define Class JsonFox As Custom
 				Endif
 				Dimension aColumns[THIS.nPosXML]
 				aColumns[THIS.nPosXML] = tcColumn
-				lcMacro = 'CREATE CURSOR ' + Alltrim(tcColumn) + ' (valor ' + lcAlter + ')'
+				lcMacro = 'CREATE CURSOR ' + Alltrim(tcColumn) + ' (valor ' + lcAlter + ' NULL)'
 				Try
 					&lcMacro
 				Catch To oErr
@@ -620,14 +623,15 @@ Define Class JsonFox As Custom
 				Return ''
 			Endif
 			If lcType == 'C' And Occurs('-', tvNewVal) == 2 .And. Len(Alltrim(tvNewVal)) = 10
-				lDate 	= This.__checkDate(tvNewVal)
+				lDate = This.__checkDate(tvNewVal)
 				If !Isnull(lDate)
 					tvNewVal = lDate
 				Endif
 			Endif
 			Try
 				Insert Into &tcColumn (valor) Values(tvNewVal)
-			Catch
+			Catch to loEx
+				MessageBox(Type("&tcColumn..valor") + " vs " + Type("tvNewVal"))
 				Insert Into &tcColumn (valor) Values(Null)
 			Endtry
 		Endif
