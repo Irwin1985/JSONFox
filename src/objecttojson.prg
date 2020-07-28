@@ -30,6 +30,10 @@ Define Class ObjectToJSON As Session
 && ======================================================================== &&
 	Function AnyToJson As Memo
 		Lparameters tValue As Variant
+		Try
+			External array tValue
+		Catch
+		EndTry
 		Do Case
 		Case Type("Alen(tValue, 1)") = "N"
 			Local k, lcArray

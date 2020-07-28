@@ -22,39 +22,46 @@ Define Class JSON As Custom
 		Top, 				;
 		Whatsthishelpid, 	;
 		Width,				;
-		Class	
+		Class
 && ======================================================================== &&
 && Function Init
 && ======================================================================== &&
 	Function Init(toRef As Object)
-		If !IsNull(toRef)
-			this.oRef = toRef
-		EndIf
-	EndFunc
+		This.extends(toRef)
+	Endfunc
+&& ======================================================================== &&
+&& Function Extends
+&& ======================================================================== &&
+	Function extends As Void
+		Lparameters toExtendedClass As Object
+		If !Isnull(toExtendedClass)
+			This.oRef = toExtendedClass
+		Endif
+	Endfunc
 && ======================================================================== &&
 && Function to_json
 && ======================================================================== &&
 	Function to_json As String
-		If Type("_Screen.Json") = "O"
-			Return _Screen.Json.objtojson.decode(this.oRef)
+		If Type("_Screen.Json") = "O" And Type("This.oRef") = "O"
+			Return _Screen.JSON.Stringify(This.oRef)
 		Else
 			Return "{}"
-		EndIf
-	EndFunc
+		Endif
+	Endfunc
 && ======================================================================== &&
 && Function This_Access
 && ======================================================================== &&
 	Function This_Access(tcPropName As String) As Object
-		If PemStatus(This, tcPropName, 5)
+		If Pemstatus(This, tcPropName, 5)
 			Return This
 		Else
 			Return This.oRef
-		EndIf
-	EndFunc
+		Endif
+	Endfunc
 && ======================================================================== &&
 && Function Destroy
 && ======================================================================== &&
 	Function Destroy
 		This.oRef = .Null.
-	EndFunc
-EndDefine
+	Endfunc
+Enddefine

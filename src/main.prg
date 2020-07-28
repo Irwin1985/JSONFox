@@ -5,7 +5,9 @@
 &&  summary:        Libraries collection for JSON Parsing
 &&  performance: 	big-o(n)
 && ******************************************************************************************* &&
+Set Path To "src" additive
 Set Procedure To "JsonClass" Additive
+Set Procedure To "JsonDecorator" Additive
 If Type("_Screen.Json") = "U"
 	=AddProperty(_Screen, "Json", .Null.)
 Endif

@@ -41,12 +41,15 @@ Tests/*.CDX
 Tests/*.cdx
 
 Tools/FxuClassFactory.dbf
-faker.dbf
-FAKER.DBF
+
 *.cdx
 *.CDX
 *.dbc
 *.DBC
+*.DBF
+*.FPT
+*.dbf
+*.fpt
 *.dct
 *.DCT
 *.dcx

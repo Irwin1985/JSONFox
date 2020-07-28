@@ -13,11 +13,11 @@
 <hr>
 
 ## Features
-
+**JSONFox** has a new built-in function called `Stringify` for object serialization and indentation. **(new)**
+**JSONFox** has a JSON Empty Class called `JSON` in which you can extends all those classes you need to convert into JSON representation. **(new)**
 **JSONFox** supports XML serialization by passing a JSON Array string representation as parameter. This is useful for CURSORS serialization between layers.
 **JSONFox** Parser recognize **DATE** and **DATETIME** types.
 **JSONFox** supports Cursor Serialization using the CursorToJSON() built-in function.
-**JSONFox** has a new built-in function called `Stringify` for object serializatio and indentation. **(new)**
 
 ### Basic Usage
 ```xBase
@@ -154,6 +154,31 @@ LOCAL cStrXML
 * Now serialize the modified XML to JSON
 cJson = _Screen.Json.XMLToJson(cStrXML)
 ?cJson
+
+* Decorate and print any class
+* Suppose you have a person class.
+oPerson = CreateObject("PersonClass")
+With oPerson
+	.fullname = "Jhon Doe"
+	.age = 45
+	.gender = "Male"
+	.married = .T.
+	.birthdate = Date(1985, 11, 15)
+	.created = Datetime()
+EndWith
+
+* Now you need to extend this person class
+oJhon = NewObject("JSon", "JsonDecorator.prg")
+?oJhon.to_json()
+{
+  "age": 45,
+  "birthdate": "1985-11-15",
+  "created": "2020-07-28 09:29:41 PM",
+  "fullname": "Jhon Doe",
+  "gender": "Male",
+  "married": true
+}
+
 ```
 ## License
 
