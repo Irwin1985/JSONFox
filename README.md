@@ -79,8 +79,8 @@ _Screen.Json.CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnD
 
 ```xBase
  * Serialize JSON String
- Set Procedure To "JSONFox.prg" Additive
- loJSON = NewObject("JSONFox", "JSONFox.prg")
+ Do LocFile("JSONFox", "app")
+ * Parse from string
  Text To lcJsonStr NoShow
    {
     "name":"Irwin",
