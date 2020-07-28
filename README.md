@@ -179,6 +179,10 @@ oJhon = NewObject("JSon", "JsonDecorator.prg")
   "married": true
 }
 
+* Stringify Example
+cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","fullname":"Jhon Doe","gender":"Male","married":true,"soports":["running","swiming","basket-ball"]}'
+?_Screen.Json.Stringify(cJson)
+
 ```
 ## License
 
