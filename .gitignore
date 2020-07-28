@@ -1,8 +1,8 @@
 # Ignore project
-*.pjx
-*.PJX
-*.pjt
-*.PJT
+#*.pjx
+#*.PJX
+#*.pjt
+#*.PJT
 
 # Ignore compiled files
 *.scx
@@ -21,6 +21,9 @@
 *.VCX
 *.fxp
 *.FXP
+
+# Ignore test prg files.
+src/test*.*
 
 # Ignore database and related files.
 Tests/FXUResults.*

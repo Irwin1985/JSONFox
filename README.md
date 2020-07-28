@@ -1,9 +1,6 @@
 # JSONFox ![](images/prg.gif)  
 
-**JSONFox** is a free **JSON / XML** ***parser*** for exchanging data between layers developed in Visual FoxPro 9.0
-
-**NOTE:** This library was inspired by **[vfpjson](https://github.com/sait/vfpjson)**.
-
+**JSONFox** is a free **JSON / XML** ***parser*** for Visual FoxPro 9.0
 
 ### Project Manager
 
@@ -11,39 +8,41 @@
 
 ### Latest Release
 
-**[JSONFox](/README.md)** - 1.9 (beta) - Release 2019-08-20 08:33:42 AM
+**[JSONFox](/README.md)** - 2.0 - Release 2020-07-28 19:50:42
 
 <hr>
 
 ## Features
 
-**JSONFox** supports XML serialization using a JSON Array as parameters. This is useful for CURSORS serialization between layers.
+**JSONFox** supports XML serialization by passing a JSON Array string representation as parameter. This is useful for CURSORS serialization between layers.
+**JSONFox** Parser recognize **DATE** and **DATETIME** types.
+**JSONFox** supports Cursor Serialization using the CursorToJSON() built-in function.
+**JSONFox** has a new built-in function called `Stringify` for object serializatio and indentation. **(new)**
 
-**JSONFox** adds an **underscore** before the attribute name to avoid internal conflict with native object properties name. That means you'll have to reference your deserialized object like: obj._attribute
-
-**JSONFox** Analyzer recognize and serialize **DATE** and **DATETIME** types.
-
-**JSONFox** now supports Cursor Serialization using the CursorToJSON() function. **(new)**
-### Example
+### Basic Usage
 ```xBase
-* Serialize JSON String
- Set Procedure To "JSONFox.prg" Additive
- loJSON = NewObject("JSONFox", "JSONFox.prg")
+* Now you can use JSONFox as a compiled App...
+ Do LocFile("JSONFox", "app")
+
+* Parse a string into an object.
+ MyObj = _Screen.Json.Parse('{"foo": "bar"}')
+ ?MyObj.foo
  
+* Convert Cursor into JSON string.
 Create Cursor cGames (game c(25), launched i(4))
 Insert into cGames Values('Pac-Man', 1980)
 Insert into cGames Values('Super Mario Bros', 1985)
 Insert into cGames Values('Space Invaders', 1978)
 Insert into cGames Values('The Legend of Zelda', 1986)
 
-?loJSON.CursorToJson('cGames')
+?_Screen.Json.CursorToJson('cGames')
 ```
 ## Function Signature
-CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As Integer]]**)
+_Screen.Json.CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As Integer]]**)
 
-* ![](images/prop.gif) **tcCursor:** the name of your in memory cursor.
+* ![](images/prop.gif) **tcCursor:** the name of your cursor.
 * ![](images/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
-* ![](images/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private environment.
+* ![](images/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
 
 <hr>
 
@@ -51,63 +50,64 @@ CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As
 * ![](images/prop.gif) **LastErrorText:** Stores the possible error generated in the current sentence.
 
 ## Methods
+<hr>
 
-* ![](images/meth.gif) **Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
+### (New Methods)
+
+* ![](images/meth.gif) **_Screen.Json.Parse(tcJsonStr AS MEMO):** Parse the string text as JSON (Visual Foxpro Empty class object representation)
   * **tcJsonStr:** represents a valid JSON string format (required).
 
-* ![](images/meth.gif) **LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
+* ![](images/meth.gif) **_Screen.Json.Stringify(tvNewVal As Variant):** Return an indented JSON string corresponding to the specified value.
+  * **tvNewVal:** you can pass either an object or a raw JSONString (required).
+
+* ![](images/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
+  * **tcJsonStr:** represents a valid JSON string format (required).
+
+* ![](images/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
   * **tcJsonFile:** represents any file extension with a valid JSON string format (required).
 
-* ![](images/meth.gif) **ArrayToXML(tStrArray AS MEMO):** Serialize a JSON string to a XML representation.
+* ![](images/meth.gif) **_Screen.Json.ArrayToXML(tStrArray AS MEMO):** Serialize a JSON string to a XML representation.
   * **tStrArray:** represents a valid JSON Array string format.
 
-* ![](images/meth.gif) **XMLToJson(tcXML AS MEMO):** Serialize a XML string to a JSON representation.
+* ![](images/meth.gif) **_Screen.Json.XMLToJson(tcXML AS MEMO):** Serialize a XML string to a JSON representation.
   * **tcXML:** represents a valid XML string format.
 
-* ![](images/meth.gif) **Encode(vNewProp as variant):** Encode a JSON object into string.
+* ![](images/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
   * **vNewProp:** represents any value type.
   
 ### Examples
 
 ```xBase
  * Serialize JSON String
- Set Procedure To "JSONFox.prg" Additive
- loJSON = NewObject("JSONFox", "JSONFox.prg")
+ Do LocFile("JSONFox", "app")
+ * Parse from string
  Text To lcJsonStr NoShow
    {
     "name":"Irwin",
     "surname": "Rodriguez",
     "birth":"1985-11-15",
-    "current_year": 2019    
+    "current_year": 2019,
     "wife": "Serelys Fonseca",
     "music_band":"The Beatles",
     "size": 1.79,
-    "isGamer": false,
-    "isProgrammer": true, 
-    "hasCar": null
+    "isgamer": false,
+    "isprogrammer": true, 
+    "hascar": null
    }
  EndText
- obj = loJSON.decode(lcJsonStr)
+ obj = _Screen.Json.Parse(lcJsonStr)
  
  * Don't forget check the LastErrorText
- If !Empty(loJson.LastErrorText) 
- 	MessageBox(loJson.LastErrorText, 0+48, "Something went wrong")
-	Release loJson
-	Return
+ If _Screen.Json.lError
+   MessageBox(_Screen.Json.LastErrorText, 48, "Something went wrong")
+   Return
  EndIf
  
- ?obj._name
- ?obj._size
+ ?obj.name
+ ?obj.size
  
- Display Object Like obj
- 
- * Deserialize Object
- cJSONStr = loJSON.encode(obj)
- If !Empty(loJson.LastErrorText) 
- 	MessageBox(loJson.LastErrorText, 0+48, "Something went wrong")
-	Release loJson
-	Return
- EndIf
+ * Deserialize and Indent
+ cJSONStr = _Screen.Json.Stringify(obj)
  ?cJSONStr
  
  * Serialize XML from JSON Array
@@ -133,25 +133,12 @@ CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As
 	}
 ENDTEXT
 
-obj = loJSON.Decode(lcStr)
-IF !Empty(loJson.LastErrorText) 
-	MessageBox(loJson.LastErrorText, 0+48, "Something went wrong")
-	Release loJson
-	Return
-EndIf
-
-* Encode just the Array attribute called (_data)*
-
-lcJson = loJson.Encode(obj._data)
+obj = _Screen.Json.Parse(lcStr)
+* Encode just the Array attribute called (data)*
+lcJsonArray = _Screen.Json.Parse(obj._data)
 
 * Serialize the JSON string to XML string
-lcXML = loJson.ArrayToXML(lcJson)
-
-If !Empty(loJson.LastErrorText)
-	MessageBox(loJson.LastErrorText, 0+48, "Error")
-	Release loJson, obj, lcJsonIni
-	Return
-EndIf
+lcXML = _Screen.Json.ArrayToXML("[" + lcJsonArray + "]")
 
 * Serialize the XML document to VFP CURSOR **(this is cool)**
 =XMLToCursor(lcXML, "qEmployees")
@@ -162,16 +149,12 @@ Replace salary With 5.000 In qEmployees
 
 * Serialize Cursor to XML stream data **(in memory)**
 LOCAL cStrXML
-=CursorToXML("qEmployees","cStrXML",1,0,0,"1")
+=CursorToXML("qEmployees", "cStrXML", 1, 0, 0,"1")
 
 * Now serialize the modified XML to JSON
-cJson = loJson.XMLToJson(cStrXML)
-If !Empty(loJson.LastErrorText)
-	MessageBox(loJson.LastErrorText, 0+48, "Error")
-	Release loJson, obj, lcJsonIni
-	Return
-EndIf
+cJson = _Screen.Json.XMLToJson(cStrXML)
 ?cJson
-
-Release loJson, obj
 ```
+## License
+
+JSONFox is released under the MIT Licence.
