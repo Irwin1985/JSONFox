@@ -17,7 +17,7 @@
 **JSONFox** supports XML serialization by passing a JSON Array string representation as parameter. This is useful for CURSORS serialization between layers.
 **JSONFox** Parser recognize **DATE** and **DATETIME** types.
 **JSONFox** supports Cursor Serialization using the CursorToJSON() built-in function.
-**JSONFox** has a new built-in function called <code>Stringify<code> for object serializatio and indentation. **(new)**
+**JSONFox** has a new built-in function called `Stringify` for object serializatio and indentation. **(new)**
 
 ### Basic Usage
 ```xBase
@@ -155,3 +155,6 @@ LOCAL cStrXML
 cJson = _Screen.Json.XMLToJson(cStrXML)
 ?cJson
 ```
+## License
+
+JSONFox is released under the MIT Licence.
