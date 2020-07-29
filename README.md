@@ -16,6 +16,8 @@
 
 **JSONFox** has a new built-in function called `Stringify` for object serialization and indentation. **(new)**
 
+**JSONFox** has a new built-in function called `JSONToCursor`. **(new)**
+
 **JSONFox** has a JSON Empty Class called `JSON` in which you can extends all those classes you need to convert into JSON representation. **(new)**
 
 **JSONFox** supports XML serialization by passing a JSON Array string representation as parameter. This is useful for CURSORS serialization between layers.
