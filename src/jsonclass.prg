@@ -4,7 +4,7 @@
 Define Class JSONClass As Session
 	Hidden oHelper
 	Hidden clManager
-	DataSession = 2
+	DataSession = 1
 	LastErrorText = ""
 	lError = .F.
 	lShowErrors = .T.
@@ -157,6 +157,8 @@ Define Class JSONClass As Session
 			=Cursortoxml('qResult','lcOut', 1, 0, 0, '1')
 		Catch To loEx
 			This.ShowExceptionError(loEx)
+		Finally
+			Use in (Select("qResult"))
 		Endtry
 		Return lcOut
 	Endfunc
@@ -178,6 +180,8 @@ Define Class JSONClass As Session
 			Endwith
 		Catch To loEx
 			This.ShowExceptionError(loEx)
+		Finally
+			Use in (Select("qXML"))
 		Endtry
 		Return lcJsonXML
 	Endfunc
@@ -213,6 +217,34 @@ Define Class JSONClass As Session
 		Return '{"' + Lower(Alltrim(tcCursor)) + '":' + lcJsonXML + '}'
 	Endfunc
 && ======================================================================== &&
+&& Function JSONToCursor
+&& ======================================================================== &&
+	Function JSONToCursor(tcJsonStr As Memo, tcCursor As String, tnDataSession As Integer) As Void
+		Try
+			This.ResetError()
+			If !Empty(tcCursor)
+				tnDataSession = Evl(tnDataSession, Set("Datasession"))
+				With This.oHelper
+					With .Lexer
+						.ScanString(tcJsonStr)
+						.NextToken()
+					Endwith
+					With .ArrayToCursor
+						.CurName 	= tcCursor
+						.nSessionID = tnDataSession
+						.Array()
+					Endwith
+				Endwith
+			Else
+				If This.lShowErrors
+					Wait "Invalid cursor name." Window Nowait
+				Endif
+			Endif
+		Catch To loEx
+			This.ShowExceptionError(loEx)
+		Endtry
+	Endfunc
+&& ======================================================================== &&
 && Function LastErrorText_Assign
 && ======================================================================== &&
 	Function LastErrorText_Assign
@@ -227,7 +259,7 @@ Define Class JSONClass As Session
 && ======================================================================== &&
 && Function ShowExceptionError
 && ======================================================================== &&
-	Function ShowExceptionError(toEx As Exception) As void
+	Function ShowExceptionError(toEx As Exception) As Void
 		With This
 			.lError = .T.
 			If .lShowErrors
@@ -243,7 +275,7 @@ Define Class JSONClass As Session
 && ======================================================================== &&
 && Function ResetError
 && ======================================================================== &&
-	Hidden Function ResetError As void
+	Hidden Function ResetError As Void
 		This.lError = .F.
 	Endfunc
 && ======================================================================== &&

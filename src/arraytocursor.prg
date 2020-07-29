@@ -29,10 +29,7 @@ Define Class ArrayToCursor As Session
 && ======================================================================== &&
 	Function Array As Void
 		With This
-			If !Empty(.nSessionID)
-				Set DataSession To .nSessionID
-				Create Cursor cDataTypes (cProp c(40), cType c(1))
-			Endif
+			.Reset()
 			.utils.Match(.sc, .Token.LeftBracket)
 			.Object()
 			.InsertData()
@@ -45,8 +42,56 @@ Define Class ArrayToCursor As Session
 			Enddo
 
 			.utils.Match(.sc, .Token.RightBracket)
+			.CheckTypeLen()
 			Use In (Select("cDataTypes"))
 		Endwith
+	Endfunc
+&& ======================================================================== &&
+&& Function Reset
+&& ======================================================================== &&
+	Function Reset
+		With This
+			If !Empty(.nSessionID)
+				Set DataSession To .nSessionID
+				Create Cursor cDataTypes (cProp c(40), cType c(1))
+			Endif
+			If Used(.CurName)
+				Select (.CurName)
+				Use
+			Endif
+			.nCounter = 0
+			Dimension .aValues(1)
+		Endwith
+	Endfunc
+&& ======================================================================== &&
+&& Function CheckTypeLen
+&& ======================================================================== &&
+	Function CheckTypeLen As Void
+		gnFieldcount = Afields(gaMyArray, This.CurName)
+		For nCount = 1 To gnFieldcount
+			If gaMyArray(nCount, 2) = "C"
+				This.AlterCharColumn(gaMyArray(nCount, 1))
+			Endif
+		Endfor
+	Endfunc
+&& ======================================================================== &&
+&& Function AlterCharColumn
+&& ======================================================================== &&
+	Function AlterCharColumn(tcColumn As String) As Void
+		Try
+			Dimension aMax(1)
+			aMax[1] = 0
+			cmd = "Select Max(Len(Alltrim(" + tcColumn + "))) From " + This.CurName + " Into Array aMax"
+			&cmd
+			If aMax[1] > 0
+				cmd = "Alter table " + This.CurName  + " alter column " + tcColumn + " c(" + Alltrim(Str(aMax[1])) + ")"
+				&cmd
+			Endif
+		Catch To loErr
+			Wait loErr.Message Window Nowait
+		Finally
+			Release aMax
+		Endtry
 	Endfunc
 && ======================================================================== &&
 && Function Object
@@ -171,7 +216,7 @@ Define Class ArrayToCursor As Session
 			Do Case
 			Case cDataTypes.cType $ "XC"
 				lcType = Strtran(cDataTypes.cType, "X", "C")
-				cQuery = cQuery + lcType + " (50) NULL"
+				cQuery = cQuery + lcType + " (250) NULL"
 			Case cDataTypes.cType = "N"
 				cQuery = cQuery + cDataTypes.cType + " (18,5) NULL"
 			Otherwise
@@ -192,7 +237,7 @@ Define Class ArrayToCursor As Session
 		Try
 			This.Token = .Null.
 		Catch
-		EndTry
+		Endtry
 		Try
 			This.utils = .Null.
 		Catch
