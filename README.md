@@ -191,11 +191,18 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 ?_Screen.Json.Stringify(cJson)
 
 ```
+
 ### Release History
+
 <hr>
+
 2020-07-30
-* Negative Numbers recognition
-* Empty array parsing
+
+* JsonToCursor() function.
+
+* Negative Numbers recognition.
+
+* Empty array parsing.
 
 
 
