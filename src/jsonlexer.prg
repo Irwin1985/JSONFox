@@ -168,9 +168,17 @@ Define Class JsonLexer As Custom
 			Do While .IsHex(.cLook) Or Isdigit(.cLook)
 				lcUnicode = lcUnicode + .cLook
 				.NextChar()
+				If Len(lcUnicode) = 6
+					Exit
+				EndIf
 			Enddo
-		Endwith
-		Return Chr(&lcUnicode)
+		EndWith
+		Try
+			lcUnicode = Chr(&lcUnicode)
+		Catch
+			Error "parse error: invalid hex format '" + Transform(lcUnicode) + "'"
+		EndTry
+		Return lcUnicode
 	Endfunc
 && ======================================================================== &&
 && Hidden Function IsHex
