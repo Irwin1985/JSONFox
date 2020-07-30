@@ -63,8 +63,16 @@ Define Class JsonLexer As Custom
 			Do Case
 			Case .cLook = '"'
 				.GetString()
-			Case Isdigit(.cLook)
-				.GetNumber()
+			Case This.cLook = "-" Or Isdigit(.cLook)
+				If This.cLook = "-"
+					If Isdigit(This.Reader.Peek())
+						.GetNumber()
+					Else
+						Error "unexpected character '" + This.cLook + "'"
+					EndIf
+				Else
+					.GetNumber()
+				Endif
 			Case .cLook = 't' And .Reader.Peek() = 'r'
 				.GetTrue()
 			Case .cLook = 'n'
@@ -170,14 +178,14 @@ Define Class JsonLexer As Custom
 				.NextChar()
 				If Len(lcUnicode) = 6
 					Exit
-				EndIf
+				Endif
 			Enddo
-		EndWith
+		Endwith
 		Try
 			lcUnicode = Chr(&lcUnicode)
 		Catch
 			Error "parse error: invalid hex format '" + Transform(lcUnicode) + "'"
-		EndTry
+		Endtry
 		Return lcUnicode
 	Endfunc
 && ======================================================================== &&
@@ -192,8 +200,13 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Hidden Function GetNumber As Void
 		With This
-			Local lnNumber As Integer, lnDecimals As Integer
-			lnNumber   = 0
+			Local lnNumber As Integer, lnDecimals As Integer, lnSign As Integer
+			lnNumber = 0
+			lnSign   = 1
+			If This.cLook = "-"
+				lnSign = -1
+				This.Match("-")
+			EndIf
 			lnDecimals = Set("Decimals")
 			Set Decimals To 0
 			.Token.Code = .TokenCode.Integer && Integer assumed
@@ -219,7 +232,7 @@ Define Class JsonLexer As Custom
 				.Token.Value = lnNumber
 				.Token.Code  = This.TokenCode.Float
 			Endif
-
+			.Token.Value = .Token.Value * lnSign
 			Set Decimals To lnDecimals
 		Endwith
 	Endfunc

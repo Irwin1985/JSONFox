@@ -96,8 +96,14 @@ Define Class JsonParser As Custom
 				vNewVal = .sc.Token.Value
 				.sc.NextToken()
 			Otherwise
-				lcMsg = "Parse error on line " + Alltrim(Str(.sc.Token.LineNumber)) + ": Unexpected Token '" + .sc.TokenToStr(.sc.Token.Code) + "'"
-				Error lcMsg
+				&&  IRODG 20200730
+				If .sc.Token.Code = .Token.RightBracket && empty array
+ 					*WARNING: this is a provisional fix while waiting for the lookahead token in lexer class.
+					vNewVal = ""
+				Else
+					Error "Parse error " + Alltrim(Str(.sc.Token.LineNumber)) + "," + Alltrim(Str(.sc.Token.columnNumber)) + " Unexpected Token '" + .sc.TokenToStr(.sc.Token.Code) + "'"
+				EndIf
+				&&  IRODG 20200730
 			Endcase
 		Endwith
 		Return vNewVal
