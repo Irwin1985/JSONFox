@@ -208,11 +208,11 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 
 * Datetime parsing supported formats: 
 
- * JavaScript built-in JSON object
+   * JavaScript built-in JSON object
  
- * ISO 8601
+   * ISO 8601
  
- * Visual Foxpro
+   * Visual Foxpro
 
 
 ## License
