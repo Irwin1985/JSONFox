@@ -53,12 +53,28 @@ Define Class JSONUtils As Custom
 		lIsDateTime = .F.
 		lDate		= .Null.
 		cStr 		= Strtran(tcDate, '-')
-		If Occurs(':', tcDate) = 2 .And. Len(Alltrim(tcDate)) <= 22
+		If Occurs(':', tcDate) >= 2 .And. Len(Alltrim(tcDate)) <= 25
 			lIsDateTime = .T.
-			cStr 		= Strtran(cStr, ':')
-			cStr 		= Strtran(Lower(cStr), 'am')
-			cStr 		= Strtran(Lower(cStr), 'pm')
-			cStr 		= Strtran(cStr, Space(1))
+			Do case
+			case "." $ tcDate and "T" $ tcDate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
+				cStr = strtran(tcDate, "T")
+				cStr = Substr(cStr, 1, At(".", cStr) - 1)
+				cStr = Strtran(cStr, '-')
+				cStr = Strtran(cStr, ':')
+				tcDate = Substr(strtran(tcDate, "T", Space(1)), 1, At(".", tcDate) - 1)
+			Case "T" $ tcDate and Occurs(':', tcDate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
+				cStr = strtran(tcDate, "T")
+				cStr = Substr(cStr, 1, At("-", cStr, 3) - 1)
+				cStr = Strtran(cStr, '-')
+				cStr = Strtran(cStr, ':')
+				tcDate = Substr(strtran(tcDate, "T", Space(1)), 1, At("-", tcDate, 3) - 1)
+			Otherwise
+				cStr = Strtran(cStr, ':')
+				cStr = Strtran(Lower(cStr), 'am')
+				cStr = Strtran(Lower(cStr), 'pm')
+				cStr = Strtran(cStr, Space(1))
+				tcDate = Substr(tcDate, 1, At(Space(1), tcDate, 2) - 1)
+			endcase
 		Endif
 		For i=1 To Len(cStr) Step 1
 			If Isdigit(Substr(cStr, i, 1))
@@ -66,12 +82,22 @@ Define Class JSONUtils As Custom
 			Else
 				Return .Null.
 			Endif
-		Endfor
-		If Val(Left(tcDate,4)) > 0 And Val(Strextract(tcDate, '-', '-',1)) > 0 And Val(Right(tcDate,2)) > 0
+		EndFor
+		lcYear  = Left(tcDate, 4)
+		lcMonth = Strextract(tcDate, '-', '-', 1)
+		If !lIsDateTime
+			lcDay = Right(tcDate, 2)
+		Else
+			lcDay = Strextract(tcDate, '-', Space(1), 2)
+		EndIf
+		If Val(lcYear) > 0 And Val(lcMonth) > 0 And Val(lcDay) > 0
 			If !lIsDateTime
-				lDate = Date(Val(Left(tcDate,4)), Val(Strextract(tcDate, '-', '-',1)), Val(Right(tcDate,2)))
+				lDate = Date(Val(lcYear), Val(lcMonth), Val(lcDay))
 			Else
-				lDate = Datetime(Val(Left(tcDate,4)), Val(Strextract(tcDate, '-', '-',1)), Val(Strextract(tcDate, '-', Space(1),2)), Val(Substr(tcDate, 12, 2)), Val(Strextract(tcDate, ':', ':',1)), Val(Right(tcDate,2)))
+				lcHour = Substr(tcDate, 12, 2)
+				lcMin  = Strextract(tcDate, ':', ':', 1)
+				lcSecs = Right(tcDate, 2)
+				lDate  = Datetime(Val(lcYear), Val(lcMonth), Val(lcDay), Val(lcHour), Val(lcMin), Val(lcSecs))
 			Endif
 		Else
 			lDate = Iif(!lIsDateTime, {//}, {//::})

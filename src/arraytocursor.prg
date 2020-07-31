@@ -134,7 +134,7 @@ Define Class ArrayToCursor As Session
 					If Len(lcValue) > STRING_MAX_SIZE
 						lcType = "M"
 					Else
-						If Occurs('-', lcValue) == 2 && Check for date or datetime.
+						If Occurs('-', lcValue) >= 2 && Check for date or datetime.
 							lDate = .utils.FormatDate(lcValue)
 							If !Isnull(lDate)
 								lcValue = lDate

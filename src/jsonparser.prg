@@ -68,7 +68,7 @@ Define Class JsonParser As Custom
 			Do Case
 			Case .sc.Token.Code = .Token.String
 				vNewVal = .sc.Token.Value
-				If Occurs('-', vNewVal) == 2
+				If Occurs('-', vNewVal) >= 2
 					lDate = .utils.FormatDate(vNewVal)
 					If !Isnull(lDate)
 						vNewVal = lDate
