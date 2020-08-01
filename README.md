@@ -1,13 +1,3 @@
-```xBase
-obj = _Screen.Json.Parse(lcJSONStr)
-Create Cursor datos (id i, ids c(20), name c(25), description c(70)) // etc
-For each loData in obj.data
-  Insert into datos values (loData.id, loData.ids, loData.name, loData.description)
-EndFor
-browse
-```
-
-
 # JSONFox ![](images/prg.gif)  
 
 **JSONFox** is a free **JSON / XML** ***parser*** for Visual FoxPro 9.0
