@@ -214,6 +214,12 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
  
    * Visual Foxpro
 
+2020-08-02
+
+* Empty object parsing.
+
+* GetPosition() and SetPosition() functions added into StreamReader class.
+
 
 ## License
 
