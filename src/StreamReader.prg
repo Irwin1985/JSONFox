@@ -1,17 +1,3 @@
-*!*	Clear
-*!*	loReader = CreateObject("StreamReader")
-*!*	loReader.SetString(FileToStr("C:\VUTILS\PROGS\ftp2.prg"))
-*!*	?Seconds()
-*!*	nTimes = 0
-*!*	Do While !loReader.EndOfStream
-*!*		nTimes = nTimes + 1
-*!*		lcChar = loReader.Read()
-*!*	*!*		?Iif(lcChar == Chr(13), "CR", Iif(lcChar == Chr(10), "LF", lcChar))
-*!*	EndDo
-*!*	?Seconds()
-*!*	?nTimes, "veces"
-
-
 && ======================================================================== &&
 && Class StreamReader
 && ======================================================================== &&
@@ -56,6 +42,18 @@ Define Class StreamReader As Custom
 		Return lcResult
 	Endfunc
 && ======================================================================== &&
+&& Function LookBehind
+&& ======================================================================== &&
+	Function LookBehind As Character
+		Lparameters tnPosition As Integer
+		Local lcChar As Character
+		lcChar = Chr(255)
+		If (This.nCurrentPos - tnPosition) > 1
+			lcChar = Substr(This.cString, tnPosition, 1)
+		Endif
+		Return lcChar
+	Endfunc
+&& ======================================================================== &&
 && Function SetString
 && ======================================================================== &&
 	Function SetString As String
@@ -89,5 +87,22 @@ Define Class StreamReader As Custom
 && ======================================================================== &&
 	Function Peek As Character
 		Return Substr(This.cString, This.nCurrentPos + 1, FETCH_SIGLE_CHAR)
+	Endfunc
+&& ======================================================================== &&
+&& Function GetPosition
+&& ======================================================================== &&
+	Function GetPosition As Integer
+		Return This.nCurrentPos
+	Endfunc
+&& ======================================================================== &&
+&& Function SetPosition
+&& ======================================================================== &&
+	Function SetPosition As Void
+		Lparameters tnNewPos As Integer
+		With This
+			.nCurrentPos = tnNewPos
+			.lInternalCall  = .T.
+			.EndOfStream = (.nCurrentPos = .nStringLen)
+		Endwith
 	Endfunc
 Enddefine

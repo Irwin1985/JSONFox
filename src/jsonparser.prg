@@ -31,11 +31,13 @@ Define Class JsonParser As Custom
 		obj = Createobject('Empty')
 		With This
 			.utils.Match(.sc, .Token.LeftCurleyBracket)
-			.kvp(@obj)
-			Do While .sc.Token.Code = .Token.Comma
-				.sc.NextToken()
+			If .sc.Token.Code != .Token.RightCurleyBracket
 				.kvp(@obj)
-			Enddo
+				Do While .sc.Token.Code = .Token.Comma
+					.sc.NextToken()
+					.kvp(@obj)
+				EndDo
+			EndIf
 			.utils.Match(.sc, .Token.RightCurleyBracket)
 		Endwith
 		Return obj
@@ -96,14 +98,7 @@ Define Class JsonParser As Custom
 				vNewVal = .sc.Token.Value
 				.sc.NextToken()
 			Otherwise
-				&&  IRODG 20200730
-				If .sc.Token.Code = .Token.RightBracket && empty array
- 					*WARNING: this is a provisional fix while waiting for the lookahead token in lexer class.
-					vNewVal = ""
-				Else
-					Error "Parse error " + Alltrim(Str(.sc.Token.LineNumber)) + "," + Alltrim(Str(.sc.Token.columnNumber)) + " Unexpected Token '" + .sc.TokenToStr(.sc.Token.Code) + "'"
-				EndIf
-				&&  IRODG 20200730
+				Error "Parse error " + Alltrim(Str(.sc.Token.LineNumber)) + "," + Alltrim(Str(.sc.Token.columnNumber)) + " Unexpected Token '" + .sc.TokenToStr(.sc.Token.Code) + "'"
 			Endcase
 		Endwith
 		Return vNewVal
@@ -118,12 +113,14 @@ Define Class JsonParser As Custom
 			.utils.Match(.sc, .Token.LeftBracket)
 			tcPropertyName = .utils.CheckProp(tcPropertyName)
 			=AddProperty(toObjRef, tcPropertyName + "(1)", 0)
-			nIndex = 0
-			.ArrayPush(toObjRef, tcPropertyName, @nIndex)
-			Do While .sc.Token.Code = .Token.Comma
-				.sc.NextToken()
+			If .sc.Token.Code != .Token.RightBracket
+				nIndex = 0
 				.ArrayPush(toObjRef, tcPropertyName, @nIndex)
-			Enddo
+				Do While .sc.Token.Code = .Token.Comma
+					.sc.NextToken()
+					.ArrayPush(toObjRef, tcPropertyName, @nIndex)
+				Enddo
+			Endif
 			.utils.Match(.sc, .Token.RightBracket)
 		Endwith
 	Endfunc

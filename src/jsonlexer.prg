@@ -17,6 +17,7 @@ Define Class JsonLexer As Custom
 	Hidden nColNumber
 	TokenCode 	= .Null.
 	Token 		= .Null.
+	PeekToken   = .Null.
 && ======================================================================== &&
 && Function Init
 && ======================================================================== &&
@@ -50,6 +51,7 @@ Define Class JsonLexer As Custom
 			=AddProperty(.Token, "columnNumber", 0)
 			=AddProperty(.Token, "Code", 0)
 			=AddProperty(.Token, "Value", "")
+			.PeekToken = .Token
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -69,7 +71,7 @@ Define Class JsonLexer As Custom
 						.GetNumber()
 					Else
 						Error "unexpected character '" + This.cLook + "'"
-					EndIf
+					Endif
 				Else
 					.GetNumber()
 				Endif
@@ -152,7 +154,7 @@ Define Class JsonLexer As Custom
 			Case .cLook = ','
 				.Token.Code = .TokenCode.Comma
 			Otherwise
-				Error "unrecongnised character '" + .cLook + "'"
+				Error "unrecongnised character '" + Transform(.cLook) + "' ASCII '" + Transform(Asc(.cLook)) + "'"
 			Endcase
 			.NextChar()
 		Endwith
@@ -206,7 +208,7 @@ Define Class JsonLexer As Custom
 			If This.cLook = "-"
 				lnSign = -1
 				This.Match("-")
-			EndIf
+			Endif
 			lnDecimals = Set("Decimals")
 			Set Decimals To 0
 			.Token.Code = .TokenCode.Integer && Integer assumed
@@ -453,6 +455,48 @@ Define Class JsonLexer As Custom
 			lcTokenStr = "UNKNOWN"
 		Endcase
 		Return lcTokenStr
+	Endfunc
+&& ======================================================================== &&
+&& Function Peek
+&& Return the next token without affecting the current one.
+&& ======================================================================== &&
+	Function Peek As Object
+		With This
+			Local nCurrentPos As Integer, loCurToken As Object, lcCurLook As Character
+* Default PeekToken values
+			With .PeekToken
+				.LineNumber   = 0
+				.ColumnNumber = 0
+				.Code 		  = 0
+				.Value 		  = 0
+			Endwith
+* Save current token values
+			nCurrentPos = .Reader.GetPosition()
+			loCurToken  = .Token
+			lcCurLook   = .cLook
+			.NextToken()
+* Store the peeked token
+			With .PeekToken
+				Local loToken As Object
+				loToken = This.Token
+				.LineNumber   = loToken.LineNumber
+				.ColumnNumber = loToken.ColumnNumber
+				.Code 		  = loToken.Code
+				.Value 		  = loToken.Value
+				Release loToken
+			Endwith
+* Restore the current position
+			.Reader.SetPosition(nCurrentPos)
+* Restore the current token
+			With .Token
+				.LineNumber   = loCurToken.LineNumber
+				.ColumnNumber = loCurToken.ColumnNumber
+				.Code 		  = loCurToken.Code
+				.Value 		  = loCurToken.Value
+			Endwith
+			.cLook = lcCurLook
+			Return .PeekToken
+		Endwith
 	Endfunc
 && ======================================================================== &&
 && Function Destroy
