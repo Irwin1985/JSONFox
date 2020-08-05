@@ -14,6 +14,8 @@
 
 ### Features
 
+**JSONFox** has a new built-in function called `JSONViewer` wich open a JSON viewer form. **(new)**
+
 **JSONFox** has a new built-in function called `Stringify` for object serialization and indentation. **(new)**
 
 **JSONFox** has a new built-in function called `JSONToCursor`. **(new)**
@@ -191,6 +193,9 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 ?_Screen.Json.Stringify(cJson)
 
 ```
+### JSONViewer() function
+![String Indentation](docs/sample1.png)  *String Indentation*
+![No Indentation](docs/sample2.png)  *No Indentation*
 
 ### Release History
 
