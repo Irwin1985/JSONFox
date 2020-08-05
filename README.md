@@ -195,7 +195,6 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 ```
 ### JSONViewer() function
 ```xBase
- * Serialize XML from JSON Array
  Text To lcStr NoShow
   {
     "array": [
