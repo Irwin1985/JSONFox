@@ -1,4 +1,4 @@
-# JSONFox ![](images/prg.gif)  
+# JSONFox ![](docs/prg.gif)  
 
 **JSONFox** is a free **JSON / XML** ***parser*** for Visual FoxPro 9.0
 
@@ -49,39 +49,39 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ## Function Signature
 _Screen.Json.CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As Integer]]**)
 
-* ![](images/prop.gif) **tcCursor:** the name of your cursor.
-* ![](images/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
-* ![](images/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
+* ![](docs/prop.gif) **tcCursor:** the name of your cursor.
+* ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
+* ![](docs/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
 
 <hr>
 
 ## Properties
-* ![](images/prop.gif) **LastErrorText:** Stores the possible error generated in the current sentence.
+* ![](docs/prop.gif) **LastErrorText:** Stores the possible error generated in the current sentence.
 
 ## Methods
 <hr>
 
 ### (New Methods)
 
-* ![](images/meth.gif) **_Screen.Json.Parse(tcJsonStr AS MEMO):** Parse the string text as JSON (Visual Foxpro Empty class object representation)
+* ![](docs/meth.gif) **_Screen.Json.Parse(tcJsonStr AS MEMO):** Parse the string text as JSON (Visual Foxpro Empty class object representation)
   * **tcJsonStr:** represents a valid JSON string format (required).
 
-* ![](images/meth.gif) **_Screen.Json.Stringify(tvNewVal As Variant):** Return an indented JSON string corresponding to the specified value.
+* ![](docs/meth.gif) **_Screen.Json.Stringify(tvNewVal As Variant):** Return an indented JSON string corresponding to the specified value.
   * **tvNewVal:** you can pass either an object or a raw JSONString (required).
 
-* ![](images/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
+* ![](docs/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
   * **tcJsonStr:** represents a valid JSON string format (required).
 
-* ![](images/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
+* ![](docs/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
   * **tcJsonFile:** represents any file extension with a valid JSON string format (required).
 
-* ![](images/meth.gif) **_Screen.Json.ArrayToXML(tStrArray AS MEMO):** Serialize a JSON string to a XML representation.
+* ![](docs/meth.gif) **_Screen.Json.ArrayToXML(tStrArray AS MEMO):** Serialize a JSON string to a XML representation.
   * **tStrArray:** represents a valid JSON Array string format.
 
-* ![](images/meth.gif) **_Screen.Json.XMLToJson(tcXML AS MEMO):** Serialize a XML string to a JSON representation.
+* ![](docs/meth.gif) **_Screen.Json.XMLToJson(tcXML AS MEMO):** Serialize a XML string to a JSON representation.
   * **tcXML:** represents a valid XML string format.
 
-* ![](images/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
+* ![](docs/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
   * **vNewProp:** represents any value type.
   
 ### Examples
@@ -194,8 +194,27 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 
 ```
 ### JSONViewer() function
-![String Indentation](docs/sample1.png)  *String Indentation*
-![No Indentation](docs/sample2.png)  *No Indentation*
+```xBase
+ * Serialize XML from JSON Array
+ Text To lcStr NoShow
+  {
+    "array": [
+      1,
+      2,
+      3
+    ],
+    "boolean": false,
+    "color": "gold",
+    "null": null,
+    "number": 123,
+    "object": null,
+    "string": "Hello World"
+  }
+ENDTEXT
+_Screen.Json.JSONViewer(lcStr)
+```
+![](docs/sample1.png)
+![](docs/sample2.png)
 
 ### Release History
 
