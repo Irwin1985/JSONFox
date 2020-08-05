@@ -220,6 +220,14 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 
 * GetPosition() and SetPosition() functions added into StreamReader class.
 
+2020-08-05
+
+* Stringify() function: parsing empty array and empty object.
+
+* JSONToRTF() function: JSON string format to RTF representation.
+
+* JSONViewer() function: open a JSON form viewer.
+
 
 ## License
 

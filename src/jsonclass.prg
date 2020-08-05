@@ -10,7 +10,7 @@ Define Class JSONClass As Session
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "2.0"
+	Version = "2.1"
 
 && ======================================================================== &&
 && Function Init
@@ -30,6 +30,7 @@ Define Class JSONClass As Session
 				.AddClass("JsonStringify")
 				.AddClass("ObjectToJson")
 				.AddClass("JsonDecorator")
+				.AddClass("JsonToRTF")
 
 				.AddProcedure("ArrayToCursor")
 				.AddProcedure("CursorToArray")
@@ -38,6 +39,7 @@ Define Class JSONClass As Session
 				.AddProcedure("JsonStringify")
 				.AddProcedure("ObjectToJson")
 				.AddProcedure("JsonDecorator")
+				.AddProcedure("JsonToRTF")
 				.LoadProcedures()
 			Endwith
 
@@ -48,6 +50,7 @@ Define Class JSONClass As Session
 			=AddProperty(.oHelper, "CursorToArray", Createobject("CursorToArray"))
 			=AddProperty(.oHelper, "JSONStringify", Createobject("JSONStringify", .oHelper.Lexer))
 			=AddProperty(.oHelper, "ObjToJson", Createobject("ObjectToJson"))
+			=AddProperty(.oHelper, "JSONToRTF", Createobject("JSONToRTF", .oHelper.Lexer))
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -96,6 +99,45 @@ Define Class JSONClass As Session
 			This.ShowExceptionError(loEx)
 		Endtry
 		Return loJSONStr
+	Endfunc
+&& ======================================================================== &&
+&& Function JSONToRTF
+&& Return a JSON string with RTF format
+&& ======================================================================== &&
+	Function JSONToRTF As Memo
+		Lparameters tvNewVal As Variant, tnIndent As Boolean
+		This.ResetError()
+		If Vartype(tvNewVal) = "O"
+			tvNewVal = This.oHelper.ObjToJson.Encode(tvNewVal)
+		Endif
+		Local loJSONStr As Memo
+		loJSONStr = ""
+		Try
+			This.lError = .F.
+			This.LastErrorText = ""
+			With This.oHelper
+				With .Lexer
+					.ScanString(tvNewVal)
+					.NextToken()
+				Endwith
+				.JSONToRTF.lShowErrors = This.lShowErrors
+				loJSONStr = .JSONToRTF.StrToRTF(tnIndent)
+				This.lError = .JSONToRTF.lError
+				This.LastErrorText = .JSONToRTF.cErrorMsg
+			Endwith
+		Catch To loEx
+			This.ShowExceptionError(loEx)
+			This.lError = .T.
+			This.LastErrorText = loEx.Message
+		Endtry
+		Return loJSONStr
+	Endfunc
+&& ======================================================================== &&
+&& Function JSONViewer
+&& ======================================================================== &&
+	Function JSONViewer As Void
+		Lparameters tcJsonStr As Memo
+		Do Form frmJSONViewer With tcJsonStr
 	Endfunc
 *  ====================== Old JSONFox Functions =========================== *
 *  . . . . . . . . . . For backward compatibility . . . . . . . . . . . .
@@ -158,7 +200,7 @@ Define Class JSONClass As Session
 		Catch To loEx
 			This.ShowExceptionError(loEx)
 		Finally
-			Use in (Select("qResult"))
+			Use In (Select("qResult"))
 		Endtry
 		Return lcOut
 	Endfunc
@@ -181,7 +223,7 @@ Define Class JSONClass As Session
 		Catch To loEx
 			This.ShowExceptionError(loEx)
 		Finally
-			Use in (Select("qXML"))
+			Use In (Select("qXML"))
 		Endtry
 		Return lcJsonXML
 	Endfunc
