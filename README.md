@@ -8,7 +8,8 @@
 
 ### Latest Release
 
-**[JSONFox](/README.md)** - 2.0 - Release 2020-07-28 19:50:42
+**[JSONFox]** - 2.1 - Release 2020-08-05 23:12:07
+**[JSONFox]** - 2.0 - Release 2020-07-28 19:50:42
 
 <hr>
 
