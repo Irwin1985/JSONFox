@@ -30,14 +30,6 @@
 
 **JSONFox** supports Cursor Serialization using the CursorToJSON() built-in function.
 
-```xBase
-SELECT miTabla
-lnTotalIndices = ATAGINFO(aInfo)
-FOR I = 1 TO ALEN(aInfo, 1)
-    ?"INDEX ON ", aInfo[i, 3], "TAG ", aInfo[i, 1], aInfo[i, 5]
-ENDFOR
-```
-
 ### Basic Usage
 ```xBase
 * Now you can use JSONFox as a compiled App...
