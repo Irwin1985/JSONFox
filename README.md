@@ -257,9 +257,8 @@ _Screen.Json.JSONViewer(lcStr)
 
 2020-08-07
 
-* Encode() function: now accept 2 parameters (toObjRef As Object [, tcFlags])
+* Encode() function: now accept 2 parameters (toObjRef As Object [, tcFlags]) *Where tcFlags could be a combination of these values:*
 
-*  Where tcFlags could be a combination of these values:
 | Parameter | Description |
 | --------- | ----------- |
 | P | Protected |
