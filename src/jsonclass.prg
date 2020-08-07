@@ -80,10 +80,10 @@ Define Class JSONClass As Session
 && Return a JSON string corresponding to the specified value
 && ======================================================================== &&
 	Function Stringify As Memo
-		Lparameters tvNewVal As Variant
+		Lparameters tvNewVal As Variant, tcFlags As String
 		This.ResetError()
 		If Vartype(tvNewVal) = "O"
-			tvNewVal = This.oHelper.ObjToJson.Encode(tvNewVal)
+			tvNewVal = This.oHelper.ObjToJson.Encode(tvNewVal, tcFlags)
 		Endif
 		Local loJSONStr As Memo
 		loJSONStr = ""
@@ -146,8 +146,8 @@ Define Class JSONClass As Session
 && Function Encode
 && <<Deprecated>> please use Stringify function instead.
 && ======================================================================== &&
-	Function Encode(toObj As Object) As Memo
-		Return This.Stringify(toObj)
+	Function Encode(toObj As Object, tcFlags As String) As Memo
+		Return This.Stringify(toObj, tcFlags)
 	Endfunc
 && ======================================================================== &&
 && Function decode

@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 2.2 - Release 2020-08-07 23:29:18
+
 **[JSONFox]** - 2.1 - Release 2020-08-05 23:12:07
 
 **[JSONFox]** - 2.0 - Release 2020-07-28 19:50:42
@@ -253,6 +255,22 @@ _Screen.Json.JSONViewer(lcStr)
 
 * JSONViewer() function: open a JSON form viewer.
 
+2020-08-07
+
+* Encode() function: now accept 2 parameters (toObjRef As Object [, tcFlags])
+
+*  Where tcFlags could be a combination of these values:
+| Parameter | Description |
+| --------- | ----------- |
+| P | Protected |
+| H | Hidden |
+| G | Public |
+| N | Native |
+| U | User Defined |
+| C | Changed |
+| I | Inherited |
+| B | Base |
+| R | Read Only |
 
 ## License
 
