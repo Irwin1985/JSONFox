@@ -18,7 +18,7 @@ Define Class ArrayToCursor As Session
 		Set Procedure To "JsonUtils" Additive
 		With This
 			.sc    		= toSC
-			.Token 		= toSC.TokenCode
+			.Token 		= toSC.TokenList
 			.nCounter 	= 0
 			.utils 		= Createobject("JsonUtils")
 		Endwith

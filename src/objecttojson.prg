@@ -2,16 +2,18 @@
 && ObjectToJSON Parser
 && ======================================================================== &&
 Define Class ObjectToJSON As Session
+	#define USER_DEFINED_PEMS	"U"
 	Hidden utils
 	lCentury = .F.
 	cDateAct = ""
-	nOrden = 0
+	nOrden   = 0
+	cFlags 	 = ""
 && ======================================================================== &&
 && Function Init
 && ======================================================================== &&
 	Function Init
 		Set Procedure To "JsonUtils" Additive
-		This.utils = Createobject("JsonUtils")
+		This.utils 	  = Createobject("JsonUtils")
 		This.lCentury = Set("Century") == "OFF"
 		This.cDateAct = Set("Date")
 		Set Century On
@@ -22,7 +24,8 @@ Define Class ObjectToJSON As Session
 && Function Encode
 && ======================================================================== &&
 	Function Encode As Memo
-		Lparameters toRefObj As Object
+		Lparameters toRefObj As Object, tcFlags As String
+		This.cFlags = Evl(tcFlags, USER_DEFINED_PEMS)
 		Return This.AnyToJson(toRefObj)
 	Endfunc
 && ======================================================================== &&
@@ -55,7 +58,7 @@ Define Class ObjectToJSON As Session
 			Local array gaMembers(1)
 			
 			lcJSONStr = "{"
-			lnTot = Amembers(gaMembers, tValue, 0, "U")
+			lnTot = Amembers(gaMembers, tValue, 0, This.cFlags)
 			For j=1 to lnTot
 				lcProp = Lower(Alltrim(gaMembers[j]))
 				lcJSONStr = lcJSONStr + Iif(Len(lcJSONStr) > 1, ",", "") + '"' + lcProp + '":'
@@ -64,7 +67,11 @@ Define Class ObjectToJSON As Session
 					=Acopy(tValue. &gaMembers[j], aCopia)
 					lcJSONStr = lcJSONStr + This.AnyToJson(@aCopia)
 				Catch
-					lcJSONStr = lcJSONStr + This.AnyToJson(tValue. &gaMembers[j])
+					try
+						lcJSONStr = lcJSONStr + This.AnyToJson(tValue. &gaMembers[j])
+					catch
+						lcJSONStr = lcJSONStr + "{}"
+					endtry
 				EndTry
 			Endfor
 			lcJSONStr = lcJSONStr + "}"

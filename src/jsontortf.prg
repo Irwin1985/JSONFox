@@ -23,7 +23,7 @@ Define Class JSONToRTF As Custom
 		Set Procedure To "JsonUtils" Additive
 		With This
 			.sc     = toSC
-			.Token  = toSC.TokenCode
+			.Token  = toSC.TokenList
 			.utils  = Createobject("JsonUtils")
 			.lError = .f.
 		Endwith

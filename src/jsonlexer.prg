@@ -15,43 +15,23 @@ Define Class JsonLexer As Custom
 	Hidden cLook
 	Hidden nLineNumber
 	Hidden nColNumber
-	TokenCode 	= .Null.
 	Token 		= .Null.
-	PeekToken   = .Null.
+	FoxLib		= .Null.
+	TokenList   = .Null.
 && ======================================================================== &&
 && Function Init
 && ======================================================================== &&
 	Function Init
-		Set Procedure To "StreamReader" Additive
-		Set Procedure To "EnumType"		Additive
-		This.Reader = Createobject("StreamReader")
-		Local lcEnum As String
-		TEXT to lcEnum noshow
-			EndOfStream = 0,
-			LeftCurleyBracket,
-			RightCurleyBracket,
-			LeftBracket,
-			RightBracket,
-			Colon,
-			Comma,
-			String,
-			Integer,
-			Float,
-			True,
-			False,
-			Null,
-			Key,
-			Value
-		ENDTEXT
-* Create both 'TokenCode' and 'Token' Object
+		Set Procedure To "FoxLibManager" Additive
 		With This
-			.TokenCode  = Enum(lcEnum)
-			.Token = Createobject("Empty")
-			=AddProperty(.Token, "lineNumber", 0)
-			=AddProperty(.Token, "columnNumber", 0)
-			=AddProperty(.Token, "Code", 0)
-			=AddProperty(.Token, "Value", "")
-			.PeekToken = .Token
+			.FoxLib = Createobject("FoxLibManager")
+			.FoxLib.AddBoth("StreamReader")
+			.FoxLib.AddBoth("Token")
+			.FoxLib.AddBoth("TokenList")
+			.FoxLib.LoadProcedures()
+			.Reader 	= Createobject("StreamReader")
+			.TokenList	= Createobject("TokenList")
+			.Token 		= Createobject("Token", .TokenList)
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -82,7 +62,7 @@ Define Class JsonLexer As Custom
 			Case .cLook = 'f' And .Reader.Peek() = 'a'
 				.GetFalse()
 			Case .cLook = EOF_CHAR
-				.Token.Code = .TokenCode.EndOfStream
+				.Token.Code = .TokenList.EndOfStream
 			Otherwise
 				.GetSpecial()
 			Endcase
@@ -128,9 +108,9 @@ Define Class JsonLexer As Custom
 			Enddo
 			.SkipBlanks()
 			If .cLook = ':'
-				.Token.Code = .TokenCode.Key
+				.Token.Code = .TokenList.Key
 			Else
-				.Token.Code = .TokenCode.String
+				.Token.Code = .TokenList.String
 			Endif
 			.Token.Value = Strconv(.Token.Value, 11)
 		Endwith
@@ -142,17 +122,17 @@ Define Class JsonLexer As Custom
 		With This
 			Do Case
 			Case .cLook = '{'
-				.Token.Code = .TokenCode.LeftCurleyBracket
+				.Token.Code = .TokenList.LeftCurleyBracket
 			Case .cLook = '}'
-				.Token.Code = .TokenCode.RightCurleyBracket
+				.Token.Code = .TokenList.RightCurleyBracket
 			Case .cLook = '['
-				.Token.Code = .TokenCode.LeftBracket
+				.Token.Code = .TokenList.LeftBracket
 			Case .cLook = ']'
-				.Token.Code = .TokenCode.RightBracket
+				.Token.Code = .TokenList.RightBracket
 			Case .cLook = ':'
-				.Token.Code = .TokenCode.Colon
+				.Token.Code = .TokenList.Colon
 			Case .cLook = ','
-				.Token.Code = .TokenCode.Comma
+				.Token.Code = .TokenList.Comma
 			Otherwise
 				Error "unrecongnised character '" + Transform(.cLook) + "' ASCII '" + Transform(Asc(.cLook)) + "'"
 			Endcase
@@ -211,7 +191,7 @@ Define Class JsonLexer As Custom
 			Endif
 			lnDecimals = Set("Decimals")
 			Set Decimals To 0
-			.Token.Code = .TokenCode.Integer && Integer assumed
+			.Token.Code = .TokenList.Integer && Integer assumed
 
 			If .cLook != "."
 				Do While Isdigit(.cLook)
@@ -232,7 +212,7 @@ Define Class JsonLexer As Custom
 					.NextChar()
 				Enddo
 				.Token.Value = lnNumber
-				.Token.Code  = This.TokenCode.Float
+				.Token.Code  = This.TokenList.Float
 			Endif
 			.Token.Value = .Token.Value * lnSign
 			Set Decimals To lnDecimals
@@ -247,7 +227,7 @@ Define Class JsonLexer As Custom
 			.Match("r")
 			.Match("u")
 			.Match("e")
-			.Token.Code  = .TokenCode.True
+			.Token.Code  = .TokenList.True
 			.Token.Value = .T.
 		Endwith
 	Endfunc
@@ -261,7 +241,7 @@ Define Class JsonLexer As Custom
 			.Match("l")
 			.Match("s")
 			.Match("e")
-			.Token.Code = .TokenCode.False
+			.Token.Code = .TokenList.False
 			.Token.Value = .F.
 		Endwith
 	Endfunc
@@ -274,7 +254,7 @@ Define Class JsonLexer As Custom
 			.Match("u")
 			.Match("l")
 			.Match("l")
-			.Token.Code = .TokenCode.Null
+			.Token.Code = .TokenList.Null
 			.Token.Value = .Null.
 		Endwith
 	Endfunc
@@ -380,33 +360,33 @@ Define Class JsonLexer As Custom
 		lcTokenStr = ""
 		With This
 			Do Case
-			Case .Token.Code = .TokenCode.LeftCurleyBracket
+			Case .Token.Code = .TokenList.LeftCurleyBracket
 				lcTokenStr = "special: <'{'>"
-			Case .Token.Code = .TokenCode.RightCurleyBracket
+			Case .Token.Code = .TokenList.RightCurleyBracket
 				lcTokenStr = "special: <'}'>"
-			Case .Token.Code = .TokenCode.LeftBracket
+			Case .Token.Code = .TokenList.LeftBracket
 				lcTokenStr = "special: <'['>"
-			Case .Token.Code = .TokenCode.RightBracket
+			Case .Token.Code = .TokenList.RightBracket
 				lcTokenStr = "special: <']'>"
-			Case .Token.Code = .TokenCode.Colon
+			Case .Token.Code = .TokenList.Colon
 				lcTokenStr = "special: <':'>"
-			Case .Token.Code = .TokenCode.Comma
+			Case .Token.Code = .TokenList.Comma
 				lcTokenStr = "special: <','>"
-			Case .Token.Code = .TokenCode.String
+			Case .Token.Code = .TokenList.String
 				lcTokenStr = "string: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenCode.Integer
+			Case .Token.Code = .TokenList.Integer
 				lcTokenStr = "integer: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenCode.Float
+			Case .Token.Code = .TokenList.Float
 				lcTokenStr = "float: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenCode.True
+			Case .Token.Code = .TokenList.True
 				lcTokenStr = "boolean: <'true'>"
-			Case .Token.Code = .TokenCode.False
+			Case .Token.Code = .TokenList.False
 				lcTokenStr = "boolean: <'false'>"
-			Case .Token.Code = .TokenCode.Null
+			Case .Token.Code = .TokenList.Null
 				lcTokenStr = "null: <'null'>"
-			Case .Token.Code = .TokenCode.Key
+			Case .Token.Code = .TokenList.Key
 				lcTokenStr = "key: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenCode.Value
+			Case .Token.Code = .TokenList.Value
 				lcTokenStr = "value: <'" + Transform(.Token.Value) + "'>"
 			Endcase
 		Endwith
@@ -417,39 +397,39 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Function TokenToStr As String
 		Lparameters tnToken As Integer
-		Local loTokenCode As Object, lcTokenStr As String
-		loTokenCode = This.TokenCode
+		Local loTokenList As Object, lcTokenStr As String
+		loTokenList = This.TokenList
 		lcTokenStr  = ""
 		Do Case
-		Case tnToken = loTokenCode.EndOfStream
+		Case tnToken = loTokenList.EndOfStream
 			lcTokenStr = "EOF"
-		Case tnToken = loTokenCode.LeftCurleyBracket
+		Case tnToken = loTokenList.LeftCurleyBracket
 			lcTokenStr = "{"
-		Case tnToken = loTokenCode.RightCurleyBracket
+		Case tnToken = loTokenList.RightCurleyBracket
 			lcTokenStr = "}"
-		Case tnToken = loTokenCode.LeftBracket
+		Case tnToken = loTokenList.LeftBracket
 			lcTokenStr = "["
-		Case tnToken = loTokenCode.RightBracket
+		Case tnToken = loTokenList.RightBracket
 			lcTokenStr = "]"
-		Case tnToken = loTokenCode.Colon
+		Case tnToken = loTokenList.Colon
 			lcTokenStr = ":"
-		Case tnToken = loTokenCode.Comma
+		Case tnToken = loTokenList.Comma
 			lcTokenStr = ","
-		Case tnToken = loTokenCode.String
+		Case tnToken = loTokenList.String
 			lcTokenStr = "STRING"
-		Case tnToken = loTokenCode.Integer
+		Case tnToken = loTokenList.Integer
 			lcTokenStr = "INTEGER"
-		Case tnToken = loTokenCode.Float
+		Case tnToken = loTokenList.Float
 			lcTokenStr = "FLOAT"
-		Case tnToken = loTokenCode.True
+		Case tnToken = loTokenList.True
 			lcTokenStr = "true"
-		Case tnToken = loTokenCode.False
+		Case tnToken = loTokenList.False
 			lcTokenStr = "false"
-		Case tnToken = loTokenCode.Null
+		Case tnToken = loTokenList.Null
 			lcTokenStr = "null"
-		Case tnToken = loTokenCode.Key
+		Case tnToken = loTokenList.Key
 			lcTokenStr = "KEY"
-		Case tnToken = loTokenCode.Value
+		Case tnToken = loTokenList.Value
 			lcTokenStr = "VALUE"
 		Otherwise
 			lcTokenStr = "UNKNOWN"
@@ -460,60 +440,45 @@ Define Class JsonLexer As Custom
 && Function Peek
 && Return the next token without affecting the current one.
 && ======================================================================== &&
-	Function Peek As Object
+	Function Peek (tnTokenNumber As Integer) As Object
 		With This
-			Local nCurrentPos As Integer, loCurToken As Object, lcCurLook As Character
-* Default PeekToken values
-			With .PeekToken
-				.LineNumber   = 0
-				.ColumnNumber = 0
-				.Code 		  = 0
-				.Value 		  = 0
-			Endwith
+			Set Step On
+			Local nCurrentPos As Integer, loCurToken As Object, lcCurLook As Character, loTokenReturn As Object
+			tnTokenNumber = Evl(tnTokenNumber, 1)
+			loTokenReturn = Createobject("Empty")
+			=AddProperty(loTokenReturn, "aTokens(1)", .Null.)
 * Save current token values
 			nCurrentPos = .Reader.GetPosition()
-			loCurToken  = .Token
-			lcCurLook   = .cLook
-			.NextToken()
+			loCurToken  = .Token.Clone()
+* Save current char
+			lcCurLook 	= .cLook
+* Iterates N tokens
+			For i = 1 To tnTokenNumber
+				Dimension loTokenReturn.aTokens(i)
+				.NextToken()
+				loTokenReturn.aTokens[i] = .Token.Clone()
 * Store the peeked token
-			With .PeekToken
-				Local loToken As Object
-				loToken = This.Token
-				.LineNumber   = loToken.LineNumber
-				.ColumnNumber = loToken.ColumnNumber
-				.Code 		  = loToken.Code
-				.Value 		  = loToken.Value
-				Release loToken
-			Endwith
+			Endfor
 * Restore the current position
 			.Reader.SetPosition(nCurrentPos)
 * Restore the current token
-			With .Token
-				.LineNumber   = loCurToken.LineNumber
-				.ColumnNumber = loCurToken.ColumnNumber
-				.Code 		  = loCurToken.Code
-				.Value 		  = loCurToken.Value
-			Endwith
+			.Token.Update(loCurToken)
 			.cLook = lcCurLook
-			Return .PeekToken
+			Return loTokenReturn
 		Endwith
 	Endfunc
 && ======================================================================== &&
 && Function Destroy
 && ======================================================================== &&
 	Function Destroy
-		This.Reader = .Null.
-		Try
-			Clear Class StreamReader
-		Catch
-		Endtry
-		Try
-			Release Procedure StreamReader
-		Catch
-		Endtry
-		Try
-			Release Procedure EnumType
-		Catch
-		Endtry
+		With This
+			.Reader 	= .Null.
+			.TokenList 	= .Null.
+			.Token 		= .Null.
+			Try
+				.FoxLib.ReleaseAll()
+			Catch
+			Endtry
+		Endwith
 	Endfunc
 Enddefine
