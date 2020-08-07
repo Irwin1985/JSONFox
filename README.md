@@ -30,7 +30,7 @@
 
 **JSONFox** Parser recognize **DATE** and **DATETIME** types.
 
-**JSONFox** supports Cursor Serialization using the CursorToJSON() built-in function.
+**JSONFox** supports Cursor Serialization using the `CursorToJSON()` built-in function.
 
 ### Basic Usage
 ```xBase
@@ -51,7 +51,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ?_Screen.Json.CursorToJson('cGames')
 ```
 ## Function Signature
-_Screen.Json.CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As Integer]]**)
+`_Screen.Json.CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As Integer]]**)`
 
 * ![](docs/prop.gif) **tcCursor:** the name of your cursor.
 * ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
@@ -225,7 +225,7 @@ _Screen.Json.JSONViewer(lcStr)
 
 2020-07-30
 
-* JsonToCursor() function.
+* `JsonToCursor()` function.
 
 * Negative Numbers recognition.
 
@@ -235,7 +235,7 @@ _Screen.Json.JSONViewer(lcStr)
 
 * Datetime parsing supported formats: 
 
-   * JavaScript built-in JSON object
+   * JavaScript built-in `JSON` object
  
    * ISO 8601
  
@@ -245,19 +245,19 @@ _Screen.Json.JSONViewer(lcStr)
 
 * Empty object parsing.
 
-* GetPosition() and SetPosition() functions added into StreamReader class.
+* `GetPosition()` and `SetPosition()` functions added into StreamReader class.
 
 2020-08-05
 
-* Stringify() function: parsing empty array and empty object.
+* `Stringify()` function: parsing empty array and empty object.
 
-* JSONToRTF() function: JSON string format to RTF representation.
+* `JSONToRTF()` function: JSON string format to RTF representation.
 
-* JSONViewer() function: open a JSON form viewer.
+* `JSONViewer()` function: open a JSON form viewer.
 
 2020-08-07
 
-* Encode() function: now accept 2 parameters (toObjRef As Object [, tcFlags]) *Where tcFlags could be a combination of these values:*
+* `Encode()` function: now accept 2 parameters (toObjRef As Object **[, tcFlags]**) *Where tcFlags could be a combination of these values:*
 
 | Parameter | Description |
 | --------- | ----------- |
@@ -273,4 +273,4 @@ _Screen.Json.JSONViewer(lcStr)
 
 ## License
 
-JSONFox is released under the MIT Licence.
+`JSONFox` is released under the MIT Licence.
