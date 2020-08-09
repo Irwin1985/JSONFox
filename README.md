@@ -271,6 +271,10 @@ _Screen.Json.JSONViewer(lcStr)
 | B | Base |
 | R | Read Only |
 
+2020-08-09
+
+* LL(k) implemented using the FoxQueue class.
+
 ## License
 
 `JSONFox` is released under the MIT Licence.
