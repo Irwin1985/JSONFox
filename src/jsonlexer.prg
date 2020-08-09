@@ -18,6 +18,7 @@ Define Class JsonLexer As Custom
 	Token 		= .Null.
 	FoxLib		= .Null.
 	TokenList   = .Null.
+	Queue		= .Null.
 && ======================================================================== &&
 && Function Init
 && ======================================================================== &&
@@ -28,10 +29,12 @@ Define Class JsonLexer As Custom
 			.FoxLib.AddBoth("StreamReader")
 			.FoxLib.AddBoth("Token")
 			.FoxLib.AddBoth("TokenList")
+			.FoxLib.AddBoth("FoxQueue")
 			.FoxLib.LoadProcedures()
 			.Reader 	= Createobject("StreamReader")
 			.TokenList	= Createobject("TokenList")
 			.Token 		= Createobject("Token", .TokenList)
+			.Queue		= CreateObject("FoxQueue")
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -39,6 +42,10 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Function NextToken As Object
 		With This
+			If .Queue.Count() > 0
+				.Token = .Queue.Dequeue()
+				Return
+			EndIf
 			.SkipBlanks()
 			.Token.LineNumber   = .nLineNumber
 			.Token.ColumnNumber = .nColNumber
@@ -467,6 +474,12 @@ Define Class JsonLexer As Custom
 			Return loTokenReturn
 		Endwith
 	Endfunc
+&& ======================================================================== &&
+&& Function PushBackToken
+&& ======================================================================== &&
+	Function PushBackToken(toToken As Object) As Void
+		This.Queue.Enqueue(toToken)
+	EndFunc
 && ======================================================================== &&
 && Function Destroy
 && ======================================================================== &&
