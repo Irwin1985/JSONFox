@@ -19,6 +19,7 @@ Define Class JsonLexer As Custom
 	FoxLib		= .Null.
 	TokenList   = .Null.
 	Queue		= .Null.
+
 && ======================================================================== &&
 && Function Init
 && ======================================================================== &&
@@ -81,10 +82,11 @@ Define Class JsonLexer As Custom
 	Hidden Function GetString As Void
 		With This
 			.Token.Value = ''
-			.NextChar()
+			.NextChar() && eat '"'
+			llShowMsg = .f.
 			Do While .cLook != EOF_CHAR
 				If .cLook = '\'
-					.NextChar()
+					.NextChar() && eat '\'
 					Do Case
 					Case .cLook = '\'
 						.Token.Value = .Token.Value + "\"
@@ -95,6 +97,7 @@ Define Class JsonLexer As Custom
 					Case .cLook = 't'
 						.Token.Value = .Token.Value + _HORIZONTAL_TAB
 					Case .cLook = '"'
+						llShowMsg = .t.
 						.Token.Value = .Token.Value + _DOUBLE_QUOTE
 					Case .cLook = 'u'
 						.Token.Value = .Token.Value + .GetUnicode()
@@ -105,7 +108,7 @@ Define Class JsonLexer As Custom
 					.NextChar()
 				Else
 					If .cLook = '"'
-						.NextChar()
+						.NextChar() && eat '"'
 						Exit
 					Else
 						.Token.Value = .Token.Value + .cLook
@@ -118,8 +121,7 @@ Define Class JsonLexer As Custom
 				.Token.Code = .TokenList.Key
 			Else
 				.Token.Code = .TokenList.String
-			Endif
-			.Token.Value = Strconv(.Token.Value, 11)
+			EndIf
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -141,7 +143,7 @@ Define Class JsonLexer As Custom
 			Case .cLook = ','
 				.Token.Code = .TokenList.Comma
 			Otherwise
-				Error "unrecongnised character '" + Transform(.cLook) + "' ASCII '" + Transform(Asc(.cLook)) + "'"
+				Error "unrecongnised character '" + Transform(.cLook) + "' ASCII '" + Transform(Asc(.cLook)) + "' line: " + Alltrim(Str(.nLineNumber)) + ", col: " + Alltrim(Str(.nColNumber))
 			Endcase
 			.NextChar()
 		Endwith
@@ -159,21 +161,27 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Hidden Function GetUnicode As Void
 		With This
+			lcHexStr = '\' + .cLook
 			.NextChar()
 			Local lcUnicode As String
 			lcUnicode = "0x"
 			Do While .IsHex(.cLook) Or Isdigit(.cLook)
-				lcUnicode = lcUnicode + .cLook
-				.NextChar()
 				If Len(lcUnicode) = 6
 					Exit
 				Endif
+				lcUnicode = lcUnicode + .cLook
+				lcHexStr = lcHexStr + .cLook
+				.NextChar()
 			Enddo
-		Endwith
+		EndWith
 		Try
 			lcUnicode = Chr(&lcUnicode)
 		Catch
-			Error "parse error: invalid hex format '" + Transform(lcUnicode) + "'"
+			Try
+				lcUnicode = Strconv(lcHexStr, 16)
+			Catch
+				Error "parse error: invalid hex format '" + Transform(lcUnicode) + "'"
+			EndTry
 		Endtry
 		Return lcUnicode
 	Endfunc
@@ -290,9 +298,9 @@ Define Class JsonLexer As Custom
 && Function ScanString
 && ======================================================================== &&
 	Function ScanString As Void
-		Lparameters tcString As String
+		Lparameters tcString As String, tlDontConvert As Boolean
 		With This
-			.Reader.SetString(tcString)
+			.Reader.SetString(Iif(!tlDontConvert, Strconv(tcString, 11), tcString))
 			.StartScanner()
 		Endwith
 	Endfunc
@@ -300,10 +308,10 @@ Define Class JsonLexer As Custom
 && Function ScanFile
 && ======================================================================== &&
 	Function ScanFile As Void
-		Lparameters tcFile As String
+		Lparameters tcFile As String, tlDontConvert As Boolean
 		If File(tcFile)
 			With This
-				.Reader.SetString(Filetostr(tcFile))
+				.Reader.SetString(Iif(!tlDontConvert, Strconv(Filetostr(tcFile), 11), Filetostr(tcFile)))
 				.StartScanner()
 			Endwith
 		Endif
@@ -353,9 +361,10 @@ Define Class JsonLexer As Custom
 			If Inlist(.cLook, CR, LF)
 				If .cLook = CR
 					.ReadCharFromInput()
-					If .cLook != LF
-						Error "Expecting line feed character"
-					Endif
+* the LF character is not mandatory.
+*!*						If .cLook != LF
+*!*							Error "Expecting line feed character"
+*!*						Endif
 				Endif
 			Endif
 		Endwith

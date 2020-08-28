@@ -10,7 +10,7 @@ Define Class JSONClass As Session
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "2.1"
+	Version = "2.2"
 
 && ======================================================================== &&
 && Function Init
@@ -65,7 +65,7 @@ Define Class JSONClass As Session
 			This.ResetError()
 			With This.oHelper
 				With .Lexer
-					.ScanString(tcJsonStr)
+					.ScanString(tcJsonStr, .F.)
 					.NextToken()
 				Endwith
 				loJSONObj = .Parser.Object()
@@ -90,9 +90,9 @@ Define Class JSONClass As Session
 		Try
 			With This.oHelper
 				With .Lexer
-					.ScanString(tvNewVal)
+					.ScanString(tvNewVal, .T.)
 					.NextToken()
-				Endwith
+				EndWith
 				loJSONStr = .JSONStringify.Stringify()
 			Endwith
 		Catch To loEx
@@ -160,7 +160,7 @@ Define Class JSONClass As Session
 			This.ResetError()
 			With This.oHelper
 				With .Lexer
-					.ScanString(tcJsonStr)
+					.ScanString(tcJsonStr, .F.)
 					.NextToken()
 				Endwith
 				loJSONObj = .Parser.Object()
@@ -187,7 +187,7 @@ Define Class JSONClass As Session
 			This.ResetError()
 			With This.oHelper
 				With .Lexer
-					.ScanString(tcArray)
+					.ScanString(tcArray, .F.)
 					.NextToken()
 				Endwith
 				With .ArrayToCursor
@@ -268,7 +268,7 @@ Define Class JSONClass As Session
 				tnDataSession = Evl(tnDataSession, Set("Datasession"))
 				With This.oHelper
 					With .Lexer
-						.ScanString(tcJsonStr)
+						.ScanString(tcJsonStr, .T.)
 						.NextToken()
 					Endwith
 					With .ArrayToCursor

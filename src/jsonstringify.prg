@@ -84,7 +84,8 @@ Define Class JSONStringify As Custom
 		With This
 			Do Case
 			Case .sc.Token.Code = .Token.String
-				vNewVal = '"' + Alltrim(.sc.Token.Value) + '"'
+*!*					vNewVal = '"' + Alltrim(.sc.Token.Value) + '"'
+				vNewVal = This.Utils.GetValue(Alltrim(.sc.Token.Value), "C")
 				.sc.NextToken()
 			Case .sc.Token.Code = .Token.Integer
 				vNewVal = Alltrim(Str(.sc.Token.Value))
