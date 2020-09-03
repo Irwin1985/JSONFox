@@ -10,7 +10,7 @@ Define Class JSONClass As Session
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "2.2"
+	Version = "2.3"
 
 && ======================================================================== &&
 && Function Init
@@ -147,7 +147,11 @@ Define Class JSONClass As Session
 && <<Deprecated>> please use Stringify function instead.
 && ======================================================================== &&
 	Function Encode(toObj As Object, tcFlags As String) As Memo
-		Return This.Stringify(toObj, tcFlags)
+		If Type("toObj") = 'O'
+			Return This.Stringify(toObj, tcFlags)
+		Else
+			Return This.oHelper.ObjToJson.AnyToJSON(toObj)
+		EndIf
 	Endfunc
 && ======================================================================== &&
 && Function decode
