@@ -8,6 +8,10 @@
 
 ### Latest Release
 
+**[JSONFox]** - 2.4 - Release 2020-09-11 13:29:08
+
+**[JSONFox]** - 2.3 - Release 2020-08-09 20:14:01
+
 **[JSONFox]** - 2.2 - Release 2020-08-07 23:29:18
 
 **[JSONFox]** - 2.1 - Release 2020-08-05 23:12:07
@@ -274,6 +278,13 @@ _Screen.Json.JSONViewer(lcStr)
 2020-08-09
 
 * LL(k) implemented using the FoxQueue class.
+
+2020-09-11
+
+* `JSONToCursor()` function: now accept another parameter called `tlJustArray`. You must pass it as .T. if you want just the Array representation of your cursor.*
+
+* `Stringify()` function: now can receive either strings objects or array representation.*
+
 
 ## License
 

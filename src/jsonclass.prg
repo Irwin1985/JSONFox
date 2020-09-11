@@ -10,7 +10,7 @@ Define Class JSONClass As Session
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "2.3"
+	Version = "2.4"
 
 && ======================================================================== &&
 && Function Init
@@ -235,7 +235,7 @@ Define Class JSONClass As Session
 && Function CursorToJSON
 && ======================================================================== &&
 	Function CursorToJSON As Memo
-		Lparameters tcCursor As String, tbCurrentRow As Boolean, tnDataSession As Integer
+		Lparameters tcCursor As String, tbCurrentRow As Boolean, tnDataSession As Integer, tlJustArray As Boolean
 		Local lcJsonXML As Memo
 		lcJsonXML = ''
 		Try
@@ -259,8 +259,9 @@ Define Class JSONClass As Session
 			This.ShowExceptionError(loEx)
 		Finally
 			Use In (Select("qResult"))
-		Endtry
-		Return '{"' + Lower(Alltrim(tcCursor)) + '":' + lcJsonXML + '}'
+		EndTry
+		lcOutput = Iif(tlJustArray, lcJsonXML, '{"' + Lower(Alltrim(tcCursor)) + '":' + lcJsonXML + '}')
+		Return lcOutput
 	Endfunc
 && ======================================================================== &&
 && Function JSONToCursor

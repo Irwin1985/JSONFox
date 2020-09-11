@@ -27,7 +27,7 @@ Define Class JSONStringify As Custom
 && Function Stringify
 && ======================================================================== &&
 	Function Stringify As Memo
-		Return This.Object(0)
+		Return This.Value(0)
 	Endfunc
 && ======================================================================== &&
 && Function Object
@@ -84,7 +84,6 @@ Define Class JSONStringify As Custom
 		With This
 			Do Case
 			Case .sc.Token.Code = .Token.String
-*!*					vNewVal = '"' + Alltrim(.sc.Token.Value) + '"'
 				vNewVal = This.Utils.GetValue(Alltrim(.sc.Token.Value), "C")
 				.sc.NextToken()
 			Case .sc.Token.Code = .Token.Integer

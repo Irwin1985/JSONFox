@@ -10,7 +10,7 @@ Define Class CursorToArray As Session
 && ======================================================================== &&
 	Function Init
 		Set Procedure To "JsonUtils" Additive
-		this.utils = Createobject("JsonUtils")
+		This.utils = Createobject("JsonUtils")
 	Endfunc
 && ======================================================================== &&
 && Function CursorToArray
@@ -29,13 +29,19 @@ Define Class CursorToArray As Session
 		Set Date Ansi
 		With This
 			nCounter = 0
-			lnTotal  = Reccount(.curName)
 			Select (.curName)
+			lnTotField  = Afields(aColumns, .curName)
+			lnTotal  	= Reccount(.curName)
+			lnRecNo = Recn(.curName)
+			Count For !Deleted() To lnTotal
+			Go lnRecNo
 			Scan
 				nCounter   = nCounter + 1
 				lcOutput   = lcOutput + "{"
-				lnTotField = Afields(aColumns, .curName)
 				For i = 1 To lnTotField
+					If i > 1
+						lcOutput = lcOutput + ','
+					Endif
 					lcOutput = lcOutput + '"' + Lower(aColumns[i, 1]) + '"'
 					lcOutput = lcOutput + ':'
 					lcValue  = Evaluate(.curName + "." + aColumns[i, 1])
@@ -59,14 +65,9 @@ Define Class CursorToArray As Session
 					Case aColumns[i, 2] = "L"
 						lcOutput = lcOutput + Iif(lcValue, "true", "false")
 					Endcase
-					If lnTotField > 1 And Between(i, 1, lnTotField - 1)
-						lcOutput = lcOutput + ','
-					Endif
-				Endfor
-				lcOutput = lcOutput + "}"
-				If lnTotal > 1 And Between(nCounter, 1, lnTotal - 1)
-					lcOutput = lcOutput + ","
-				Endif
+				EndFor
+				lcOutput = lcOutput + '}' + Iif(nCounter < lnTotal, ',', '')
+				Select (.curName)
 			Endscan
 		Endwith
 		lcOutput = lcOutput + "]"
@@ -78,7 +79,7 @@ Define Class CursorToArray As Session
 		Endif
 		Set Date &lcDateAct
 		Return lcOutput
-	EndFunc
+	Endfunc
 && ======================================================================== &&
 && Function Destroy
 && ======================================================================== &&
