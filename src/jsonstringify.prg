@@ -90,7 +90,7 @@ Define Class JSONStringify As Custom
 				vNewVal = Alltrim(Str(.sc.Token.Value))
 				.sc.NextToken()
 			Case .sc.Token.Code = .Token.Float
-				vNewVal = Transform(.sc.Token.Value)
+				vNewVal = Strtran(Transform(.sc.Token.Value), ',', '.')
 				.sc.NextToken()
 			Case .sc.Token.Code = .Token.True
 				vNewVal = "true"

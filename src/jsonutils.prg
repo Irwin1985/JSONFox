@@ -36,7 +36,7 @@ Define Class JSONUtils As Custom
 			Endcase
 			tcValue = Alltrim(tcValue)
 		Case tcType $ "YFIN"
-			tcValue = Transform(tcValue)
+			tcValue = Strtran(Transform(tcValue), ',', '.')
 		Case tcType = "L"
 			tcValue = Iif(tcValue, "true", "false")
 		Endcase
