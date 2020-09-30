@@ -1,7 +1,7 @@
 && ======================================================================== &&
-&& Class Token
+&& Class JSONClassToken
 && ======================================================================== &&
-Define Class Token As Custom
+Define Class JSONClassToken As Custom
 * Hidden properties (for debuging purposes)
 	Hidden BaseClass, ;
 		class, ;

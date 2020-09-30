@@ -5,9 +5,24 @@
 &&  summary:        Libraries collection for JSON Parsing
 &&  performance: 	big-o(n)
 && ******************************************************************************************* &&
-Set Path To "src" Additive
-Set Procedure To "JsonClass" Additive
-Set Procedure To "JsonDecorator" Additive
+
+
+Set procedure to "src\ArrayToArray" Additive
+Set procedure to "src\ArrayToCursor" Additive
+Set procedure to "src\CursorToArray" Additive
+Set procedure to "src\FoxQueue" Additive
+Set procedure to "src\JSONClass" Additive
+Set procedure to "src\JSONClassToken" Additive
+Set procedure to "src\JSONDecorator" Additive
+Set procedure to "src\JsonLexer" Additive
+Set procedure to "src\JsonParser" Additive
+Set procedure to "src\JSONStringify" Additive
+Set procedure to "src\JSONToRTF" Additive
+Set procedure to "src\JSONUtils" Additive
+Set procedure to "src\ObjectToJSON" Additive
+Set procedure to "src\StreamReader" Additive
+Set procedure to "src\TokenList" Additive
+
 If Type("_Screen.Json") = "U"
 	=AddProperty(_Screen, "Json", .Null.)
 Endif

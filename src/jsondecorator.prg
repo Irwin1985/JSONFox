@@ -1,7 +1,7 @@
 && ======================================================================== &&
-&& Class JSON
+&& Class JSONDecorator
 && ======================================================================== &&
-Define Class JSON As Custom
+Define Class JSONDecorator As Custom
 	Hidden 					;
 		oRef,				;
 		Classlibrary, 		;
