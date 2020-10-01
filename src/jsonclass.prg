@@ -9,7 +9,7 @@ Define Class JSONClass As Session
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "2.6"
+	Version = "2.7"
 
 && ======================================================================== &&
 && Function Init
