@@ -3,14 +3,13 @@
 && ======================================================================== &&
 Define Class JSONClass As Session
 	Hidden oHelper
-*!*		Hidden clManager
 	DataSession = 1
 	LastErrorText = ""
 	lError = .F.
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "2.5"
+	Version = "2.6"
 
 && ======================================================================== &&
 && Function Init
@@ -20,29 +19,6 @@ Define Class JSONClass As Session
 			.ResetError()
 			.lTablePrompt = Set("TablePrompt") == "ON"
 			Set TablePrompt Off
-*!*				Set Procedure To "ClassLibManager" 	Additive
-*!*				.clManager = Createobject("ClassLibManager")
-*!*				With .clManager
-*!*					.AddClass("ArrayToCursor")
-*!*					.AddClass("CursorToArray")
-*!*					.AddClass("JsonLexer")
-*!*					.AddClass("JsonParser")
-*!*					.AddClass("JsonStringify")
-*!*					.AddClass("ObjectToJson")
-*!*					.AddClass("JsonDecorator")
-*!*					.AddClass("JsonToRTF")
-
-*!*					.AddProcedure("ArrayToCursor")
-*!*					.AddProcedure("CursorToArray")
-*!*					.AddProcedure("JsonLexer")
-*!*					.AddProcedure("JsonParser")
-*!*					.AddProcedure("JsonStringify")
-*!*					.AddProcedure("ObjectToJson")
-*!*					.AddProcedure("JsonDecorator")
-*!*					.AddProcedure("JsonToRTF")
-*!*					.LoadProcedures()
-*!*				Endwith
-
 			.oHelper = Createobject("Empty")
 			=AddProperty(.oHelper, "Lexer", Createobject("JsonLexer"))
 			=AddProperty(.oHelper, "Parser", Createobject("JsonParser", .oHelper.Lexer))
@@ -136,8 +112,11 @@ Define Class JSONClass As Session
 && Function JSONViewer
 && ======================================================================== &&
 	Function JSONViewer As Void
-		Lparameters tcJsonStr As Memo
-		Do Form frmJSONViewer With tcJsonStr
+		Lparameters tcJsonStr As Memo, tlStopExecution As Boolean
+		Do Form frmJSONViewer With tcJsonStr, tlStopExecution
+		If tlStopExecution
+			Read events
+		EndIf
 	Endfunc
 *  ====================== Old JSONFox Functions =========================== *
 *  . . . . . . . . . . For backward compatibility . . . . . . . . . . . .
@@ -340,9 +319,5 @@ Define Class JSONClass As Session
 			This.oHelper = .Null.
 		Catch
 		Endtry
-*!*			Try
-*!*				This.clManager.ReleaseAll()
-*!*			Catch
-*!*			Endtry
 	Endfunc
 Enddefine
