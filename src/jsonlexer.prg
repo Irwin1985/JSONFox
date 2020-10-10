@@ -16,7 +16,6 @@ Define Class JsonLexer As Custom
 	Hidden nLineNumber
 	Hidden nColNumber
 	Token 		= .Null.
-*!*		FoxLib		= .Null.
 	TokenList   = .Null.
 	Queue		= .Null.
 
@@ -24,14 +23,7 @@ Define Class JsonLexer As Custom
 && Function Init
 && ======================================================================== &&
 	Function Init
-*!*			Set Procedure To "FoxLibManager" Additive
 		With This
-*!*				.FoxLib = Createobject("FoxLibManager")
-*!*				.FoxLib.AddBoth("StreamReader")
-*!*				.FoxLib.AddBoth("JSONClassToken")
-*!*				.FoxLib.AddBoth("TokenList")
-*!*				.FoxLib.AddBoth("FoxQueue")
-*!*				.FoxLib.LoadProcedures()
 			.Reader 	= Createobject("StreamReader")
 			.TokenList	= Createobject("TokenList")
 			.Token 		= Createobject("JSONClassToken", .TokenList)
@@ -362,9 +354,6 @@ Define Class JsonLexer As Custom
 				If .cLook = CR
 					.ReadCharFromInput()
 * the LF character is not mandatory.
-*!*						If .cLook != LF
-*!*							Error "Expecting line feed character"
-*!*						Endif
 				Endif
 			Endif
 		Endwith
@@ -497,10 +486,6 @@ Define Class JsonLexer As Custom
 			.Reader 	= .Null.
 			.TokenList 	= .Null.
 			.Token 		= .Null.
-*!*				Try
-*!*					.FoxLib.ReleaseAll()
-*!*				Catch
-*!*				Endtry
 		Endwith
 	Endfunc
 Enddefine

@@ -9,7 +9,7 @@ Define Class JSONClass As Session
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "2.7"
+	Version = "2.8"
 
 && ======================================================================== &&
 && Function Init
@@ -83,17 +83,17 @@ Define Class JSONClass As Session
 	Function JSONToRTF As Memo
 		Lparameters tvNewVal As Variant, tnIndent As Boolean
 		This.ResetError()
-		If Vartype(tvNewVal) = "O"
+		If Vartype(tvNewVal) = 'O'
 			tvNewVal = This.oHelper.ObjToJson.Encode(tvNewVal)
 		Endif
 		Local loJSONStr As Memo
-		loJSONStr = ""
+		loJSONStr = ''
 		Try
 			This.lError = .F.
-			This.LastErrorText = ""
+			This.LastErrorText = ''
 			With This.oHelper
 				With .Lexer
-					.ScanString(tvNewVal)
+					.ScanString(tvNewVal, .T.)
 					.NextToken()
 				Endwith
 				.JSONToRTF.lShowErrors = This.lShowErrors
