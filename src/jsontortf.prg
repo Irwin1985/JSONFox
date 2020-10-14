@@ -1,3 +1,4 @@
+#include "JSONFox.h"
 && ======================================================================== &&
 && JSONToRTF
 && EBNF		object 	= '{' format kvp | {',' format kvp} '}'
@@ -9,7 +10,6 @@
 Define Class JSONToRTF As Custom
 	#Define CRLF Chr(13) + Chr(10) + "\par"
 	Hidden sc
-	Hidden Token
 	Hidden utils
 	lIndent = .t.
 	lShowErrors = .T.
@@ -23,7 +23,6 @@ Define Class JSONToRTF As Custom
 		Set Procedure To "JsonUtils" Additive
 		With This
 			.sc     = toSC
-			.Token  = toSC.TokenList
 			.utils  = Createobject("JsonUtils")
 			.lError = .f.
 		Endwith
@@ -49,13 +48,13 @@ Define Class JSONToRTF As Custom
 	Hidden Function Object As VOID
 		Lparameters tnSpace As Integer
 		With This
-			.utils.Match(.sc, .Token.LeftCurleyBracket)
-			If .sc.Token.Code != .Token.RightCurleyBracket
+			.utils.Match(.sc, T_LEFTCURLEYBRACKET)
+			If .sc.Token.Code != T_RIGHTCURLEYBRACKET
 				Local nSpaceBlock, lcJSON As String
 				nSpaceBlock = tnSpace + 1
 				lcJSON = "\{" + Iif(This.lIndent, CRLF, "") + .JSFormat(nSpaceBlock)
 				lcJSON = lcJSON + .kvp(nSpaceBlock)
-				Do While .sc.Token.Code = .Token.Comma
+				Do While .sc.Token.Code = T_COMMA
 					.sc.NextToken()
 					lcJSON = lcJSON + "," + Iif(This.lIndent, CRLF, "") + .JSFormat(nSpaceBlock)
 					lcJSON = lcJSON + .kvp(nSpaceBlock)
@@ -64,7 +63,7 @@ Define Class JSONToRTF As Custom
 			Else
 				lcJSON = "\{\}"
 			EndIf
-			.utils.Match(.sc, .Token.RightCurleyBracket)
+			.utils.Match(.sc, T_RIGHTCURLEYBRACKET)
 		Endwith
 		Return lcJSON
 	Endfunc
@@ -78,7 +77,7 @@ Define Class JSONToRTF As Custom
 			Local lcProp As String
 			lcProp = .sc.Token.Value
 			.sc.NextToken()
-			.utils.Match(.sc, .Token.Colon)
+			.utils.Match(.sc, T_COLON)
 
 			Return '\cf2 "' + lcProp + '"\cf1: ' + .Value(tnSpaceIdent)
 		Endwith
@@ -92,26 +91,26 @@ Define Class JSONToRTF As Custom
 		vNewVal = ""
 		With This
 			Do Case
-			Case .sc.Token.Code = .Token.String
+			Case .sc.Token.Code = T_STRING
 				vNewVal = '\cf5 "' + Alltrim(.sc.Token.Value) + '"\cf1'
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.Integer
+			Case .sc.Token.Code = T_INTEGER
 				vNewVal = "\cf3 " + Alltrim(Str(.sc.Token.Value)) + "\cf1"
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.Float
+			Case .sc.Token.Code = T_FLOAT
 				vNewVal = "\cf3 " + Transform(.sc.Token.Value) + "\cf1"
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.True
+			Case .sc.Token.Code = T_TRUE
 				vNewVal = "\cf4 true\cf1"
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.False
+			Case .sc.Token.Code = T_FALSE
 				vNewVal = "\cf4 false\cf1"
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.LeftCurleyBracket
+			Case .sc.Token.Code = T_LEFTCURLEYBRACKET
 				vNewVal = .Object(tnSpaceBlock)
-			Case .sc.Token.Code = .Token.LeftBracket
+			Case .sc.Token.Code = T_LEFTBRACKET
 				vNewVal = .Array(tnSpaceBlock)
-			Case .sc.Token.Code = .Token.Null
+			Case .sc.Token.Code = T_NULL
 				vNewVal = "null"
 				.sc.NextToken()
 			Otherwise
@@ -134,13 +133,13 @@ Define Class JSONToRTF As Custom
 		Local lcArrayStr As String
 		lcArrayStr = ""
 		With This
-			.utils.Match(.sc, .Token.LeftBracket)
-			If .sc.Token.Code != .Token.RightBracket
+			.utils.Match(.sc, T_LEFTBRACKET)
+			If .sc.Token.Code != T_RIGHTBRACKET
 				Local lnBlock As Integer
 				lnBlock = tnIdentation + 1
 				lcArrayStr = "[" + Iif(This.lIndent, CRLF, "") + .JSFormat(lnBlock)
 				lcArrayStr = lcArrayStr + .Value(lnBlock)
-				Do While .sc.Token.Code = .Token.Comma
+				Do While .sc.Token.Code = T_COMMA
 					.sc.NextToken()
 					lcArrayStr = lcArrayStr + "," + Iif(This.lIndent, CRLF, "") + .JSFormat(lnBlock)
 					lcArrayStr = lcArrayStr + .Value(lnBlock)
@@ -149,7 +148,7 @@ Define Class JSONToRTF As Custom
 			Else
 				lcArrayStr = "[]"
 			EndIf
-			.utils.Match(.sc, .Token.RightBracket)
+			.utils.Match(.sc, T_RIGHTBRACKET)
 		Endwith
 		Return lcArrayStr
 	Endfunc
@@ -166,10 +165,6 @@ Define Class JSONToRTF As Custom
 	Function Destroy
 		Try
 			This.sc = .Null.
-		Catch
-		Endtry
-		Try
-			This.Token = .Null.
 		Catch
 		Endtry
 		Try

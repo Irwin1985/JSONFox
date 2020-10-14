@@ -1,3 +1,4 @@
+#include "JSONFox.h"
 && ======================================================================== &&
 && Stringify
 && EBNF		object 	= '{' format kvp | {',' format kvp} '}'
@@ -9,7 +10,6 @@
 Define Class JSONStringify As Custom
 	#Define CRLF Chr(13) + Chr(10)
 	Hidden sc
-	Hidden Token
 	Hidden utils
 && ======================================================================== &&
 && Function Init
@@ -19,7 +19,6 @@ Define Class JSONStringify As Custom
 		Set Procedure To "JsonUtils" Additive
 		With This
 			.sc    = toSC
-			.Token = toSC.TokenList
 			.utils = Createobject("JsonUtils")
 		Endwith
 	Endfunc
@@ -40,22 +39,22 @@ Define Class JSONStringify As Custom
 	Hidden Function Object As VOID
 		Lparameters tnSpace As Integer
 		With This
-			.utils.Match(.sc, .Token.LeftCurleyBracket)
-			If .sc.Token.Code != .Token.RightCurleyBracket
+			.utils.Match(.sc, T_LEFTCURLEYBRACKET)
+			If .sc.Token.Code != T_RIGHTCURLEYBRACKET
 				Local nSpaceBlock, lcJSON As String
 				nSpaceBlock = tnSpace + 1
-				lcJSON = "{" + CRLF + .JSFormat(nSpaceBlock)
+				lcJSON = '{' + CRLF + .JSFormat(nSpaceBlock)
 				lcJSON = lcJSON + .kvp(nSpaceBlock)
-				Do While .sc.Token.Code = .Token.Comma
+				Do While .sc.Token.Code = T_COMMA
 					.sc.NextToken()
-					lcJSON = lcJSON + "," + CRLF + .JSFormat(nSpaceBlock)
+					lcJSON = lcJSON + ',' + CRLF + .JSFormat(nSpaceBlock)
 					lcJSON = lcJSON + .kvp(nSpaceBlock)
 				EndDo
-				lcJSON = lcJSON + CRLF + .JSFormat(tnSpace) + "}"
+				lcJSON = lcJSON + CRLF + .JSFormat(tnSpace) + '}'
 			Else
-				lcJSON = "{}"
+				lcJSON = '{}'
 			Endif
-			.utils.Match(.sc, .Token.RightCurleyBracket)
+			.utils.Match(.sc, T_RIGHTCURLEYBRACKET)
 		Endwith
 		Return lcJSON
 	Endfunc
@@ -69,7 +68,7 @@ Define Class JSONStringify As Custom
 			Local lcProp As String
 			lcProp = .sc.Token.Value
 			.sc.NextToken()
-			.utils.Match(.sc, .Token.Colon)
+			.utils.Match(.sc, T_COLON)
 
 			Return '"' + lcProp + '": ' + .Value(tnSpaceIdent)
 		Endwith
@@ -80,30 +79,30 @@ Define Class JSONStringify As Custom
 && ======================================================================== &&
 	Hidden Function Value As Variant
 		Lparameters tnSpaceBlock As Integer
-		vNewVal = ""
+		vNewVal = ''
 		With This
 			Do Case
-			Case .sc.Token.Code = .Token.String
-				vNewVal = This.Utils.GetValue(Alltrim(.sc.Token.Value), "C")
+			Case .sc.Token.Code = T_STRING
+				vNewVal = This.Utils.GetValue(Alltrim(.sc.Token.Value), 'C')
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.Integer
+			Case .sc.Token.Code = T_INTEGER
 				vNewVal = Alltrim(Str(.sc.Token.Value))
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.Float
+			Case .sc.Token.Code = T_FLOAT
 				vNewVal = Strtran(Transform(.sc.Token.Value), ',', '.')
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.True
-				vNewVal = "true"
+			Case .sc.Token.Code = T_TRUE
+				vNewVal = 'true'
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.False
-				vNewVal = "false"
+			Case .sc.Token.Code = T_FALSE
+				vNewVal = 'false'
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.LeftCurleyBracket
+			Case .sc.Token.Code = T_LEFTCURLEYBRACKET
 				vNewVal = .Object(tnSpaceBlock)
-			Case .sc.Token.Code = .Token.LeftBracket
+			Case .sc.Token.Code = T_LEFTBRACKET
 				vNewVal = .Array(tnSpaceBlock)
-			Case .sc.Token.Code = .Token.Null
-				vNewVal = "null"
+			Case .sc.Token.Code = T_NULL
+				vNewVal = 'null'
 				.sc.NextToken()
 			Otherwise
 				lcMsg = "Parse error on line " + Alltrim(Str(.sc.Token.LineNumber)) + ": Unexpected Token '" + .sc.TokenToStr(.sc.Token.Code) + "'"
@@ -119,24 +118,24 @@ Define Class JSONStringify As Custom
 	Hidden Function Array As VOID
 		Lparameters tnIdentation As Integer
 		Local lcArrayStr As String
-		lcArrayStr = ""
+		lcArrayStr = ''
 		With This
-			.utils.Match(.sc, .Token.LeftBracket)
-			If .sc.Token.Code != .Token.RightBracket
+			.utils.Match(.sc, T_LEFTBRACKET)
+			If .sc.Token.Code != T_RIGHTBRACKET
 				Local lnBlock As Integer
 				lnBlock = tnIdentation + 1
-				lcArrayStr = "[" + CRLF + .JSFormat(lnBlock)
+				lcArrayStr = '[' + CRLF + .JSFormat(lnBlock)
 				lcArrayStr = lcArrayStr + .Value(lnBlock)
-				Do While .sc.Token.Code = .Token.Comma
+				Do While .sc.Token.Code = T_COMMA
 					.sc.NextToken()
-					lcArrayStr = lcArrayStr + "," + CRLF + .JSFormat(lnBlock)
+					lcArrayStr = lcArrayStr + ',' + CRLF + .JSFormat(lnBlock)
 					lcArrayStr = lcArrayStr + .Value(lnBlock)
 				EndDo
-				lcArrayStr = lcArrayStr + CRLF + .JSFormat(tnIdentation) + "]"
+				lcArrayStr = lcArrayStr + CRLF + .JSFormat(tnIdentation) + ']'
 			Else
-				lcArrayStr = "[]"
+				lcArrayStr = '[]'
 			Endif
-			.utils.Match(.sc, .Token.RightBracket)			
+			.utils.Match(.sc, T_RIGHTBRACKET)			
 		Endwith
 		Return lcArrayStr
 	Endfunc
@@ -153,10 +152,6 @@ Define Class JSONStringify As Custom
 	Function Destroy
 		Try
 			This.sc = .Null.
-		Catch
-		Endtry
-		Try
-			This.Token = .Null.
 		Catch
 		Endtry
 		Try

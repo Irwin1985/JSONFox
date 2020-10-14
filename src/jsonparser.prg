@@ -1,3 +1,4 @@
+#include "JSONFox.h"
 && ======================================================================== &&
 && JsonParser
 && EBNF Grammar
@@ -8,7 +9,6 @@
 && ======================================================================== &&
 Define Class JsonParser As Custom
 	Hidden sc
-	Hidden Token
 	Hidden utils
 && ======================================================================== &&
 && Function Init
@@ -18,7 +18,6 @@ Define Class JsonParser As Custom
 		Set Procedure To "JsonUtils" Additive
 		With This
 			.sc    = toSC
-			.Token = toSC.TokenList
 			.utils = Createobject("JsonUtils")
 		Endwith
 	Endfunc
@@ -30,15 +29,15 @@ Define Class JsonParser As Custom
 	Function Object As Object
 		obj = Createobject('Empty')
 		With This
-			.utils.Match(.sc, .Token.LeftCurleyBracket)
-			If .sc.Token.Code != .Token.RightCurleyBracket
+			.utils.Match(.sc, T_LEFTCURLEYBRACKET)
+			If .sc.Token.Code != T_RIGHTCURLEYBRACKET
 				.kvp(@obj)
-				Do While .sc.Token.Code = .Token.Comma
+				Do While .sc.Token.Code = T_COMMA
 					.sc.NextToken()
 					.kvp(@obj)
 				EndDo
 			EndIf
-			.utils.Match(.sc, .Token.RightCurleyBracket)
+			.utils.Match(.sc, T_RIGHTCURLEYBRACKET)
 		Endwith
 		Return obj
 	Endfunc
@@ -51,8 +50,8 @@ Define Class JsonParser As Custom
 		With This
 			lcProp = .sc.Token.Value
 			.sc.NextToken()
-			.utils.Match(.sc, .Token.Colon)
-			If .sc.Token.Code != .Token.LeftBracket
+			.utils.Match(.sc, T_COLON)
+			If .sc.Token.Code != T_LEFTBRACKET
 				=AddProperty(toObj, .utils.CheckProp(lcProp), .Value(toObj, lcProp))
 			Else
 				.Value(toObj, lcProp)
@@ -68,7 +67,7 @@ Define Class JsonParser As Custom
 		vNewVal = .Null.
 		With This
 			Do Case
-			Case .sc.Token.Code = .Token.String
+			Case .sc.Token.Code = T_STRING
 				vNewVal = .sc.Token.Value
 				If Occurs('-', vNewVal) >= 2
 					lDate = .utils.FormatDate(vNewVal)
@@ -77,24 +76,24 @@ Define Class JsonParser As Custom
 					Endif
 				Endif
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.Integer
+			Case .sc.Token.Code = T_INTEGER
 				vNewVal = .sc.Token.Value
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.Float
+			Case .sc.Token.Code = T_FLOAT
 				vNewVal = .sc.Token.Value
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.True
+			Case .sc.Token.Code = T_TRUE
 				vNewVal = .sc.Token.Value
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.False
+			Case .sc.Token.Code = T_FALSE
 				vNewVal = .sc.Token.Value
 				.sc.NextToken()
-			Case .sc.Token.Code = .Token.LeftCurleyBracket
+			Case .sc.Token.Code = T_LEFTCURLEYBRACKET
 				vNewVal = .Object()
-			Case .sc.Token.Code = .Token.LeftBracket
+			Case .sc.Token.Code = T_LEFTBRACKET
 				.Array(toObj2, tcProperty)
 				Return
-			Case .sc.Token.Code = .Token.Null
+			Case .sc.Token.Code = T_NULL
 				vNewVal = .sc.Token.Value
 				.sc.NextToken()
 			Otherwise
@@ -110,18 +109,18 @@ Define Class JsonParser As Custom
 	Hidden Function Array As Void
 		Lparameters toObjRef As Object, tcPropertyName As String
 		With This
-			.utils.Match(.sc, .Token.LeftBracket)
+			.utils.Match(.sc, T_LEFTBRACKET)
 			tcPropertyName = .utils.CheckProp(tcPropertyName)
 			=AddProperty(toObjRef, tcPropertyName + "(1)", 0)
-			If .sc.Token.Code != .Token.RightBracket
+			If .sc.Token.Code != T_RIGHTBRACKET
 				nIndex = 0
 				.ArrayPush(toObjRef, tcPropertyName, @nIndex)
-				Do While .sc.Token.Code = .Token.Comma
+				Do While .sc.Token.Code = T_COMMA
 					.sc.NextToken()
 					.ArrayPush(toObjRef, tcPropertyName, @nIndex)
 				Enddo
 			Endif
-			.utils.Match(.sc, .Token.RightBracket)
+			.utils.Match(.sc, T_RIGHTBRACKET)
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -141,10 +140,6 @@ Define Class JsonParser As Custom
 	Function Destroy
 		Try
 			This.sc = .Null.
-		Catch
-		Endtry
-		Try
-			This.Token = .Null.
 		Catch
 		Endtry
 		Try

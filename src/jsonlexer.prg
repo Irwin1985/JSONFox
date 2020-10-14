@@ -1,3 +1,4 @@
+#include "JSONFox.h"
 && ======================================================================== &&
 && Class JsonLexer
 && ======================================================================== &&
@@ -16,7 +17,6 @@ Define Class JsonLexer As Custom
 	Hidden nLineNumber
 	Hidden nColNumber
 	Token 		= .Null.
-	TokenList   = .Null.
 	Queue		= .Null.
 
 && ======================================================================== &&
@@ -25,8 +25,7 @@ Define Class JsonLexer As Custom
 	Function Init
 		With This
 			.Reader 	= Createobject("StreamReader")
-			.TokenList	= Createobject("TokenList")
-			.Token 		= Createobject("JSONClassToken", .TokenList)
+			.Token 		= Createobject("JSONClassToken")
 			.Queue		= CreateObject("FoxQueue")
 		Endwith
 	Endfunc
@@ -62,7 +61,7 @@ Define Class JsonLexer As Custom
 			Case .cLook = 'f' And .Reader.Peek() = 'a'
 				.GetFalse()
 			Case .cLook = EOF_CHAR
-				.Token.Code = .TokenList.EndOfStream
+				.Token.Code = T_ENDOFSTREAM
 			Otherwise
 				.GetSpecial()
 			Endcase
@@ -110,9 +109,9 @@ Define Class JsonLexer As Custom
 			Enddo
 			.SkipBlanks()
 			If .cLook = ':'
-				.Token.Code = .TokenList.Key
+				.Token.Code = T_KEY
 			Else
-				.Token.Code = .TokenList.String
+				.Token.Code = T_STRING
 			EndIf
 		Endwith
 	Endfunc
@@ -123,17 +122,17 @@ Define Class JsonLexer As Custom
 		With This
 			Do Case
 			Case .cLook = '{'
-				.Token.Code = .TokenList.LeftCurleyBracket
+				.Token.Code = T_LEFTCURLEYBRACKET
 			Case .cLook = '}'
-				.Token.Code = .TokenList.RightCurleyBracket
+				.Token.Code = T_RIGHTCURLEYBRACKET
 			Case .cLook = '['
-				.Token.Code = .TokenList.LeftBracket
+				.Token.Code = T_LEFTBRACKET
 			Case .cLook = ']'
-				.Token.Code = .TokenList.RightBracket
+				.Token.Code = T_RIGHTBRACKET
 			Case .cLook = ':'
-				.Token.Code = .TokenList.Colon
+				.Token.Code = T_COLON
 			Case .cLook = ','
-				.Token.Code = .TokenList.Comma
+				.Token.Code = T_COMMA
 			Otherwise
 				Error "unrecongnised character '" + Transform(.cLook) + "' ASCII '" + Transform(Asc(.cLook)) + "' line: " + Alltrim(Str(.nLineNumber)) + ", col: " + Alltrim(Str(.nColNumber))
 			Endcase
@@ -192,15 +191,15 @@ Define Class JsonLexer As Custom
 			Local lnNumber As Integer, lnDecimals As Integer, lnSign As Integer
 			lnNumber = 0
 			lnSign   = 1
-			If This.cLook = "-"
+			If This.cLook = '-'
 				lnSign = -1
-				This.Match("-")
+				This.Match('-')
 			Endif
 			lnDecimals = Set("Decimals")
 			Set Decimals To 0
-			.Token.Code = .TokenList.Integer && Integer assumed
+			.Token.Code = T_INTEGER && Integer assumed
 
-			If .cLook != "."
+			If .cLook != '.'
 				Do While Isdigit(.cLook)
 					lnDigit  = Val(.cLook)
 					lnNumber = lnNumber * 10 + lnDigit
@@ -209,8 +208,8 @@ Define Class JsonLexer As Custom
 			Endif
 			.Token.Value = lnNumber
 
-			If .cLook = "."
-				.NextChar() && consume "."
+			If .cLook = '.'
+				.NextChar() && consume '.'
 				lnScale = 1
 				Do While Isdigit(.cLook)
 					lnScale  = lnScale * 0.1
@@ -219,7 +218,7 @@ Define Class JsonLexer As Custom
 					.NextChar()
 				Enddo
 				.Token.Value = lnNumber
-				.Token.Code  = This.TokenList.Float
+				.Token.Code  = T_FLOAT
 			Endif
 			.Token.Value = .Token.Value * lnSign
 			Set Decimals To lnDecimals
@@ -230,11 +229,11 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Hidden Function GetTrue As Void
 		With This
-			.Match("t")
-			.Match("r")
-			.Match("u")
-			.Match("e")
-			.Token.Code  = .TokenList.True
+			.Match('t')
+			.Match('r')
+			.Match('u')
+			.Match('e')
+			.Token.Code  = T_TRUE
 			.Token.Value = .T.
 		Endwith
 	Endfunc
@@ -243,12 +242,12 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Hidden Function GetFalse As Void
 		With This
-			.Match("f")
-			.Match("a")
-			.Match("l")
-			.Match("s")
-			.Match("e")
-			.Token.Code = .TokenList.False
+			.Match('f')
+			.Match('a')
+			.Match('l')
+			.Match('s')
+			.Match('e')
+			.Token.Code = T_FALSE
 			.Token.Value = .F.
 		Endwith
 	Endfunc
@@ -257,11 +256,11 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Hidden Function GetNull As Void
 		With This
-			.Match("n")
-			.Match("u")
-			.Match("l")
-			.Match("l")
-			.Token.Code = .TokenList.Null
+			.Match('n')
+			.Match('u')
+			.Match('l')
+			.Match('l')
+			.Token.Code = T_NULL
 			.Token.Value = .Null.
 		Endwith
 	Endfunc
@@ -362,36 +361,36 @@ Define Class JsonLexer As Custom
 && ToString
 && ======================================================================== &&
 	Function ToString As String
-		lcTokenStr = ""
+		lcTokenStr = ''
 		With This
 			Do Case
-			Case .Token.Code = .TokenList.LeftCurleyBracket
+			Case .Token.Code = T_LEFTCURLEYBRACKET
 				lcTokenStr = "special: <'{'>"
-			Case .Token.Code = .TokenList.RightCurleyBracket
+			Case .Token.Code = T_RIGHTCURLEYBRACKET
 				lcTokenStr = "special: <'}'>"
-			Case .Token.Code = .TokenList.LeftBracket
+			Case .Token.Code = T_LEFTBRACKET
 				lcTokenStr = "special: <'['>"
-			Case .Token.Code = .TokenList.RightBracket
+			Case .Token.Code = T_RIGHTBRACKET
 				lcTokenStr = "special: <']'>"
-			Case .Token.Code = .TokenList.Colon
+			Case .Token.Code = T_COLON
 				lcTokenStr = "special: <':'>"
-			Case .Token.Code = .TokenList.Comma
+			Case .Token.Code = T_COMMA
 				lcTokenStr = "special: <','>"
-			Case .Token.Code = .TokenList.String
+			Case .Token.Code = T_STRING
 				lcTokenStr = "string: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenList.Integer
+			Case .Token.Code = T_INTEGER
 				lcTokenStr = "integer: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenList.Float
+			Case .Token.Code = T_FLOAT
 				lcTokenStr = "float: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenList.True
+			Case .Token.Code = T_TRUE
 				lcTokenStr = "boolean: <'true'>"
-			Case .Token.Code = .TokenList.False
+			Case .Token.Code = T_FALSE
 				lcTokenStr = "boolean: <'false'>"
-			Case .Token.Code = .TokenList.Null
+			Case .Token.Code = T_NULL
 				lcTokenStr = "null: <'null'>"
-			Case .Token.Code = .TokenList.Key
+			Case .Token.Code = T_KEY
 				lcTokenStr = "key: <'" + Transform(.Token.Value) + "'>"
-			Case .Token.Code = .TokenList.Value
+			Case .Token.Code = T_VALUE
 				lcTokenStr = "value: <'" + Transform(.Token.Value) + "'>"
 			Endcase
 		Endwith
@@ -402,42 +401,41 @@ Define Class JsonLexer As Custom
 && ======================================================================== &&
 	Function TokenToStr As String
 		Lparameters tnToken As Integer
-		Local loTokenList As Object, lcTokenStr As String
-		loTokenList = This.TokenList
-		lcTokenStr  = ""
+		lcTokenStr As String
+		lcTokenStr = ''
 		Do Case
-		Case tnToken = loTokenList.EndOfStream
-			lcTokenStr = "EOF"
-		Case tnToken = loTokenList.LeftCurleyBracket
-			lcTokenStr = "{"
-		Case tnToken = loTokenList.RightCurleyBracket
-			lcTokenStr = "}"
-		Case tnToken = loTokenList.LeftBracket
-			lcTokenStr = "["
-		Case tnToken = loTokenList.RightBracket
-			lcTokenStr = "]"
-		Case tnToken = loTokenList.Colon
-			lcTokenStr = ":"
-		Case tnToken = loTokenList.Comma
-			lcTokenStr = ","
-		Case tnToken = loTokenList.String
-			lcTokenStr = "STRING"
-		Case tnToken = loTokenList.Integer
-			lcTokenStr = "INTEGER"
-		Case tnToken = loTokenList.Float
-			lcTokenStr = "FLOAT"
-		Case tnToken = loTokenList.True
-			lcTokenStr = "true"
-		Case tnToken = loTokenList.False
-			lcTokenStr = "false"
-		Case tnToken = loTokenList.Null
-			lcTokenStr = "null"
-		Case tnToken = loTokenList.Key
-			lcTokenStr = "KEY"
-		Case tnToken = loTokenList.Value
-			lcTokenStr = "VALUE"
+		Case tnToken = T_ENDOFSTREAM
+			lcTokenStr = 'EOF'
+		Case tnToken = T_LEFTCURLEYBRACKET
+			lcTokenStr = '{'
+		Case tnToken = T_RIGHTCURLEYBRACKET
+			lcTokenStr = '}'
+		Case tnToken = T_LEFTBRACKET
+			lcTokenStr = '['
+		Case tnToken = T_RIGHTBRACKET
+			lcTokenStr = ']'
+		Case tnToken = T_COLON
+			lcTokenStr = ':'
+		Case tnToken = T_COMMA
+			lcTokenStr = ','
+		Case tnToken = T_STRING
+			lcTokenStr = 'STRING'
+		Case tnToken = T_INTEGER
+			lcTokenStr = 'INTEGER'
+		Case tnToken = T_FLOAT
+			lcTokenStr = 'FLOAT'
+		Case tnToken = T_TRUE
+			lcTokenStr = 'true'
+		Case tnToken = T_FALSE
+			lcTokenStr = 'false'
+		Case tnToken = T_NULL
+			lcTokenStr = 'null'
+		Case tnToken = T_KEY
+			lcTokenStr = 'KEY'
+		Case tnToken = T_VALUE
+			lcTokenStr = 'VALUE'
 		Otherwise
-			lcTokenStr = "UNKNOWN"
+			lcTokenStr = 'UNKNOWN'
 		Endcase
 		Return lcTokenStr
 	Endfunc
@@ -484,7 +482,6 @@ Define Class JsonLexer As Custom
 	Function Destroy
 		With This
 			.Reader 	= .Null.
-			.TokenList 	= .Null.
 			.Token 		= .Null.
 		Endwith
 	Endfunc

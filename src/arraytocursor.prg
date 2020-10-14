@@ -1,10 +1,10 @@
+#include "JSONFox.h"
 && ======================================================================== &&
 && ArrayToCursor Parser
 && ======================================================================== &&
 Define Class ArrayToCursor As Session
 	#Define STRING_MAX_SIZE		254
 	Hidden sc
-	Hidden Token
 	Hidden utils
 	CurName = ""
 	Dimension aValues(1)
@@ -18,7 +18,6 @@ Define Class ArrayToCursor As Session
 		Set Procedure To "JsonUtils" Additive
 		With This
 			.sc    		= toSC
-			.Token 		= toSC.TokenList
 			.nCounter 	= 0
 			.utils 		= Createobject("JsonUtils")
 		Endwith
@@ -30,18 +29,18 @@ Define Class ArrayToCursor As Session
 	Function Array As Void
 		With This
 			.Reset()
-			.utils.Match(.sc, .Token.LeftBracket)
+			.utils.Match(.sc, T_LEFTBRACKET)
 			.Object()
 			.InsertData()
 
-			Do While .sc.Token.Code = .Token.Comma
+			Do While .sc.Token.Code = T_COMMA
 				.nCounter = 0
 				.sc.NextToken()
 				.Object()
 				.InsertData()
 			Enddo
 
-			.utils.Match(.sc, .Token.RightBracket)
+			.utils.Match(.sc, T_RIGHTBRACKET)
 			.CheckTypeLen()
 			Use In (Select("cDataTypes"))
 		Endwith
@@ -99,15 +98,15 @@ Define Class ArrayToCursor As Session
 && ======================================================================== &&
 	Hidden Function Object As Void
 		With This
-			.utils.Match(.sc, .Token.LeftCurleyBracket)
+			.utils.Match(.sc, T_LEFTCURLEYBRACKET)
 			.kvp()
 
-			Do While .sc.Token.Code = .Token.Comma
+			Do While .sc.Token.Code = T_COMMA
 				.sc.NextToken()
 				.kvp()
 			Enddo
 
-			.utils.Match(.sc, .Token.RightCurleyBracket)
+			.utils.Match(.sc, T_RIGHTCURLEYBRACKET)
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -119,8 +118,8 @@ Define Class ArrayToCursor As Session
 		With This
 			lcProp = .sc.Token.Value
 			.sc.NextToken()
-			.utils.Match(.sc, .Token.Colon)
-			If Inlist(.sc.Token.Code, .Token.String, .Token.Integer, .Token.Float, .Token.True, .Token.False, .Token.Null)
+			.utils.Match(.sc, T_COLON)
+			If Inlist(.sc.Token.Code, T_STRING, T_INTEGER, T_FLOAT, T_TRUE, T_FALSE, T_NULL)
 				lcValue = .Value()
 				.nCounter = .nCounter + 1
 				Dimension .aValues(.nCounter)
@@ -159,17 +158,17 @@ Define Class ArrayToCursor As Session
 		vNewVal = ""
 		With This
 			Do Case
-			Case .sc.Token.Code = .Token.String
+			Case .sc.Token.Code = T_STRING
 				vNewVal = .sc.Token.Value
-			Case .sc.Token.Code = .Token.Integer
+			Case .sc.Token.Code = T_INTEGER
 				vNewVal = Int(.sc.Token.Value)
-			Case .sc.Token.Code = .Token.Float
+			Case .sc.Token.Code = T_FLOAT
 				vNewVal = .sc.Token.Value
-			Case .sc.Token.Code = .Token.True
+			Case .sc.Token.Code = T_TRUE
 				vNewVal = .sc.Token.Value
-			Case .sc.Token.Code = .Token.False
+			Case .sc.Token.Code = T_FALSE
 				vNewVal = .sc.Token.Value
-			Case .sc.Token.Code = .Token.Null
+			Case .sc.Token.Code = T_NULL
 				vNewVal = .sc.Token.Value
 			Otherwise
 				lcMsg = "Parse error on line " + Alltrim(Str(.sc.Token.LineNumber)) + ": Unexpected Token '" + .sc.TokenToStr(.sc.Token.Code) + "'"
@@ -232,10 +231,6 @@ Define Class ArrayToCursor As Session
 	Function Destroy
 		Try
 			This.sc = .Null.
-		Catch
-		Endtry
-		Try
-			This.Token = .Null.
 		Catch
 		Endtry
 		Try

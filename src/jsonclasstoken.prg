@@ -28,33 +28,6 @@ Define Class JSONClassToken As Custom
 	LineNumber 	 = 0
 	ColumnNumber = 0
 	Value 		 = .Null.
-
-&& ======================================================================== &&
-&& Function Init
-&& ======================================================================== &&
-	Function Init(toDecorated As Object)
-		If !Isnull(toDecorated)
-			This.SetDecorated(toDecorated)
-		Endif
-	Endfunc
-&& ======================================================================== &&
-&& Function SetDecorated
-&& ======================================================================== &&
-	Function SetDecorated(toDecorated As Object)
-		If !Isnull(toDecorated)
-			This.Decorated = toDecorated
-		Endif
-	Endfunc
-&& ======================================================================== &&
-&& Function This_Access
-&& ======================================================================== &&
-	Function This_Access(tcMember As String)
-		If Pemstatus(This, tcMember, 5)
-			Return This
-		Else
-			Return This.Decorated
-		Endif
-	Endfunc
 && ======================================================================== &&
 && Function Clone
 && ======================================================================== &&
