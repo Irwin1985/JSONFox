@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 3.0 - Release 2020-10-14 17:26:07
+
 **[JSONFox]** - 2.8 - Release 2020-10-10 18:17:34
 
 **[JSONFox]** - 2.7 - Release 2020-09-29 14:05:46
@@ -234,6 +236,11 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2020-10-14
+
+* Core changes (including JSONFox.h instead of token objects for better performance).
+
 
 2020-07-30
 
