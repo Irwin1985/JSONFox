@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 3.1 - Release 2020-10-19 08:45:10
+
 **[JSONFox]** - 3.0 - Release 2020-10-14 17:26:07
 
 **[JSONFox]** - 2.8 - Release 2020-10-10 18:17:34
@@ -31,6 +33,8 @@
 <hr>
 
 ### Features
+
+**JSONFox** has a new built-in function called `CursorStructure` wich retrieve the JSON representation of the alias given. **(new)**
 
 **JSONFox** has a new built-in function called `JSONViewer` wich open a JSON viewer form. **(new)**
 
@@ -230,12 +234,22 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 ENDTEXT
 _Screen.Json.JSONViewer(lcStr)
 ```
+### CursorStructure`() function
+```xBase
+Use Home(2) + "NorthWind\Customers.dbf"
+?_screen.json.cursorstructure('Customers', Set("Datasession"), .T.)
+```
+
 ![](docs/sample1.png)
 ![](docs/sample2.png)
 
 ### Release History
 
 <hr>
+
+2020-10-19
+
+* `CursorStructure`()` function.
 
 2020-10-14
 
