@@ -218,7 +218,13 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 ### CursorStructure() function
 ```xBase
 Use Home(2) + "NorthWind\Customers.dbf"
-?_screen.json.cursorstructure('Customers', Set("Datasession"), .T.)
+?_Screen.Json.CursorStructure('Customers', Set("Datasession"), .T.)
+// Function Signature
+// CursorStructure(tcAlias, tnDataSessionID, tlCopyExtended)
+// 1. tcAlias is the alias given.
+// 2. tnDataSessionID is the current Datasession where Alias() lives (for private data sessions).
+// 3. tlCopyExtended if .F. then copy FIELD_NAME, FIELD_TYPE, FIELD_LENGTH and FIELD_DECIMAL_PLACES. 
+//    if is .T. then parse all the alias data structure.
 ```
 ### JSONViewer() function
 ```xBase
