@@ -215,6 +215,11 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 ?_Screen.Json.Stringify(cJson)
 
 ```
+### CursorStructure`() function
+```xBase
+Use Home(2) + "NorthWind\Customers.dbf"
+?_screen.json.cursorstructure('Customers', Set("Datasession"), .T.)
+```
 ### JSONViewer() function
 ```xBase
  Text To lcStr NoShow
@@ -234,12 +239,6 @@ cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","
 ENDTEXT
 _Screen.Json.JSONViewer(lcStr)
 ```
-### CursorStructure`() function
-```xBase
-Use Home(2) + "NorthWind\Customers.dbf"
-?_screen.json.cursorstructure('Customers', Set("Datasession"), .T.)
-```
-
 ![](docs/sample1.png)
 ![](docs/sample2.png)
 
