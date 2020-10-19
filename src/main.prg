@@ -21,6 +21,7 @@ Set procedure to "src\JSONToRTF" Additive
 Set procedure to "src\JSONUtils" Additive
 Set procedure to "src\ObjectToJSON" Additive
 Set procedure to "src\StreamReader" Additive
+Set procedure to "src\StructureToJSON" Additive
 
 If Type("_Screen.Json") = "U"
 	=AddProperty(_Screen, "Json", .Null.)

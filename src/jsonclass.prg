@@ -9,7 +9,7 @@ Define Class JSONClass As Session
 	lShowErrors = .T.
 	Hidden lInternal
 	Hidden lTablePrompt
-	Version = "3.0"
+	Version = "3.1"
 
 && ======================================================================== &&
 && Function Init
@@ -27,6 +27,7 @@ Define Class JSONClass As Session
 			=AddProperty(.oHelper, "JSONStringify", Createobject("JSONStringify", .oHelper.Lexer))
 			=AddProperty(.oHelper, "ObjToJson", Createobject("ObjectToJson"))
 			=AddProperty(.oHelper, "JSONToRTF", Createobject("JSONToRTF", .oHelper.Lexer))
+			=AddProperty(.oHelper, "StructureToJSON", Createobject("StructureToJSON"))
 		Endwith
 	Endfunc
 && ======================================================================== &&
@@ -241,7 +242,33 @@ Define Class JSONClass As Session
 		EndTry
 		lcOutput = Iif(tlJustArray, lcJsonXML, '{"' + Lower(Alltrim(tcCursor)) + '":' + lcJsonXML + '}')
 		Return lcOutput
-	Endfunc
+	EndFunc
+*========================================================================*
+* Function CursorStructure
+*========================================================================*
+	Function CursorStructure
+		Lparameters tcCursor As String, tnDataSession As Integer, tlCopyExtended As Boolean
+		Local lcOutput As Memo
+		lcOutput = ''
+		Try
+			This.ResetError()
+			tcCursor = Evl(tcCursor, Alias())
+			tnDataSession = Evl(tnDataSession, Set("Datasession"))
+			With This.oHelper
+				With .StructureToJSON
+					.CurName 	= tcCursor
+					.nSessionID = tnDataSession
+					.lExtended  = tlCopyExtended
+					lcOutput 	= .StructureToJSON()
+				Endwith
+			Endwith
+		Catch To loEx
+			This.ShowExceptionError(loEx)
+		Finally
+			Use In (Select("qResult"))
+		EndTry
+		Return lcOutput
+	EndFunc
 && ======================================================================== &&
 && Function JSONToCursor
 && ======================================================================== &&
