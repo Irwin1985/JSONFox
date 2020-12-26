@@ -35,7 +35,7 @@ Define Class JSONClass As Session
 		Lparameters tvNewVal As Variant, tcFlags As String
 		This.ResetError()
 		If Vartype(tvNewVal) = "O"
-			tvNewVal = _Screen.ObjectToJson.Encode(tvNewVal, tcFlags)
+			tvNewVal = _Screen.ObjectToJson.Encode(@tvNewVal, tcFlags)
 		Endif
 		Local loJSONStr As Memo
 		loJSONStr = ""
@@ -52,7 +52,7 @@ Define Class JSONClass As Session
 		Lparameters tvNewVal As Variant, tnIndent As Boolean
 		This.ResetError()
 		If Vartype(tvNewVal) = 'O'
-			tvNewVal = _Screen.ObjToJson.Encode(tvNewVal)
+			tvNewVal = _Screen.ObjToJson.Encode(@tvNewVal)
 		Endif
 		Local loJSONStr As Memo
 		loJSONStr = ''
@@ -87,7 +87,7 @@ Define Class JSONClass As Session
 	&& <<Deprecated>> please use Stringify function instead.
 	&& ======================================================================== &&
 	Function Encode(toObj As Object, tcFlags As String) As Memo
-		Return _Screen.ObjectToJson.Encode(toObj, tcFlags)
+		Return _Screen.ObjectToJson.Encode(@toObj, tcFlags)
 	Endfunc
 	&& ======================================================================== &&
 	&& Function decode

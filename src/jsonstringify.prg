@@ -67,6 +67,8 @@ Define Class JSONStringify As Custom
 			Return This.Object(tnSpaceBlock)
 		Case JSONUtils.Match(T_LBRACKET)
 			Return This.Array(tnSpaceBlock)
+		Case JSONUtils.Match(T_STRING)
+			Return JSONUtils.GetString(_Screen.oPrevious.Lexeme)
 		Otherwise
 			JSONUtils.advance()
 			Return _Screen.oPrevious.Lexeme

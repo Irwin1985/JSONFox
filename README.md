@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 4.1 - Release 2020-12-26 23:32:01
+
 **[JSONFox]** - 4.0 - Release 2020-12-26 11:47:18
 
 **[JSONFox]** - 3.1 - Release 2020-10-19 08:45:10
