@@ -1,23 +1,77 @@
+#include "JSONFox.h"
 && ======================================================================== &&
 && Class utils
 && JSON Utilities
 && ======================================================================== &&
 Define Class JSONUtils As Custom
-&& ======================================================================== &&
-&& Function Match
-&& ======================================================================== &&
-	Function Match As Void
-		Lparameters toSC As Object, tnToken As Integer
-		If toSC.Token.Code = tnToken
-			toSC.NextToken()
+	* match
+	Function match(tnType)
+		If This.Check(tnType)
+			This.advance()
+			Return .T.
+		Endif
+		Return .F.
+	Endfunc
+
+	* Consume
+	Function consume
+		Lparameters tnType As Integer, tcMessage As String
+		If This.Check(tnType)
+			Return This.advance()
+		Endif
+		Error This.jsonError(This.peek(), tcMessage)
+	Endfunc
+
+	* Check
+	Function Check(tnType)
+		If This.isAtEnd()
+			Return .F.
 		Else
-			lcMsg = "Parse error on line " + Alltrim(Str(toSC.Token.LineNumber)) + ": Expecting '" + toSC.TokenToStr(tnToken) + "' got '" + toSC.TokenToStr(toSC.Token.Code) + "'"
-			Error lcMsg
+			Return _Screen.oPeek.Type == tnType
 		Endif
 	Endfunc
-&& ======================================================================== &&
-&& Function GetValue
-&& ======================================================================== &&
+
+	* Advance
+	Function advance
+		If !This.isAtEnd()
+			_Screen.curtokenpos = _Screen.curtokenpos + 1
+		Endif
+		Return This.previous() && retrieve the just eaten token.
+	Endfunc
+
+	* Previous
+	Function previous
+		_Screen.oPrevious = _Screen.tokens[_screen.curtokenpos - 1]
+		Return _Screen.oPrevious
+	Endfunc
+
+	* IsAtEnd
+	Function isAtEnd
+		loPeek = This.peek()
+		Return loPeek.Type = T_EOF
+	Endfunc
+
+	* Peek
+	Function peek
+		_Screen.oPeek = _Screen.tokens[_screen.curtokenpos]
+		Return _Screen.oPeek
+	Endfunc
+
+	* Error
+	Function jsonError(toToken, tcMessage)
+		lcMsg = " at '" + toToken.lexeme + "'"
+		If toToken.Type == T_EOF
+			lcMsg = " at end"
+		Endif
+		This.jsonReport(toToken.Line, lcMsg, tcMessage)
+	Endfunc
+	* Report
+	Function jsonReport(tnLine, tcWhere, tcMessage)
+		Error "[line " + Alltrim(Str(tnLine)) + "] Error " + tcWhere + ": " + tcMessage
+	Endfunc
+	&& ======================================================================== &&
+	&& Function GetValue
+	&& ======================================================================== &&
 	Function GetValue As String
 		Lparameters tcValue As String, tcType As Character
 		Do Case
@@ -42,10 +96,10 @@ Define Class JSONUtils As Custom
 		Endcase
 		Return tcValue
 	Endfunc
-&& ======================================================================== &&
-&& Function FormatDate
-&& return a valid date or datetime date type.
-&& ======================================================================== &&
+	&& ======================================================================== &&
+	&& Function FormatDate
+	&& return a valid date or datetime date type.
+	&& ======================================================================== &&
 	Function FormatDate As Variant
 		Lparameters tcDate As String
 		Local cStr As String, lIsDateTime As Boolean, lDate As Variant
@@ -55,26 +109,26 @@ Define Class JSONUtils As Custom
 		cStr 		= Strtran(tcDate, '-')
 		If Occurs(':', tcDate) >= 2 .And. Len(Alltrim(tcDate)) <= 25
 			lIsDateTime = .T.
-			Do case
-			case "." $ tcDate and "T" $ tcDate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
-				cStr = strtran(tcDate, "T")
+			Do Case
+			Case "." $ tcDate And "T" $ tcDate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
+				cStr = Strtran(tcDate, "T")
 				cStr = Substr(cStr, 1, At(".", cStr) - 1)
 				cStr = Strtran(cStr, '-')
 				cStr = Strtran(cStr, ':')
-				tcDate = Substr(strtran(tcDate, "T", Space(1)), 1, At(".", tcDate) - 1)
-			Case "T" $ tcDate and Occurs(':', tcDate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
-				cStr = strtran(tcDate, "T")
+				tcDate = Substr(Strtran(tcDate, "T", Space(1)), 1, At(".", tcDate) - 1)
+			Case "T" $ tcDate And Occurs(':', tcDate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
+				cStr = Strtran(tcDate, "T")
 				cStr = Substr(cStr, 1, At("-", cStr, 3) - 1)
 				cStr = Strtran(cStr, '-')
 				cStr = Strtran(cStr, ':')
-				tcDate = Substr(strtran(tcDate, "T", Space(1)), 1, At("-", tcDate, 3) - 1)
+				tcDate = Substr(Strtran(tcDate, "T", Space(1)), 1, At("-", tcDate, 3) - 1)
 			Otherwise
 				cStr = Strtran(cStr, ':')
 				cStr = Strtran(Lower(cStr), 'am')
 				cStr = Strtran(Lower(cStr), 'pm')
 				cStr = Strtran(cStr, Space(1))
 				tcDate = Substr(tcDate, 1, At(Space(1), tcDate, 2) - 1)
-			endcase
+			Endcase
 		Endif
 		For i=1 To Len(cStr) Step 1
 			If Isdigit(Substr(cStr, i, 1))
@@ -82,14 +136,14 @@ Define Class JSONUtils As Custom
 			Else
 				Return .Null.
 			Endif
-		EndFor
+		Endfor
 		lcYear  = Left(tcDate, 4)
 		lcMonth = Strextract(tcDate, '-', '-', 1)
 		If !lIsDateTime
 			lcDay = Right(tcDate, 2)
 		Else
 			lcDay = Strextract(tcDate, '-', Space(1), 2)
-		EndIf
+		Endif
 		If Val(lcYear) > 0 And Val(lcMonth) > 0 And Val(lcDay) > 0
 			If !lIsDateTime
 				lDate = Date(Val(lcYear), Val(lcMonth), Val(lcDay))
@@ -104,9 +158,9 @@ Define Class JSONUtils As Custom
 		Endif
 		Return lDate
 	Endfunc
-&& ======================================================================== &&
-&& Function GetString
-&& ======================================================================== &&
+	&& ======================================================================== &&
+	&& Function GetString
+	&& ======================================================================== &&
 	Function GetString As String
 		Lparameters tcString As String
 		tcString = Allt(tcString)
@@ -117,21 +171,21 @@ Define Class JSONUtils As Custom
 		tcString = Strtran(tcString, Chr(13), '\r' )
 		tcString = Strtran(tcString, '"', '\"' )
 		Return '"' +tcString + '"'
-	EndFunc
-&& ======================================================================== &&
-&& Function CheckProp
-&& Check the object property name for invalid format (replace with '_')
-&& ======================================================================== &&
+	Endfunc
+	&& ======================================================================== &&
+	&& Function CheckProp
+	&& Check the object property name for invalid format (replace with '_')
+	&& ======================================================================== &&
 	Function CheckProp(tcProp As String) As String
 		Local lcFinalProp As String
 		lcFinalProp = ""
 		For i = 1 To Len(tcProp)
 			lcChar = Substr(tcProp, i, 1)
-			If (i = 1 and IsDigit(lcChar)) or (!Isalpha(lcChar) and !IsDigit(lcChar))
+			If (i = 1 And Isdigit(lcChar)) Or (!Isalpha(lcChar) And !Isdigit(lcChar))
 				lcFinalProp = lcFinalProp + "_"
-			else
+			Else
 				lcFinalProp = lcFinalProp + lcChar
-			EndIf
+			Endif
 		Endfor
 		Return Alltrim(lcFinalProp)
 	Endfunc

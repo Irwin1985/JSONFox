@@ -8,34 +8,27 @@
 && 			array	= '[' value | {',' value} ']'
 && ======================================================================== &&
 Define Class JSONToRTF As Custom
-	#Define CRLF Chr(13) + Chr(10) + "\par"
-	Hidden sc
-	Hidden utils
-	lIndent = .t.
+	lIndent 	= .t.
 	lShowErrors = .T.
-	lError = .f.
-	cErrorMsg = ""
+	lError 		= .f.
+	cErrorMsg 	= ""
 && ======================================================================== &&
 && Function Init
 && ======================================================================== &&
 	Function Init
-		Lparameters toSC As Object
-		Set Procedure To "JsonUtils" Additive
-		With This
-			.sc     = toSC
-			.utils  = Createobject("JsonUtils")
-			.lError = .f.
-		Endwith
+		This.lError = .f.
 	Endfunc
 && ======================================================================== &&
 && Function StrToRTF
 && ======================================================================== &&
 	Function StrToRTF As Memo
 		Lparameters tnIndent as Boolean
-		This.lIndent = tnIndent
+		Private JSONUtils
+		JSONUtils 		= _Screen.JSONUtils
+		This.lIndent 	= tnIndent
 		this.lError 	= .F.
 		this.cErrorMsg 	= ""
-		Return This.Object(0)
+		Return This.Value(0)
 	Endfunc
 && ======================================================================== &&
 && Function Object
@@ -48,14 +41,12 @@ Define Class JSONToRTF As Custom
 	Hidden Function Object As VOID
 		Lparameters tnSpace As Integer
 		With This
-			.utils.Match(.sc, T_LEFTCURLEYBRACKET)
-			If .sc.Token.Code != T_RIGHTCURLEYBRACKET
+			If !JSONUtils.Check(T_RBRACE)
 				Local nSpaceBlock, lcJSON As String
 				nSpaceBlock = tnSpace + 1
 				lcJSON = "\{" + Iif(This.lIndent, CRLF, "") + .JSFormat(nSpaceBlock)
 				lcJSON = lcJSON + .kvp(nSpaceBlock)
-				Do While .sc.Token.Code = T_COMMA
-					.sc.NextToken()
+				Do While JSONUtils.match(T_COMMA)
 					lcJSON = lcJSON + "," + Iif(This.lIndent, CRLF, "") + .JSFormat(nSpaceBlock)
 					lcJSON = lcJSON + .kvp(nSpaceBlock)
 				Enddo
@@ -63,7 +54,7 @@ Define Class JSONToRTF As Custom
 			Else
 				lcJSON = "\{\}"
 			EndIf
-			.utils.Match(.sc, T_RIGHTCURLEYBRACKET)
+			JSONUtils.Consume(T_RBRACE, "Expect '}' after json object.")
 		Endwith
 		Return lcJSON
 	Endfunc
@@ -75,9 +66,9 @@ Define Class JSONToRTF As Custom
 		Lparameters tnSpaceIdent As Integer
 		With This
 			Local lcProp As String
-			lcProp = .sc.Token.Value
-			.sc.NextToken()
-			.utils.Match(.sc, T_COLON)
+			loElement = JSONUtils.Consume(T_STRING, "Expect right key element")
+			lcProp = loElement.Lexeme
+			JSONUtils.Consume(T_COLON, "Expect ':' after key element.")
 
 			Return '\cf2 "' + lcProp + '"\cf1: ' + .Value(tnSpaceIdent)
 		Endwith
@@ -91,35 +82,24 @@ Define Class JSONToRTF As Custom
 		vNewVal = ""
 		With This
 			Do Case
-			Case .sc.Token.Code = T_STRING
-				vNewVal = '\cf5 "' + Alltrim(.sc.Token.Value) + '"\cf1'
-				.sc.NextToken()
-			Case .sc.Token.Code = T_INTEGER
-				vNewVal = "\cf3 " + Alltrim(Str(.sc.Token.Value)) + "\cf1"
-				.sc.NextToken()
-			Case .sc.Token.Code = T_FLOAT
-				vNewVal = "\cf3 " + Transform(.sc.Token.Value) + "\cf1"
-				.sc.NextToken()
-			Case .sc.Token.Code = T_TRUE
-				vNewVal = "\cf4 true\cf1"
-				.sc.NextToken()
-			Case .sc.Token.Code = T_FALSE
-				vNewVal = "\cf4 false\cf1"
-				.sc.NextToken()
-			Case .sc.Token.Code = T_LEFTCURLEYBRACKET
+			Case JSONUtils.Match(T_STRING)
+				vNewVal = '\cf5 "' + _Screen.oPrevious.Lexeme + '"\cf1'
+			Case JSONUtils.Match(T_NUMBER)
+				vNewVal = "\cf3 " + _Screen.oPrevious.Lexeme + "\cf1"
+			Case JSONUtils.Match(T_BOOLEAN)
+				vNewVal = "\cf4 " + _Screen.oPrevious.Lexeme + "\cf1"
+			Case JSONUtils.Match(T_LBRACE)
 				vNewVal = .Object(tnSpaceBlock)
-			Case .sc.Token.Code = T_LEFTBRACKET
+			Case JSONUtils.Match(T_LBRACKET)
 				vNewVal = .Array(tnSpaceBlock)
-			Case .sc.Token.Code = T_NULL
+			Case JSONUtils.Match(T_NULL)
 				vNewVal = "null"
-				.sc.NextToken()
 			Otherwise
 				.lError = .T.
-				lcMsg = "Parse error on line " + Alltrim(Str(.sc.Token.LineNumber)) + ": Unexpected Token '" + .sc.TokenToStr(.sc.Token.Code) + "'"
 				If .lShowErrors
-					Error lcMsg
+					JSONUtils.jsonError(JSONUtils.peek(), "Unknown token value")
 				EndIf
-				.cErrorMsg = lcMsg
+				.cErrorMsg = "Unknown token value"
 			Endcase
 		Endwith
 		Return vNewVal
@@ -133,14 +113,12 @@ Define Class JSONToRTF As Custom
 		Local lcArrayStr As String
 		lcArrayStr = ""
 		With This
-			.utils.Match(.sc, T_LEFTBRACKET)
-			If .sc.Token.Code != T_RIGHTBRACKET
+			If !JSONUtils.Check(T_RBRACKET)
 				Local lnBlock As Integer
 				lnBlock = tnIdentation + 1
 				lcArrayStr = "[" + Iif(This.lIndent, CRLF, "") + .JSFormat(lnBlock)
 				lcArrayStr = lcArrayStr + .Value(lnBlock)
-				Do While .sc.Token.Code = T_COMMA
-					.sc.NextToken()
+				Do While JSONUtils.Match(T_COMMA)
 					lcArrayStr = lcArrayStr + "," + Iif(This.lIndent, CRLF, "") + .JSFormat(lnBlock)
 					lcArrayStr = lcArrayStr + .Value(lnBlock)
 				Enddo
@@ -148,7 +126,7 @@ Define Class JSONToRTF As Custom
 			Else
 				lcArrayStr = "[]"
 			EndIf
-			.utils.Match(.sc, T_RIGHTBRACKET)
+			JSONUtils.Consume(T_RBRACKET, "Expect ']' after array elements.")
 		Endwith
 		Return lcArrayStr
 	Endfunc
@@ -158,26 +136,5 @@ Define Class JSONToRTF As Custom
 	Hidden Function JSFormat As String
 		Lparameters tnSpaceMult As Integer
 		Return Iif(This.lIndent, Space(tnSpaceMult * 2), "")
-	Endfunc
-&& ======================================================================== &&
-&& Function Destroy
-&& ======================================================================== &&
-	Function Destroy
-		Try
-			This.sc = .Null.
-		Catch
-		Endtry
-		Try
-			This.utils = .Null.
-		Catch
-		Endtry
-		Try
-			Clear Class JsonUtils
-		Catch
-		Endtry
-		Try
-			Release Procedure JsonUtils
-		Catch
-		Endtry
 	Endfunc
 Enddefine

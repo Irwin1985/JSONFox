@@ -1,19 +1,24 @@
-***************************
 * JSONFox Constants
-***************************
-
-#define 	T_ENDOFSTREAM 		 	0
-#define 	T_LEFTCURLEYBRACKET  	1
-#define 	T_RIGHTCURLEYBRACKET 	2
-#define 	T_LEFTBRACKET 		 	3
-#define 	T_RIGHTBRACKET 		 	4
-#define 	T_COLON 			 	5
-#define 	T_COMMA 			 	6
-#define 	T_STRING 			 	7
-#define 	T_INTEGER 				8
-#define 	T_FLOAT 				9
-#define 	T_TRUE 				 	10
-#define 	T_FALSE 				11
-#define 	T_NULL 				 	12
-#define 	T_KEY 				 	13
-#define 	T_VALUE 				14
+#Define T_NONE	0
+#Define T_LBRACE	1
+#Define T_RBRACE	2
+#Define T_LBRACKET	3
+#Define T_RBRACKET	4
+#Define T_COMMA	5
+#Define T_COLON	6
+#Define T_TRUE	7
+#Define T_FALSE	8
+#Define T_NULL	9
+#Define T_NUMBER	10
+#Define T_KEY	11
+#Define T_STRING	12
+#Define T_LINE	13
+#Define T_INTEGER	14
+#Define T_FLOAT	15
+#Define T_VALUE	16
+#Define T_EOF	17
+#Define T_BOOLEAN	18
+#Define CR	Chr(13)
+#Define LF	Chr(10)
+#Define CRLF	CR + LF
+#Define T_TAB	Chr(9)

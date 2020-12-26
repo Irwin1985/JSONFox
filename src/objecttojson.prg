@@ -1,36 +1,34 @@
-&& ======================================================================== &&
-&& ObjectToJSON Parser
-&& ======================================================================== &&
+* ObjectToJSON
 Define Class ObjectToJSON As Session
 	#define USER_DEFINED_PEMS	"U"
-	Hidden utils
 	lCentury = .F.
 	cDateAct = ""
 	nOrden   = 0
 	cFlags 	 = ""
-&& ======================================================================== &&
-&& Function Init
-&& ======================================================================== &&
+	* Function Init
 	Function Init
-		Set Procedure To "JsonUtils" Additive
-		This.utils 	  = Createobject("JsonUtils")
 		This.lCentury = Set("Century") == "OFF"
 		This.cDateAct = Set("Date")
 		Set Century On
 		Set Date Ansi
 		Mvcount = 60000
 	Endfunc
-&& ======================================================================== &&
-&& Function Encode
-&& ======================================================================== &&
-	Function Encode As Memo
-		Lparameters toRefObj As Object, tcFlags As String
+	* Encode
+	Function Encode(toRefObj, tcFlags)
+		lPassByRef = .T.
+		Try
+			External array toRefObj
+		Catch
+			lPassByRef = .F.
+		EndTry
 		This.cFlags = Evl(tcFlags, USER_DEFINED_PEMS)
-		Return This.AnyToJson(toRefObj)
+		If lPassByRef
+			Return This.AnyToJson(@toRefObj)
+		Else
+			Return This.AnyToJson(toRefObj)
+		EndIf
 	Endfunc
-&& ======================================================================== &&
-&& Function AnyToJson
-&& ======================================================================== &&
+	* AnyToJson
 	Function AnyToJson As Memo
 		Lparameters tValue As Variant
 		Try
@@ -77,29 +75,15 @@ Define Class ObjectToJSON As Session
 			lcJSONStr = lcJSONStr + "}"
 			Return lcJSONStr
 		Otherwise
-			Return This.Utils.GetValue(tValue, Vartype(tValue))
+			Return _Screen.JSONUtils.GetValue(tValue, Vartype(tValue))
 		EndCase
 	Endfunc
-&& ======================================================================== &&
-&& Function Destroy
-&& ======================================================================== &&
+	* Destroy
 	Function Destroy
 		If This.lCentury
 			Set Century Off
 		Endif
 		lcDateAct = This.cDateAct
 		Set Date &lcDateAct
-		Try
-			This.utils = .Null.
-		Catch
-		Endtry
-		Try
-			Clear Class JsonUtils
-		Catch
-		Endtry
-		Try
-			Release Procedure JsonUtils
-		Catch
-		Endtry
 	Endfunc
 Enddefine

@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 4.0 - Release 2020-12-26 11:47:18
+
 **[JSONFox]** - 3.1 - Release 2020-10-19 08:45:10
 
 **[JSONFox]** - 3.0 - Release 2020-10-14 17:26:07
@@ -34,15 +36,17 @@
 
 ### Features
 
-**JSONFox** has a new built-in function called `CursorStructure` wich retrieve the JSON representation of the alias given. **(new)**
+**JSONFox** now can parse any valid JSON string by calling the `Parse` method which retrieve an Visual Foxpro equivalent data type. **(new)**
 
-**JSONFox** has a new built-in function called `JSONViewer` wich open a JSON viewer form. **(new)**
+**JSONFox** has a new built-in function called `CursorStructure` which retrieve the JSON representation of the alias given.
 
-**JSONFox** has a new built-in function called `Stringify` for object serialization and indentation. **(new)**
+**JSONFox** has a new built-in function called `JSONViewer` which open a JSON viewer form.
 
-**JSONFox** has a new built-in function called `JSONToCursor`. **(new)**
+**JSONFox** has a new built-in function called `Stringify` for object serialization and indentation.
 
-**JSONFox** has a JSON Empty Class called `JSON` in which you can extends all those classes you need to convert into JSON representation. **(new)**
+**JSONFox** has a new built-in function called `JSONToCursor`.
+
+**JSONFox** has a JSON Empty Class called `JSON` in which you can extends all those classes you need to convert into JSON representation.
 
 **JSONFox** supports XML serialization by passing a JSON Array string representation as parameter. This is useful for CURSORS serialization between layers.
 
@@ -58,6 +62,13 @@
 * Parse a string into an object.
  MyObj = _Screen.Json.Parse('{"foo": "bar"}')
  ?MyObj.foo
+
+**New** you may also parse any valid JSON string.
+ ?_Screen.Json.Parse('"bar"') && bar
+ ?_Screen.Json.Parse('true')  && .T.
+ ?_Screen.Json.Parse('false') && .F.
+ ?_Screen.Json.Parse('null')  && .NULL.
+ ?_Screen.Json.Parse('1985')  && 1985
  
 * Convert Cursor into JSON string.
 Create Cursor cGames (game c(25), launched i(4))
@@ -67,10 +78,12 @@ Insert into cGames Values('Space Invaders', 1978)
 Insert into cGames Values('The Legend of Zelda', 1986)
 
 ?_Screen.Json.CursorToJson('cGames')
+
+* Convert any cursor structure into JSON
+?_Screen.Json.CursorStructure('cGames')
 ```
 ## Function Signature
-`_Screen.Json.CursorToJSON(tcCursor As String **[, tbCurrentRow As Boolean [, tnDataSession As Integer]]**)`
-
+* ![](docs/meth.gif) **_Screen.Json.CursorToJSON(tcCursor As String *[, tbCurrentRow As Boolean [, tnDataSession As Integer]]*)**
 * ![](docs/prop.gif) **tcCursor:** the name of your cursor.
 * ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
 * ![](docs/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
@@ -86,16 +99,19 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ### (New Methods)
 
 * ![](docs/meth.gif) **_Screen.Json.Parse(tcJsonStr AS MEMO):** Parse the string text as JSON (Visual Foxpro Empty class object representation)
-  * **tcJsonStr:** represents a valid JSON string format (required).
+  * **tcJsonStr:** represents a valid JSON string format.
 
 * ![](docs/meth.gif) **_Screen.Json.Stringify(tvNewVal As Variant):** Return an indented JSON string corresponding to the specified value.
-  * **tvNewVal:** you can pass either an object or a raw JSONString (required).
+  * **tvNewVal:** you can pass either an object or a raw JSONString.
+
+* ![](docs/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
+  * **vNewProp:** represents any value type.
 
 * ![](docs/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
-  * **tcJsonStr:** represents a valid JSON string format (required).
+  * **tcJsonStr:** represents a valid JSON string format.
 
 * ![](docs/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
-  * **tcJsonFile:** represents any file extension with a valid JSON string format (required).
+  * **tcJsonFile:** represents any file extension with a valid JSON string format.
 
 * ![](docs/meth.gif) **_Screen.Json.ArrayToXML(tStrArray AS MEMO):** Serialize a JSON string to a XML representation.
   * **tStrArray:** represents a valid JSON Array string format.
@@ -103,9 +119,37 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * ![](docs/meth.gif) **_Screen.Json.XMLToJson(tcXML AS MEMO):** Serialize a XML string to a JSON representation.
   * **tcXML:** represents a valid XML string format.
 
-* ![](docs/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
-  * **vNewProp:** represents any value type.
-  
+
+  * ![](docs/meth.gif) **_Screen.Json.JsonToCursor(cJsonStr, cCursorName *[, nDataSessionID*]):** Convert JSON array into cursor.
+  * **cJsonStr:** **Array** JSON string format.
+  * **cCursorName:** your generated cursor name.
+  * **nDataSessionID:** if you are using private sessions please provide it here. Otherwise default session will be assumed.
+
+  * ![](docs/meth.gif) **_Screen.Json.CursorStructure(cCursorName *[, nDataSessionID] [, tbCopyExtended]*):** Dump the json structure of the given cursor or alias.
+  * **cCursorName:** your cursor name.
+  * **nDataSessionID:** if you are using private sessions please provide it here. Otherwise default session will be assumed.  
+  * **tbCopyExtended:** generates the extended version of the cursor structure.
+
+  * ![](docs/meth.gif) **_Screen.Json.JsonStringify(cJsonStr *[, cFlags]*):** Pretty prints the JSON format.
+  * **cJsonStr:** JSON string format.
+  * **cFlags:** like AMEMBERS() functions flags. You may also pass any combinations of them.
+
+  | Parameter | Description   |
+  | --------- | ------------- |
+  | P         | Protected     |
+  | H         | Hidden        |
+  | G         | Public        |
+  | N         | Native        |
+  | U         | User Defined  |
+  | C         | Changed       |
+  | I         | Inherited     |
+  | B         | Base          |
+  | R         | Read Only     |
+
+  * ![](docs/meth.gif) **_Screen.Json.JsonViewer(cJsonStr *[, bStopExecution]*):** Open your JSON inside an Editor.
+  * **cJsonStr:** JSON string format.
+  * **bStopExecution:** waits until editor windows ends.
+
 ### Examples
 
 ```xBase

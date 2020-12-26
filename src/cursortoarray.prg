@@ -1,24 +1,14 @@
-&& ======================================================================== &&
-&& CursorToArray Parser
-&& ======================================================================== &&
+* CursorToArray Parser
 Define Class CursorToArray As Session
 	nSessionID = 0
-	curName = ""
-	Hidden utils
-&& ======================================================================== &&
-&& Function Init
-&& ======================================================================== &&
-	Function Init
-		Set Procedure To "JsonUtils" Additive
-		This.utils = Createobject("JsonUtils")
-	Endfunc
-&& ======================================================================== &&
-&& Function CursorToArray
-&& ======================================================================== &&
+	curName    = ""
+	* Function CursorToArray
 	Function CursorToArray As Memo
 		If !Empty(This.nSessionID)
 			Set DataSession To This.nSessionID
 		Endif
+		Private JSONUtils
+		JSONUtils = _Screen.JSONUtils
 		Local lcOutput As Memo
 		lcOutput = "["
 		llCentury = Set("Century") == "OFF"
@@ -32,7 +22,7 @@ Define Class CursorToArray As Session
 			Select (.curName)
 			lnTotField  = Afields(aColumns, .curName)
 			lnTotal  	= Reccount(.curName)
-			lnRecNo = Recn(.curName)
+			lnRecNo 	= Recn(.curName)
 			Count For !Deleted() To lnTotal
 			Go lnRecNo
 			Scan
@@ -56,7 +46,7 @@ Define Class CursorToArray As Session
 							If Vartype(lcValue) = "X"
 								lcValue = "null"
 							Else
-								lcValue = This.utils.GetString(Alltrim(lcValue))
+								lcValue = JSONUtils.GetString(Alltrim(lcValue))
 							Endif
 						Endcase
 						lcOutput = lcOutput + Alltrim(lcValue)
@@ -65,7 +55,7 @@ Define Class CursorToArray As Session
 					Case aColumns[i, 2] = "L"
 						lcOutput = lcOutput + Iif(lcValue, "true", "false")
 					Endcase
-				EndFor
+				Endfor
 				lcOutput = lcOutput + '}' + Iif(nCounter < lnTotal, ',', '')
 				Select (.curName)
 			Endscan
@@ -79,22 +69,5 @@ Define Class CursorToArray As Session
 		Endif
 		Set Date &lcDateAct
 		Return lcOutput
-	Endfunc
-&& ======================================================================== &&
-&& Function Destroy
-&& ======================================================================== &&
-	Function Destroy
-		Try
-			This.utils = .Null.
-		Catch
-		Endtry
-		Try
-			Clear Class JsonUtils
-		Catch
-		Endtry
-		Try
-			Release Procedure JsonUtils
-		Catch
-		Endtry
 	Endfunc
 Enddefine
