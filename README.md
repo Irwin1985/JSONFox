@@ -296,9 +296,14 @@ _Screen.Json.JSONViewer(lcStr)
 
 <hr>
 
+2020-12-26
+
+* Several changes was made into the core library.
+
+
 2020-10-19
 
-* `CursorStructure`()` function.
+* `CursorStructure()` function.
 
 2020-10-14
 
