@@ -155,7 +155,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ### Examples
 
 ```xBase
- * Serialize JSON String
+ * Sample 1: Serialize JSON String
  Do LocFile("JSONFox", "app")
  * Parse from string
  Text To lcJsonStr NoShow
@@ -187,7 +187,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
  cJSONStr = _Screen.Json.Stringify(obj)
  ?cJSONStr
  
- * Serialize XML from JSON Array
+ * Sample 2: Serialize XML from JSON Array
  Text To lcStr NoShow
 	 {
 	  "status": "success",
@@ -212,27 +212,23 @@ ENDTEXT
 
 obj = _Screen.Json.Parse(lcStr)
 * Encode just the Array attribute called (data)*
-lcJsonArray = _Screen.Json.Parse(obj._data)
+lcJsonArray = _Screen.Json.Encode(obj.data)
 
-* Serialize the JSON string to XML string
-lcXML = _Screen.Json.ArrayToXML("[" + lcJsonArray + "]")
+* Surround the lcJSONArray with array character delimiters '[' ']'.
+lcJsonArray = "[" + lcJsonArray + "]"
 
-* Serialize the XML document to VFP CURSOR **(this is cool)**
-=XMLToCursor(lcXML, "qEmployees")
+* Convert the JSONArray into VFP CURSOR **(this is cool)**
+_Screen.Json.JSONToCursor(lcJsonArray, "qEmployees")
 
 * Modifies some fields
 Select qEmployees
 Replace salary With 5.000 In qEmployees
 
-* Serialize Cursor to XML stream data **(in memory)**
-LOCAL cStrXML
-=CursorToXML("qEmployees", "cStrXML", 1, 0, 0,"1")
-
-* Now serialize the modified XML to JSON
-cJson = _Screen.Json.XMLToJson(cStrXML)
+* Now serialize the cursor to JSON
+cJson = _Screen.json.CursorToJson("qEmployees")
 ?cJson
 
-* Decorate and print any class
+* Sample 3: Decorate and print any class
 * Suppose you have a person class.
 oPerson = CreateObject("PersonClass")
 With oPerson
@@ -256,7 +252,7 @@ oJhon = NewObject("JSon", "JsonDecorator.prg")
   "married": true
 }
 
-* Stringify Example
+* Sample 4: Stringify Example
 cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","fullname":"Jhon Doe","gender":"Male","married":true,"soports":["running","swiming","basket-ball"]}'
 ?_Screen.Json.Stringify(cJson)
 
