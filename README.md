@@ -187,7 +187,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
  cJSONStr = _Screen.Json.Stringify(obj)
  ?cJSONStr
  
- * Sample 2: Serialize XML from JSON Array
+ * Sample 2: JSONArray to Cursor
  Text To lcStr NoShow
 	 {
 	  "status": "success",
@@ -220,7 +220,7 @@ lcJsonArray = "[" + lcJsonArray + "]"
 * Convert the JSONArray into VFP CURSOR **(this is cool)**
 _Screen.Json.JSONToCursor(lcJsonArray, "qEmployees")
 
-* Modifies some fields
+* Modify some fields
 Select qEmployees
 Replace salary With 5.000 In qEmployees
 
