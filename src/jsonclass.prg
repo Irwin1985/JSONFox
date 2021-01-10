@@ -1,84 +1,84 @@
 * JSONClass
-Define Class JSONClass As Session
-	DataSession 	= 1
+define class JSONClass as session
+	datasession 	= 1
 	LastErrorText 	= ""
-	lError 			= .F.
-	lShowErrors 	= .T.
-	Version 		= "4.0"
-	Hidden lInternal
-	Hidden lTablePrompt
+	lError 			= .f.
+	lShowErrors 	= .t.
+	version 		= "4.2"
+	hidden lInternal
+	hidden lTablePrompt
 
 	*Function Init
-	Function Init
-		With This
+	function init
+		with this
 			.ResetError()
-			.lTablePrompt = Set("TablePrompt") == "ON"
-			Set TablePrompt Off
-		Endwith
-	Endfunc
+			.lTablePrompt = set("TablePrompt") == "ON"
+			set tableprompt off
+		endwith
+	endfunc
 	* Parse the string text as JSON
-	Function Parse As Memo
-		Lparameters tcJsonStr As Memo
-		Local loJSONObj As Object
-		loJSONObj = .Null.
-		Try
-			This.ResetError()
-			_Screen.tokenizer.tokenize(tcJsonStr)
-			loJSONObj = _Screen.Parser.Parse()
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Endtry
-		Return loJSONObj
-	Endfunc
+	function Parse as memo
+		lparameters tcJsonStr as memo
+		local loJSONObj as object
+		loJSONObj = .null.
+		try
+			this.ResetError()
+			_screen.tokenizer.tokenize(tcJsonStr)
+			loJSONObj = _screen.Parser.Parse()
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		endtry
+		return loJSONObj
+	endfunc
 	* Stringify
-	Function Stringify As Memo
-		Lparameters tvNewVal As Variant, tcFlags As String
-		This.ResetError()
-		If Vartype(tvNewVal) = "O"
-			tvNewVal = _Screen.ObjectToJson.Encode(@tvNewVal, tcFlags)
-		Endif
-		Local loJSONStr As Memo
+	function Stringify as memo
+		lparameters tvNewVal as Variant, tcFlags as string
+		this.ResetError()
+		if vartype(tvNewVal) = "O"
+			tvNewVal = _screen.ObjectToJson.Encode(@tvNewVal, tcFlags)
+		endif
+		local loJSONStr as memo
 		loJSONStr = ""
-		Try
-			_Screen.tokenizer.tokenize(tvNewVal)
-			loJSONStr = _Screen.JSONStringify.Stringify()
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Endtry
-		Return loJSONStr
-	Endfunc
+		try
+			_screen.tokenizer.tokenize(tvNewVal)
+			loJSONStr = _screen.JSONStringify.Stringify()
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		endtry
+		return loJSONStr
+	endfunc
 	* JSONToRTF
-	Function JSONToRTF As Memo
-		Lparameters tvNewVal As Variant, tnIndent As Boolean
-		This.ResetError()
-		If Vartype(tvNewVal) = 'O'
-			tvNewVal = _Screen.ObjToJson.Encode(@tvNewVal)
-		Endif
-		Local loJSONStr As Memo
+	function JSONToRTF as memo
+		lparameters tvNewVal as Variant, tnIndent as Boolean
+		this.ResetError()
+		if vartype(tvNewVal) = 'O'
+			tvNewVal = _screen.ObjToJson.Encode(@tvNewVal)
+		endif
+		local loJSONStr as memo
 		loJSONStr = ''
-		Try
-			This.lError = .F.
-			This.LastErrorText = ''
-			_Screen.tokenizer.tokenize(tvNewVal)
-			_Screen.JSONToRTF.lShowErrors = This.lShowErrors
-			loJSONStr = _Screen.JSONToRTF.StrToRTF(tnIndent)
-			This.lError = _Screen.JSONToRTF.lError
-			This.LastErrorText = _Screen.JSONToRTF.cErrorMsg
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-			This.lError = .T.
-			This.LastErrorText = loEx.Message
-		Endtry
-		Return loJSONStr
-	Endfunc
+		try
+			this.lError = .f.
+			this.LastErrorText = ''
+			_screen.tokenizer.tokenize(tvNewVal)
+			_screen.JSONToRTF.lShowErrors = this.lShowErrors
+			loJSONStr = _screen.JSONToRTF.StrToRTF(tnIndent)
+			this.lError = _screen.JSONToRTF.lError
+			this.LastErrorText = _screen.JSONToRTF.cErrorMsg
+		catch to loEx
+			this.ShowExceptionError(loEx)
+			this.lError = .t.
+			this.LastErrorText = loEx.message
+		endtry
+		return loJSONStr
+	endfunc
 	* JSONViewer
-	Function JSONViewer As Void
-		Lparameters tcJsonStr As Memo, tlStopExecution As Boolean
-		Do Form frmJSONViewer With tcJsonStr, tlStopExecution
-		If tlStopExecution
-			Read Events
-		Endif
-	Endfunc
+	function JSONViewer as Void
+		lparameters tcJsonStr as memo, tlStopExecution as Boolean
+		do form frmJSONViewer with tcJsonStr, tlStopExecution
+		if tlStopExecution
+			read events
+		endif
+	endfunc
 	*  ====================== Old JSONFox Functions =========================== *
 	*  . . . . . . . . . . For backward compatibility . . . . . . . . . . . .
 	*  ======================================================================== *
@@ -86,171 +86,171 @@ Define Class JSONClass As Session
 	&& Function Encode
 	&& <<Deprecated>> please use Stringify function instead.
 	&& ======================================================================== &&
-	Function Encode(toObj As Object, tcFlags As String) As Memo
-		Return _Screen.ObjectToJson.Encode(@toObj, tcFlags)
-	Endfunc
+	function Encode(toObj as object, tcFlags as string) as memo
+		return _screen.ObjectToJson.Encode(@toObj, tcFlags)
+	endfunc
 	&& ======================================================================== &&
 	&& Function decode
 	&& <<Deprecated>> please use Parse function instead.
 	&& ======================================================================== &&
-	Function Decode(tcJsonStr As Memo) As Object
-		Local loJSONObj As Object
-		loJSONObj = .Null.
-		Try
-			This.ResetError()
-			_Screen.tokenizer.tokenize(tcJsonStr)
-			loJSONObj = _Screen.Parser.Parse()
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Endtry
-		Return loJSONObj
-	Endfunc
+	function Decode(tcJsonStr as memo) as object
+		local loJSONObj as object
+		loJSONObj = .null.
+		try
+			this.ResetError()
+			_screen.tokenizer.tokenize(tcJsonStr)
+			loJSONObj = _screen.Parser.Parse()
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		endtry
+		return loJSONObj
+	endfunc
 	&& ======================================================================== &&
 	&& Function LoadFile
 	&& <<Deprecated>> please use Parse function instead.
 	&& ======================================================================== &&
-	Function LoadFile(tcJsonFile As String) As Object
-		Return This.Decode(Filetostr(tcJsonFile))
-	Endfunc
+	function LoadFile(tcJsonFile as string) as object
+		return this.Decode(filetostr(tcJsonFile))
+	endfunc
 	* ArrayToXML
-	Function ArrayToXML(tcArray As Memo) As String
-		Local lcOut As String
+	function ArrayToXML(tcArray as memo) as string
+		local lcOut as string
 		lcOut = ''
-		Try
-			This.ResetError()
-			_Screen.tokenizer.tokenize(tcArray)
-			_Screen.ArrayToCursor.CurName 	 = "qResult"
-			_Screen.ArrayToCursor.nSessionID = Set("Datasession")
-			_Screen.ArrayToCursor.Array()
-			=Cursortoxml('qResult','lcOut', 1, 0, 0, '1')
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Finally
-			Use In (Select("qResult"))
-		Endtry
-		Return lcOut
-	Endfunc
+		try
+			this.ResetError()
+			_screen.tokenizer.tokenize(tcArray)
+			_screen.ArrayToCursor.CurName 	 = "qResult"
+			_screen.ArrayToCursor.nSessionID = set("Datasession")
+			_screen.ArrayToCursor.array()
+			=cursortoxml('qResult','lcOut', 1, 0, 0, '1')
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			use in (select("qResult"))
+		endtry
+		return lcOut
+	endfunc
 	* XMLToJson
-	Function XMLToJson(tcXML As Memo) As Memo
-		Local lcJsonXML As Memo
+	function XMLToJson(tcXML as memo) as memo
+		local lcJsonXML as memo
 		lcJsonXML = ''
-		Try
-			This.ResetError()
-			=Xmltocursor(tcXML, 'qXML')
-			_Screen.CursorToArray.CurName 	 = "qXML"
-			_Screen.CursorToArray.nSessionID = Set("Datasession")
-			lcJsonXML = _Screen.CursorToArray.CursorToArray()
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Finally
-			Use In (Select("qXML"))
-		Endtry
-		Return lcJsonXML
-	Endfunc
+		try
+			this.ResetError()
+			=xmltocursor(tcXML, 'qXML')
+			_screen.CursorToArray.CurName 	 = "qXML"
+			_screen.CursorToArray.nSessionID = set("Datasession")
+			lcJsonXML = _screen.CursorToArray.CursorToArray()
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			use in (select("qXML"))
+		endtry
+		return lcJsonXML
+	endfunc
 	* CursorToJSON
-	Function CursorToJSON As Memo
-		Lparameters tcCursor As String, tbCurrentRow As Boolean, tnDataSession As Integer, tlJustArray As Boolean
-		Local lcJsonXML As Memo
+	function CursorToJSON as memo
+		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean
+		local lcJsonXML as memo
 		lcJsonXML = ''
-		Try
-			This.ResetError()
-			tcCursor = Evl(tcCursor, Alias())
-			tnDataSession = Evl(tnDataSession, Set("Datasession"))
-			If tbCurrentRow
-				lnRecno = Recno(tcCursor)
-				Select * From (tcCursor) Where Recno() = lnRecno Into Cursor qResult
-			Else
-				Select * From (tcCursor) Into Cursor qResult
-			Endif
+		try
+			this.ResetError()
+			tcCursor = evl(tcCursor, alias())
+			tnDataSession = evl(tnDataSession, set("Datasession"))
+			if tbCurrentRow
+				lnRecno = recno(tcCursor)
+				select * from (tcCursor) where recno() = lnRecno into cursor qResult
+			else
+				select * from (tcCursor) into cursor qResult
+			endif
 
-			_Screen.CursorToArray.CurName 	 = "qResult"
-			_Screen.CursorToArray.nSessionID = tnDataSession
-			lcJsonXML = _Screen.CursorToArray.CursorToArray()
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Finally
-			Use In (Select("qResult"))
-		Endtry
-		lcOutput = Iif(tlJustArray, lcJsonXML, '{"' + Lower(Alltrim(tcCursor)) + '":' + lcJsonXML + '}')
-		Return lcOutput
-	Endfunc
+			_screen.CursorToArray.CurName 	 = "qResult"
+			_screen.CursorToArray.nSessionID = tnDataSession
+			lcJsonXML = _screen.CursorToArray.CursorToArray()
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			use in (select("qResult"))
+		endtry
+		lcOutput = iif(tlJustArray, lcJsonXML, '{"' + lower(alltrim(tcCursor)) + '":' + lcJsonXML + '}')
+		return lcOutput
+	endfunc
 	* JSONToCursor
-	Function JSONToCursor(tcJsonStr As Memo, tcCursor As String, tnDataSession As Integer) As Void
-		Try
-			This.ResetError()
-			If !Empty(tcCursor)
-				tnDataSession = Evl(tnDataSession, Set("Datasession"))
-				_Screen.tokenizer.tokenize(tcJsonStr)
-				_Screen.ArrayToCursor.CurName 	 = tcCursor
-				_Screen.ArrayToCursor.nSessionID = tnDataSession
-				_Screen.ArrayToCursor.Array()
-			Else
-				If This.lShowErrors
-					Wait "Invalid cursor name." Window Nowait
-				Endif
-			Endif
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Endtry
-	Endfunc
+	function JSONToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
+		try
+			this.ResetError()
+			if !empty(tcCursor)
+				tnDataSession = evl(tnDataSession, set("Datasession"))
+				_screen.tokenizer.tokenize(tcJsonStr)
+				_screen.ArrayToCursor.CurName 	 = tcCursor
+				_screen.ArrayToCursor.nSessionID = tnDataSession
+				_screen.ArrayToCursor.array()
+			else
+				if this.lShowErrors
+					wait "Invalid cursor name." window nowait
+				endif
+			endif
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		endtry
+	endfunc
 	* CursorStructure
-	Function CursorStructure
-		Lparameters tcCursor As String, tnDataSession As Integer, tlCopyExtended As Boolean
-		Local lcOutput As Memo
+	function CursorStructure
+		lparameters tcCursor as string, tnDataSession as integer, tlCopyExtended as Boolean
+		local lcOutput as memo
 		lcOutput = ''
-		Try
-			This.ResetError()
-			loStructureToJSON = _Screen.StructureToJSON
-			tcCursor = Evl(tcCursor, Alias())
-			tnDataSession = Evl(tnDataSession, Set("Datasession"))
+		try
+			this.ResetError()
+			loStructureToJSON = _screen.StructureToJSON
+			tcCursor = evl(tcCursor, alias())
+			tnDataSession = evl(tnDataSession, set("Datasession"))
 			loStructureToJSON.CurName 	= tcCursor
 			loStructureToJSON.nSessionID  = tnDataSession
 			loStructureToJSON.lExtended   = tlCopyExtended
 			lcOutput = loStructureToJSON.StructureToJSON()
-		Catch To loEx
-			This.ShowExceptionError(loEx)
-		Finally
-			Use In (Select("qResult"))
-		Endtry
-		Return lcOutput
-	Endfunc
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			use in (select("qResult"))
+		endtry
+		return lcOutput
+	endfunc
 	* LastErrorText_Assign
-	Function LastErrorText_Assign
-		Lparameters vNewVal
-		With This
-			If .lInternal
-				.lInternal = .F.
+	function LastErrorText_Assign
+		lparameters vNewVal
+		with this
+			if .lInternal
+				.lInternal = .f.
 				.LastErrorText = m.vNewVal
-			Endif
-		Endwith
-	Endfunc
+			endif
+		endwith
+	endfunc
 	* ShowExceptionError
-	Function ShowExceptionError(toEx As Exception) As Void
-		With This
-			.lError = .T.
-			If .lShowErrors
-				Wait "ErrorNo: " 	+ Str(toEx.ErrorNo) 	+ Chr(13) + ;
-					"Message: " 	+ toEx.Message 			+ Chr(13) + ;
-					"LineNo: " 		+ Str(toEx.Lineno) 		+ Chr(13) + ;
-					"Procedure: " 	+ toEx.Procedure Window Nowait
-			Endif
-			.lInternal = .T.
-			.LastErrorText = toEx.Message
-		Endwith
-	Endfunc
+	function ShowExceptionError(toEx as exception) as Void
+		with this
+			.lError = .t.
+			if .lShowErrors
+				wait "ErrorNo: " 	+ str(toEx.errorno) 	+ chr(13) + ;
+					"Message: " 	+ toEx.message 			+ chr(13) + ;
+					"LineNo: " 		+ str(toEx.lineno) 		+ chr(13) + ;
+					"Procedure: " 	+ toEx.procedure window nowait
+			endif
+			.lInternal = .t.
+			.LastErrorText = toEx.message
+		endwith
+	endfunc
 	* ResetError
-	Hidden Function ResetError As Void
+	hidden function ResetError as Void
 		_screen.curtokenpos = 1
-		This.lError = .F.
-	Endfunc
+		this.lError = .f.
+	endfunc
 	* Destroy
-	Function Destroy
-		Try
-			If This.lTablePrompt
-				lcTablePrompt = This.lTablePrompt
-				Set TablePrompt &lcTablePrompt
-			Endif
-		Catch
-		Endtry
-	Endfunc
-Enddefine
+	function destroy
+		try
+			if this.lTablePrompt
+				lcTablePrompt = this.lTablePrompt
+				set tableprompt &lcTablePrompt
+			endif
+		catch
+		endtry
+	endfunc
+enddefine

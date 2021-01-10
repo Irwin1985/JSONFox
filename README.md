@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 4.2 - Release 2021-01-10 20:03:18
+
 **[JSONFox]** - 4.1 - Release 2020-12-26 23:32:01
 
 **[JSONFox]** - 4.0 - Release 2020-12-26 11:47:18
@@ -293,6 +295,10 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2021-01-10
+
+* Method CursorToArray now support nullable columns from tables or cursor.
 
 2020-12-26
 

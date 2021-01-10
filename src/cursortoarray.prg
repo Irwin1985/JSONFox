@@ -1,73 +1,74 @@
 * CursorToArray Parser
-Define Class CursorToArray As Session
+define class CursorToArray as session
 	nSessionID = 0
-	curName    = ""
+	CurName    = ""
 	* Function CursorToArray
-	Function CursorToArray As Memo
-		If !Empty(This.nSessionID)
-			Set DataSession To This.nSessionID
-		Endif
-		Private JSONUtils
-		JSONUtils = _Screen.JSONUtils
-		Local lcOutput As Memo
+	function CursorToArray as memo
+		if !empty(this.nSessionID)
+			set datasession to this.nSessionID
+		endif
+		private JSONUtils
+		JSONUtils = _screen.JSONUtils
+		local lcOutput as memo
 		lcOutput = "["
-		llCentury = Set("Century") == "OFF"
-		llDeleted = Set("Deleted") == "OFF"
-		lcDateAct = Set("Date")
-		Set Century On
-		Set Deleted On
-		Set Date Ansi
-		With This
+		llCentury = set("Century") == "OFF"
+		llDeleted = set("Deleted") == "OFF"
+		lcDateAct = set("Date")
+		set century on
+		set deleted on
+		set date ansi
+		with this
 			nCounter = 0
-			Select (.curName)
-			lnTotField  = Afields(aColumns, .curName)
-			lnTotal  	= Reccount(.curName)
-			lnRecNo 	= Recn(.curName)
-			Count For !Deleted() To lnTotal
-			Go lnRecNo
-			Scan
+			select (.CurName)
+			lnTotField  = afields(aColumns, .CurName)
+			lnTotal  	= reccount(.CurName)
+			lnRecNo 	= recn(.CurName)
+			count for !deleted() to lnTotal
+			go lnRecNo
+			scan
 				nCounter   = nCounter + 1
 				lcOutput   = lcOutput + "{"
-				For i = 1 To lnTotField
-					If i > 1
+				for i = 1 to lnTotField
+					if i > 1
 						lcOutput = lcOutput + ','
-					Endif
-					lcOutput = lcOutput + '"' + Lower(aColumns[i, 1]) + '"'
+					endif
+					lcOutput = lcOutput + '"' + lower(aColumns[i, 1]) + '"'
 					lcOutput = lcOutput + ':'
-					lcValue  = Evaluate(.curName + "." + aColumns[i, 1])
-					Do Case
-					Case aColumns[i, 2] $ "CDTBGMQVW"
-						Do Case
-						Case aColumns[i, 2] = "D"
-							lcValue = '"' + Strtran(Dtoc(lcValue), ".", "-") + '"'
-						Case aColumns[i, 2] = "T"
-							lcValue = '"' + Strtran(Ttoc(lcValue), ".", "-") + '"'
-						Otherwise
-							If Vartype(lcValue) = "X"
-								lcValue = "null"
-							Else
-								lcValue = JSONUtils.GetString(Alltrim(lcValue))
-							Endif
-						Endcase
-						lcOutput = lcOutput + Alltrim(lcValue)
-					Case aColumns[i, 2] $ "YFIN"
-						lcOutput = lcOutput + Transform(lcValue)
-					Case aColumns[i, 2] = "L"
-						lcOutput = lcOutput + Iif(lcValue, "true", "false")
-					Endcase
-				Endfor
-				lcOutput = lcOutput + '}' + Iif(nCounter < lnTotal, ',', '')
-				Select (.curName)
-			Endscan
-		Endwith
+					lcValue  = evaluate(.CurName + "." + aColumns[i, 1])
+					if vartype(lcValue) = 'X'
+						lcValue = "null"
+						lcOutput = lcOutput + alltrim(lcValue)
+					else
+						do case
+						case aColumns[i, 2] $ "CDTBGMQVW"
+							do case
+							case aColumns[i, 2] = 'D'
+								lcValue = '"' + strtran(dtoc(lcValue), '.', '-') + '"'
+							case aColumns[i, 2] = 'T'
+								lcValue = '"' + strtran(ttoc(lcValue), '.', '-') + '"'
+							otherwise
+								lcValue = JSONUtils.GetString(alltrim(lcValue))
+							endcase
+							lcOutput = lcOutput + alltrim(lcValue)
+						case aColumns[i, 2] $ "YFIN"
+							lcOutput = lcOutput + transform(lcValue)
+						case aColumns[i, 2] = "L"
+							lcOutput = lcOutput + iif(lcValue, "true", "false")
+						endcase
+					endif
+				endfor
+				lcOutput = lcOutput + '}' + iif(nCounter < lnTotal, ',', '')
+				select (.CurName)
+			endscan
+		endwith
 		lcOutput = lcOutput + "]"
-		If llCentury
-			Set Century Off
-		Endif
-		If llDeleted
-			Set Deleted Off
-		Endif
-		Set Date &lcDateAct
-		Return lcOutput
-	Endfunc
-Enddefine
+		if llCentury
+			set century off
+		endif
+		if llDeleted
+			set deleted off
+		endif
+		set date &lcDateAct
+		return lcOutput
+	endfunc
+enddefine
