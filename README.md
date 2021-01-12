@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 4.3 - Release 2021-01-12 16:52:07
+
 **[JSONFox]** - 4.2 - Release 2021-01-10 20:03:18
 
 **[JSONFox]** - 4.1 - Release 2020-12-26 23:32:01
@@ -295,6 +297,10 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2021-01-12
+
+* Parsing `Collections` based objects including nested ones.
 
 2021-01-10
 
