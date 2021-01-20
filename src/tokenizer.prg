@@ -1,204 +1,205 @@
 #include "JSONFox.h"
 * Tokenizer
-Define Class Tokenizer As Custom
-	Source 	= ""
-	Start 	= 0
-	Current = 0
-	Line 	= 0
+define class Tokenizer as custom
+	source 	= ""
+	start 	= 0
+	current = 0
+	line 	= 0
 	counter = 0
 	* Tokenize
-	Function Tokenize(tcSource)
-		This.Source = tcSource
-		This.Start = 0
-		This.Current = 1
-		This.Line = 1
-		
+	function Tokenize(tcSource)
+		this.source = tcSource
+		this.start = 0
+		this.current = 1
+		this.line = 1
+
 		this.counter = 0
-		Dimension _Screen.tokens[1]
-		Do While !This.isAtEnd()
+		dimension _screen.tokens[1]
+		do while !this.isAtEnd()
 			this.start = this.current
-			This.scanToken()
-		Enddo
+			this.scanToken()
+		enddo
 		* EOF Token
 		*This.newToken(T_EOF, "EOF")
-	Endfunc
+	endfunc
 
 	* isAtEnd
-	Function isAtEnd
-		Return This.Current > Len(This.Source)
-	Endfunc
+	function isAtEnd
+		return this.current > len(this.source)
+	endfunc
 
 	* scanToken
-	Function scanToken
-		Local ch
-		ch = This.advance()
-		Do Case
-		Case ch == '{'
+	function scanToken
+		local ch
+		ch = this.advance()
+		do case
+		case ch == '{'
 			this.newToken(T_LBRACE, '{')
-		Case ch == '}'
+		case ch == '}'
 			this.newToken(T_RBRACE, '}')
-		Case ch == '['
+		case ch == '['
 			this.newToken(T_LBRACKET, '[')
-		Case ch == ']'
+		case ch == ']'
 			this.newToken(T_RBRACKET, ']')
-		Case ch == ':'
+		case ch == ':'
 			this.newToken(T_COLON, ':')
-		Case ch == ','
+		case ch == ','
 			this.newToken(T_COMMA, ',')
-		Case ch == LF
+		case ch == LF
 			this.line = this.line + 1
-		Case InList(Asc(ch), 13, 9, 32)
+		case inlist(asc(ch), 13, 9, 32)
 			* break
-		Case ch == '"'
-			This.String()
-		Otherwise
-			Do case
-			case IsDigit(ch)
-				this.Number()
-			Case this.isLetter(ch)
+		case ch == '"'
+			this.string()
+		otherwise
+			do case
+			case isdigit(ch)
+				this.number()
+			case this.isLetter(ch)
 				this.identifier()
-			Otherwise
-				this.showError(this.line, "Unexpected character '" + Transform(ch) + "'")
+			otherwise
+				this.showError(this.line, "Unexpected character '" + transform(ch) + "'")
 			endcase
-		Endcase
-	EndFunc
+		endcase
+	endfunc
 	* identifier
-	Function identifier
-		Do while this.isLetter(this.peek())
+	function identifier
+		do while this.isLetter(this.peek())
 			this.advance()
-		EndDo
-		lexeme = Substr(this.source, this.start, this.current - this.start)
-		If InList(lexeme, "true", "false", "null")
-			this.newToken(Iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
-		Else
+		enddo
+		lexeme = substr(this.source, this.start, this.current - this.start)
+		if inlist(lexeme, "true", "false", "null")
+			this.newToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
+		else
 			this.showError(this.line, "Unexpected identifier '" + lexeme + "'")
 		endif
 	endfunc
 	* number
-	Function number
-		Do while IsDigit(this.peek())
+	function number
+		do while isdigit(this.peek())
 			this.advance()
-		EndDo
+		enddo
 
-		If this.peek() == '.' and IsDigit(this.peekNext())
+		if this.peek() == '.' and isdigit(this.peekNext())
 			this.advance()
-			Do while (IsDigit(this.peek()))
+			do while (isdigit(this.peek()))
 				this.advance()
-			EndDo
-		EndIf
-		literal = Substr(this.source, this.start, this.current - this.start)
+			enddo
+		endif
+		literal = substr(this.source, this.start, this.current - this.start)
 		this.newToken(T_NUMBER, literal)
-	EndFunc
+	endfunc
 	* string
-	Function String
-		Local s, c
+	function string
+		local s, c
 		s = ''
-		Do While !This.isAtEnd()
-			c = This.advance()			
-			If c = '\'
-				peek = this.advance()	
-				Do case
-				Case peek = '\'
+		do while !this.isAtEnd()
+			c = this.advance()
+			if c = '\'
+				peek = this.advance()
+				do case
+				case peek = '\'
 					s = s + '\'
-				Case peek = 'n'
+				case peek = 'n'
 					s = s + LF
-				Case peek = 'r'
+				case peek = 'r'
 					s = s + CR
-				Case peek = 't'
+				case peek = 't'
 					s = s + T_TAB
-				Case peek = '"'
+				case peek = '"'
 					s = s + '"'
-				Case peek = 'u'
+				case peek = 'u'
 					s = s + this.getUnicode()
-				Otherwise
+				otherwise
 					s = s + '\'
 				endcase
-			Else
-				If c = '"'
-					Exit
-				Else
+			else
+				if c = '"'
+					exit
+				else
 					s = s + c
 				endif
-			EndIf
-		EndDo
+			endif
+		enddo
 		this.newToken(T_STRING, s)
-	EndFunc
+	endfunc
 	* peek
-	Function peek
-		If this.current > Len(this.source)
-			Return Chr(255)
-		EndIf
-		Return Substr(this.source, this.current, 1)
-	EndFunc
+	function peek
+		if this.current > len(this.source)
+			return chr(255)
+		endif
+		return substr(this.source, this.current, 1)
+	endfunc
 	* peekNext
-	Function peekNext
-		If this.current + 1 > Len(this.source)
-			Return Chr(255)
-		EndIf
-		Return Substr(this.source, this.current + 1, 1)
-	EndFunc
+	function peekNext
+		if this.current + 1 > len(this.source)
+			return chr(255)
+		endif
+		return substr(this.source, this.current + 1, 1)
+	endfunc
 	* advance
-	Function advance
-		This.Current = This.Current + 1
-		Return Substr(This.Source, This.Current - 1, 1)
-	EndFunc
+	function advance
+		this.current = this.current + 1
+		return substr(this.source, this.current - 1, 1)
+	endfunc
 	* getUnicode
-	Hidden Function getUnicode As Void
+	hidden function getUnicode as Void
 		lcHexStr = '\u'
-		c = This.advance()
-		Local lcUnicode As String
+		c = this.advance()
+		local lcUnicode as string
 		lcUnicode = "0x"
-		Do While !this.isAtEnd() and (this.isHex(c) Or Isdigit(c))
-			If Len(lcUnicode) = 6
-				Exit
-			Endif
+		do while !this.isAtEnd() and (this.isHex(c) or isdigit(c))
+			if len(lcUnicode) = 6
+				exit
+			endif
 			lcUnicode = lcUnicode + c
 			lcHexStr = lcHexStr + c
 			c = this.advance()
-		Enddo
-		Try
-			lcUnicode = Chr(&lcUnicode)
-		Catch
-			Try
-				lcUnicode = Strconv(lcHexStr, 16)
-			Catch
-				Error "parse error: invalid hex format '" + Transform(lcUnicode) + "'"
-			EndTry
-		Endtry
-		Return lcUnicode
-	EndFunc
+		enddo
+		try
+			lcUnicode = chr(&lcUnicode)
+		catch
+			try
+				lcUnicode = strconv(lcHexStr, 16)
+			catch
+				error "parse error: invalid hex format '" + transform(lcUnicode) + "'"
+			endtry
+		endtry
+		return lcUnicode
+	endfunc
 	* isHex
-	Hidden Function isHex As Boolean
-		Lparameters tcLook As String
-		Return Between(Asc(tcLook), Asc("A"), Asc("F")) Or Between(Asc(tcLook), Asc("a"), Asc("f"))
-	EndFunc
+	hidden function isHex as Boolean
+		lparameters tcLook as string
+		return between(asc(tcLook), asc("A"), asc("F")) or between(asc(tcLook), asc("a"), asc("f"))
+	endfunc
 	* Create new token
-	Hidden Function newToken(tnTokenType, tcTokenValue)
+	hidden function newToken(tnTokenType, tcTokenValue)
 		* Add token
-		token = Createobject("Empty")
-		
-		=AddProperty(token, "type", tnTokenType)
-		=AddProperty(token, "lexeme", tcTokenValue)
-		=AddProperty(token, "literal", tcTokenValue)
-		=AddProperty(token, "line", this.start)
-		
+		lcTokenRef = "JsonToken" + SYS(2015)
+		&lcTokenRef = createobject("Empty")
+
+		=addproperty(&lcTokenRef, "type", tnTokenType)
+		=addproperty(&lcTokenRef, "lexeme", tcTokenValue)
+		=addproperty(&lcTokenRef, "literal", tcTokenValue)
+		=addproperty(&lcTokenRef, "line", this.start)
+
 		this.counter = this.counter + 1
-		Dimension _Screen.tokens[this.counter]
-		_Screen.tokens[this.counter] = token
-	EndFunc
+		dimension _screen.tokens[this.counter]
+		_screen.tokens[this.counter] = &lcTokenRef
+	endfunc
 	* PrettyPrint
-	Function PrettyPrint
-		For i=1 To Alen(_Screen.tokens, 1)
-			token = _Screen.tokens[i]
-			?"Type:",token.Type, "Lit: ", token.literal, "Line: ", token.line
-		EndFor
-	EndFunc
+	function PrettyPrint
+		for i=1 to alen(_screen.tokens, 1)
+			token = _screen.tokens[i]
+			?"Type:",token.type, "Lit: ", token.literal, "Line: ", token.line
+		endfor
+	endfunc
 	* showError
-	Function showError(tnLine, tcMessage)
-		Error "[line" + Alltrim(Str(tnLine)) + "] Error: " + tcMessage
-	EndFunc
+	function showError(tnLine, tcMessage)
+		error "[line" + alltrim(str(tnLine)) + "] Error: " + tcMessage
+	endfunc
 	* isLetter
-	Function isLetter(ch)
-		Return 'a' <= ch and ch <= 'z' or 'A' <= ch and ch <= 'Z'
-	EndFunc	
-EndDefine
+	function isLetter(ch)
+		return 'a' <= ch and ch <= 'z' or 'A' <= ch and ch <= 'Z'
+	endfunc
+enddefine

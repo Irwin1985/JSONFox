@@ -43,9 +43,17 @@ define class CursorToArray as session
 						case aColumns[i, 2] $ "CDTBGMQVW"
 							do case
 							case aColumns[i, 2] = 'D'
-								lcValue = '"' + strtran(dtoc(lcValue), '.', '-') + '"'
+								if !empty(lcValue)
+									lcValue = '"' + strtran(dtoc(lcValue), '.', '-') + '"'
+								else
+									lcValue = 'null'
+								endif
 							case aColumns[i, 2] = 'T'
-								lcValue = '"' + strtran(ttoc(lcValue), '.', '-') + '"'
+								if !empty(lcValue)
+									lcValue = '"' + strtran(ttoc(lcValue), '.', '-') + '"'
+								else
+									lcValue = 'null'
+								endif
 							otherwise
 								lcValue = JSONUtils.GetString(alltrim(lcValue))
 							endcase
