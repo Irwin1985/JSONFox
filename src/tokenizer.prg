@@ -7,7 +7,7 @@ define class Tokenizer as custom
 	line 	= 0
 	counter = 0
 	* Tokenize
-	function Tokenize(tcSource)
+	function Tokenize(tcSource)		
 		this.source = tcSource
 		this.start = 0
 		this.current = 1
@@ -145,6 +145,7 @@ define class Tokenizer as custom
 	* getUnicode
 	hidden function getUnicode as Void
 		lcHexStr = '\u'
+		local c
 		c = this.advance()
 		local lcUnicode as string
 		lcUnicode = "0x"
@@ -156,6 +157,9 @@ define class Tokenizer as custom
 			lcHexStr = lcHexStr + c
 			c = this.advance()
 		enddo
+		&& IRODG 01/28/21
+		this.current = this.current - 1 && shift back the character.
+		&& IRODG 01/28/21
 		try
 			lcUnicode = chr(&lcUnicode)
 		catch

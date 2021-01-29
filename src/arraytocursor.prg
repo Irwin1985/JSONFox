@@ -82,6 +82,7 @@ Define Class ArrayToCursor As Session
 
 			lxValue = This.Value()
 			lcType  = Vartype(lxValue)
+			lnFieldLength = 0
 			Do Case
 			Case lcType = "N"
 				lcType = Iif(Occurs(".", Transform(lxValue)) > 0, "N", "I")
@@ -96,11 +97,19 @@ Define Class ArrayToCursor As Session
 							lcType  = Vartype(lxValue)
 						Endif
 					Endif
-				Endif
+				endif
+				&& IRODG 01/28/21
+				if lcType == "C"
+					lnFieldLength = iif(empty(Len(lxValue)), 1, Len(lxValue))
+				endif
+				&& IRODG 01/28/21
 			Endcase
 			lcFieldName = Lower(JSONUtils.CheckProp(lcProp))
-
-			This.CheckStructure(lcFieldName, lcType, Iif(lcType == "C", Len(lxValue), 0))
+			
+			&& IRODG 01/28/21
+			*This.CheckStructure(lcFieldName, lcType, Iif(lcType == "C", Len(lxValue), 0))
+			This.CheckStructure(lcFieldName, lcType, lnFieldLength)
+			&& IRODG 01/28/21
 		Else
 			JSONUtils.jsonError(_Screen.oPeek, "Unknown token value")
 		Endif
