@@ -3,190 +3,166 @@
 && Class utils
 && JSON Utilities
 && ======================================================================== &&
-Define Class JSONUtils As Custom
+define class jsonutils as custom
 	* match
-	Function match(tnType)
-		If This.Check(tnType)
-			This.advance()
-			Return .T.
-		Endif
-		Return .F.
-	Endfunc
+	function match(tntype)
+		if this.check(tntype)
+			this.advance()
+			return .t.
+		endif
+		return .f.
+	endfunc
 
 	* Consume
-	Function consume
-		Lparameters tnType As Integer, tcMessage As String
-		If This.Check(tnType)
-			Return This.advance()
-		Endif
-		Error This.jsonError(This.peek(), tcMessage)
-	Endfunc
+	function consume
+		lparameters tntype as integer, tcmessage as string
+		if this.check(tntype)
+			return this.advance()
+		endif
+		error this.jsonerror(this.peek(), tcmessage)
+	endfunc
 
 	* Check
-	Function Check(tnType)
-		If This.isAtEnd()
-			Return .F.
-		Else
-			Return _Screen.oPeek.Type == tnType
-		Endif
-	Endfunc
+	function check(tntype)
+		if this.isatend()
+			return .f.
+		else
+			return _screen.opeek.type == tntype
+		endif
+	endfunc
 
 	* Advance
-	Function advance
-		If !This.isAtEnd()
-			_Screen.curtokenpos = _Screen.curtokenpos + 1
-		Endif
-		Return This.previous() && retrieve the just eaten token.
-	Endfunc
+	function advance
+		if !this.isatend()
+			_screen.curtokenpos = _screen.curtokenpos + 1
+		endif
+		return this.previous() && retrieve the just eaten token.
+	endfunc
 
 	* Previous
-	Function previous
-		_Screen.oPrevious = _Screen.tokens[_screen.curtokenpos - 1]
-		Return _Screen.oPrevious
-	Endfunc
+	function previous
+		_screen.oprevious = _screen.tokens[_screen.curtokenpos - 1]
+		return _screen.oprevious
+	endfunc
 
 	* IsAtEnd
-	Function isAtEnd
-		loPeek = This.peek()
-		Return loPeek.Type = T_EOF
-	Endfunc
+	function isatend
+		lopeek = this.peek()
+		return lopeek.type = t_eof
+	endfunc
 
 	* Peek
-	Function peek
-		_Screen.oPeek = _Screen.tokens[_screen.curtokenpos]
-		Return _Screen.oPeek
-	Endfunc
+	function peek
+		_screen.opeek = _screen.tokens[_screen.curtokenpos]
+		return _screen.opeek
+	endfunc
 
 	* Error
-	Function jsonError(toToken, tcMessage)
-		lcMsg = " at '" + toToken.lexeme + "'"
-		If toToken.Type == T_EOF
-			lcMsg = " at end"
-		Endif
-		This.jsonReport(toToken.Line, lcMsg, tcMessage)
-	Endfunc
+	function jsonerror(totoken, tcmessage)
+		lcmsg = " at '" + totoken.lexeme + "'"
+		if totoken.type == t_eof
+			lcmsg = " at end"
+		endif
+		this.jsonreport(totoken.line, lcmsg, tcmessage)
+	endfunc
 	* Report
-	Function jsonReport(tnLine, tcWhere, tcMessage)
-		Error "[line " + Alltrim(Str(tnLine)) + "] Error " + tcWhere + ": " + tcMessage
-	Endfunc
+	function jsonreport(tnline, tcwhere, tcmessage)
+		error "[line " + alltrim(str(tnline)) + "] Error " + tcwhere + ": " + tcmessage
+	endfunc
 	&& ======================================================================== &&
 	&& Function GetValue
 	&& ======================================================================== &&
-	Function GetValue As String
-		Lparameters tcValue As String, tcType As Character
-		Do Case
-		Case tcType $ "CDTBGMQVWX"
-			Do Case
-			Case tcType = "D"
-				tcValue = '"' + Strtran(Dtoc(tcValue), ".", "-") + '"'
-			Case tcType = "T"
-				tcValue = '"' + Strtran(Ttoc(tcValue), ".", "-") + '"'
-			Otherwise
-				If tcType = "X"
-					tcValue = "null"
-				Else
-					tcValue = This.GetString(tcValue)
-				Endif
-			Endcase
-			tcValue = Alltrim(tcValue)
-		Case tcType $ "YFIN"
-			tcValue = Strtran(Transform(tcValue), ',', '.')
-		Case tcType = "L"
-			tcValue = Iif(tcValue, "true", "false")
-		Endcase
-		Return tcValue
-	Endfunc
+	function getvalue as string
+		lparameters tcvalue as string, tctype as character
+		do case
+		case tctype $ "CDTBGMQVWX"
+			do case
+			case tctype = "D"
+				tcvalue = '"' + strtran(dtoc(tcvalue), ".", "-") + '"'
+			case tctype = "T"
+				tcvalue = '"' + strtran(ttoc(tcvalue), ".", "-") + '"'
+			otherwise
+				if tctype = "X"
+					tcvalue = "null"
+				else
+					tcvalue = this.getstring(tcvalue)
+				endif
+			endcase
+			tcvalue = alltrim(tcvalue)
+		case tctype $ "YFIN"
+			tcvalue = strtran(transform(tcvalue), ',', '.')
+		case tctype = "L"
+			tcvalue = iif(tcvalue, "true", "false")
+		endcase
+		return tcvalue
+	endfunc
 	&& ======================================================================== &&
 	&& Function FormatDate
 	&& return a valid date or datetime date type.
 	&& ======================================================================== &&
-	Function FormatDate As Variant
-		Lparameters tcDate As String
-		Local cStr As String, lIsDateTime As Boolean, lDate As Variant
-		cStr 		= ''
-		lIsDateTime = .F.
-		lDate		= .Null.
-		cStr 		= Strtran(tcDate, '-')
-		If Occurs(':', tcDate) >= 2 .And. Len(Alltrim(tcDate)) <= 25
-			lIsDateTime = .T.
-			Do Case
-			Case "." $ tcDate And "T" $ tcDate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
-				cStr = Strtran(tcDate, "T")
-				cStr = Substr(cStr, 1, At(".", cStr) - 1)
-				cStr = Strtran(cStr, '-')
-				cStr = Strtran(cStr, ':')
-				tcDate = Substr(Strtran(tcDate, "T", Space(1)), 1, At(".", tcDate) - 1)
-			Case "T" $ tcDate And Occurs(':', tcDate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
-				cStr = Strtran(tcDate, "T")
-				cStr = Substr(cStr, 1, At("-", cStr, 3) - 1)
-				cStr = Strtran(cStr, '-')
-				cStr = Strtran(cStr, ':')
-				tcDate = Substr(Strtran(tcDate, "T", Space(1)), 1, At("-", tcDate, 3) - 1)
-			Otherwise
-				cStr = Strtran(cStr, ':')
-				cStr = Strtran(Lower(cStr), 'am')
-				cStr = Strtran(Lower(cStr), 'pm')
-				cStr = Strtran(cStr, Space(1))
-				tcDate = Substr(tcDate, 1, At(Space(1), tcDate, 2) - 1)
-			Endcase
-		Endif
-		For i=1 To Len(cStr) Step 1
-			If Isdigit(Substr(cStr, i, 1))
-				Loop
-			Else
-				Return .Null.
-			Endif
-		Endfor
-		lcYear  = Left(tcDate, 4)
-		lcMonth = Strextract(tcDate, '-', '-', 1)
-		If !lIsDateTime
-			lcDay = Right(tcDate, 2)
-		Else
-			lcDay = Strextract(tcDate, '-', Space(1), 2)
-		Endif
-		If Val(lcYear) > 0 And Val(lcMonth) > 0 And Val(lcDay) > 0
-			If !lIsDateTime
-				lDate = Date(Val(lcYear), Val(lcMonth), Val(lcDay))
-			Else
-				lcHour = Substr(tcDate, 12, 2)
-				lcMin  = Strextract(tcDate, ':', ':', 1)
-				lcSecs = Right(tcDate, 2)
-				lDate  = Datetime(Val(lcYear), Val(lcMonth), Val(lcDay), Val(lcHour), Val(lcMin), Val(lcSecs))
-			Endif
-		Else
-			lDate = Iif(!lIsDateTime, {//}, {//::})
-		Endif
-		Return lDate
-	Endfunc
+	function formatdate as variant
+		lparameters tcdate as string
+		local ldate
+		ldate = .null.
+		if occurs(':', tcdate) >= 2 .and. len(alltrim(tcdate)) <= 25
+			do case
+			case '.' $ tcdate and 'T' $ tcdate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
+				tcdate = substr(strtran(tcdate, "T", space(1)), 1, at(".", tcdate) - 1)
+			case 'T' $ tcdate and occurs(':', tcdate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
+				tcdate = substr(strtran(tcdate, 'T', space(1)), 1, at('-', tcdate, 3) - 1)
+			otherwise && VFP Date Time Format. 'YYYY-mm-dd HH:mm:ss'
+			endcase
+			try
+				setDateAct = set("Date")
+				set date ymd
+				ldate = ctot(tcdate)
+			catch				
+				ldate = {//::}
+			finally
+				set date &setDateAct
+			endtry
+		else
+			try
+				setDateAct = set("Date")
+				set date ymd
+				ldate = ctod(tcdate)
+			catch
+				ldate = {//}
+			finally
+				set date &setDateAct
+			endtry
+		endif
+		return ldate
+	endfunc
 	&& ======================================================================== &&
 	&& Function GetString
 	&& ======================================================================== &&
-	Function GetString As String
-		Lparameters tcString As String
-		tcString = Allt(tcString)
-		tcString = Strtran(tcString, '\', '\\' )
-		tcString = Strtran(tcString, '/', '\/' )
-		tcString = Strtran(tcString, Chr(9),  '\t' )
-		tcString = Strtran(tcString, Chr(10), '\n' )
-		tcString = Strtran(tcString, Chr(13), '\r' )
-		tcString = Strtran(tcString, '"', '\"' )
-		Return '"' +tcString + '"'
-	Endfunc
+	function getstring as string
+		lparameters tcstring as string
+		tcstring = allt(tcstring)
+		tcstring = strtran(tcstring, '\', '\\' )
+		tcstring = strtran(tcstring, '/', '\/' )
+		tcstring = strtran(tcstring, chr(9),  '\t' )
+		tcstring = strtran(tcstring, chr(10), '\n' )
+		tcstring = strtran(tcstring, chr(13), '\r' )
+		tcstring = strtran(tcstring, '"', '\"' )
+		return '"' +tcstring + '"'
+	endfunc
 	&& ======================================================================== &&
 	&& Function CheckProp
 	&& Check the object property name for invalid format (replace with '_')
 	&& ======================================================================== &&
-	Function CheckProp(tcProp As String) As String
-		Local lcFinalProp As String
-		lcFinalProp = ""
-		For i = 1 To Len(tcProp)
-			lcChar = Substr(tcProp, i, 1)
-			If (i = 1 And Isdigit(lcChar)) Or (!Isalpha(lcChar) And !Isdigit(lcChar))
-				lcFinalProp = lcFinalProp + "_"
-			Else
-				lcFinalProp = lcFinalProp + lcChar
-			Endif
-		Endfor
-		Return Alltrim(lcFinalProp)
-	Endfunc
-Enddefine
+	function checkprop(tcprop as string) as string
+		local lcfinalprop as string
+		lcfinalprop = ""
+		for i = 1 to len(tcprop)
+			lcchar = substr(tcprop, i, 1)
+			if (i = 1 and isdigit(lcchar)) or (!isalpha(lcchar) and !isdigit(lcchar))
+				lcfinalprop = lcfinalprop + "_"
+			else
+				lcfinalprop = lcfinalprop + lcchar
+			endif
+		endfor
+		return alltrim(lcfinalprop)
+	endfunc
+enddefine

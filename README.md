@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 5.1 - Release 2021-02-18 20:25:18
+
 **[JSONFox]** - 4.5 - Release 2021-01-28 21:35:58
 
 **[JSONFox]** - 4.4 - Release 2021-01-19 08:00:12
@@ -301,6 +303,10 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2021-02-18
+
+* Bug fixed: Date & DateTime format parsing.
 
 2021-01-28
 
