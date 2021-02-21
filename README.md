@@ -94,7 +94,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * Convert any cursor structure into JSON
 ?_Screen.Json.CursorStructure('cGames')
 ```
-## Function Signature
+## Full Documentation
 * ![](docs/meth.gif) **_Screen.Json.CursorToJSON(tcCursor As String *[, tbCurrentRow As Boolean [, tnDataSession As Integer]]*)**
 * ![](docs/prop.gif) **tcCursor:** the name of your cursor.
 * ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
@@ -116,18 +116,17 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * ![](docs/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
   * **vNewProp:** represents any value type.
 
-* ![](docs/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
-  * **tcJsonStr:** represents a valid JSON string format.
+~~* ![](docs/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
+  * **tcJsonStr:** represents a valid JSON string format.~~
 
-* ![](docs/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
-  * **tcJsonFile:** represents any file extension with a valid JSON string format.
+~~* ![](docs/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
+  * **tcJsonFile:** represents any file extension with a valid JSON string format.~~
 
 * ![](docs/meth.gif) **_Screen.Json.ArrayToXML(tStrArray AS MEMO):** Serialize a JSON string to a XML representation.
   * **tStrArray:** represents a valid JSON Array string format.
 
 * ![](docs/meth.gif) **_Screen.Json.XMLToJson(tcXML AS MEMO):** Serialize a XML string to a JSON representation.
   * **tcXML:** represents a valid XML string format.
-
 
   * ![](docs/meth.gif) **_Screen.Json.JsonToCursor(cJsonStr, cCursorName *[, nDataSessionID*]):** Convert JSON array into cursor.
   * **cJsonStr:** **Array** JSON string format.
@@ -235,31 +234,7 @@ Replace salary With 5.000 In qEmployees
 cJson = _Screen.json.CursorToJson("qEmployees")
 ?cJson
 
-* Sample 3: Decorate and print any class
-* Suppose you have a person class.
-oPerson = CreateObject("PersonClass")
-With oPerson
-	.fullname = "Jhon Doe"
-	.age = 45
-	.gender = "Male"
-	.married = .T.
-	.birthdate = Date(1985, 11, 15)
-	.created = Datetime()
-EndWith
-
-* Now you need to extend this person class
-oJhon = NewObject("JSon", "JsonDecorator.prg")
-?oJhon.to_json()
-{
-  "age": 45,
-  "birthdate": "1985-11-15",
-  "created": "2020-07-28 09:29:41 PM",
-  "fullname": "Jhon Doe",
-  "gender": "Male",
-  "married": true
-}
-
-* Sample 4: Stringify Example
+* Sample 3: Stringify Example
 cJson = '{"age":45,"birthdate":"1985-11-15","created":"2020-07-28 09:29:41 PM","fullname":"Jhon Doe","gender":"Male","married":true,"soports":["running","swiming","basket-ball"]}'
 ?_Screen.Json.Stringify(cJson)
 
