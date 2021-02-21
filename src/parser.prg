@@ -94,13 +94,7 @@ Define Class Parser As Custom
 		lvNewVal = .Null.
 		Do Case
 		Case JSONUtils.Match(T_STRING)
-			lvNewVal = _Screen.oPrevious.Lexeme
-			If Occurs('-', lvNewVal) >= 2
-				lDate = JSONUtils.FormatDate(lvNewVal)
-				If !Isnull(lDate)
-					lvNewVal = lDate
-				Endif
-			Endif
+			lvNewVal = JSONUtils.CheckString(_Screen.oPrevious.Lexeme)
 			Return lvNewVal
 		Case JSONUtils.Match(T_NUMBER)
 			nVal = Val(_Screen.oPrevious.Lexeme)

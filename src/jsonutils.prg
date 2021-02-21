@@ -97,6 +97,42 @@ define class jsonutils as custom
 		return tcvalue
 	endfunc
 	&& ======================================================================== &&
+	&& Function CheckString
+	&& Check the string content in case it is a date or datetime.
+	&& String itself or string date / datetime format.
+	&& ======================================================================== &&
+	function CheckString(tcString)
+		date_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])$"
+		datetime_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
+		iso_8601_pattern = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[+-](\d{2})\:(\d{2})$"
+		java_datetime = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[.](\d{3})(\w{1})$"
+		_screen.oRegEx.Global = .T.
+
+		* Regular Date Format
+		_screen.oRegEx.Pattern = date_pattern
+		if _screen.oRegEx.Test(tcString)
+			return this.formatDate(tcString)
+		endif
+		* Regular Date Time Format
+		_screen.oRegEx.Pattern = datetime_pattern
+		if _screen.oRegEx.Test(tcString)
+			return this.formatDate(tcString)
+		endif
+		* ISO8601 Date Time Format
+		_screen.oRegEx.Pattern = iso_8601_pattern
+		if _screen.oRegEx.Test(tcString)
+			return this.formatDate(tcString)
+		endif
+		* JavaScript Date Time Format
+		_screen.oRegEx.Pattern = java_datetime
+		if _screen.oRegEx.Test(tcString)
+			return this.formatDate(tcString)
+		endif
+		
+		* Normal String
+		return tcString
+	endfunc
+	&& ======================================================================== &&
 	&& Function FormatDate
 	&& return a valid date or datetime date type.
 	&& ======================================================================== &&
