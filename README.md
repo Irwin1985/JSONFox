@@ -116,11 +116,11 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * ![](docs/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
   * **vNewProp:** represents any value type.
 
-~~* ![](docs/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
-  * **tcJsonStr:** represents a valid JSON string format.~~
+* ![](docs/meth.gif) **_Screen.Json.Decode(tcJsonStr AS MEMO):** Decode a valid JSON format string.
+  * **tcJsonStr:** represents a valid JSON string format.
 
-~~* ![](docs/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
-  * **tcJsonFile:** represents any file extension with a valid JSON string format.~~
+* ![](docs/meth.gif) **_Screen.Json.LoadFile(tcJsonFile AS STRING):** Loads and decodes any file extension with a valid JSON format string inside.
+  * **tcJsonFile:** represents any file extension with a valid JSON string format.
 
 * ![](docs/meth.gif) **_Screen.Json.ArrayToXML(tStrArray AS MEMO):** Serialize a JSON string to a XML representation.
   * **tStrArray:** represents a valid JSON Array string format.
@@ -128,17 +128,17 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * ![](docs/meth.gif) **_Screen.Json.XMLToJson(tcXML AS MEMO):** Serialize a XML string to a JSON representation.
   * **tcXML:** represents a valid XML string format.
 
-  * ![](docs/meth.gif) **_Screen.Json.JsonToCursor(cJsonStr, cCursorName *[, nDataSessionID*]):** Convert JSON array into cursor.
+* ![](docs/meth.gif) **_Screen.Json.JsonToCursor(cJsonStr, cCursorName *[, nDataSessionID*]):** Convert JSON array into cursor.
   * **cJsonStr:** **Array** JSON string format.
   * **cCursorName:** your generated cursor name.
   * **nDataSessionID:** if you are using private sessions please provide it here. Otherwise default session will be assumed.
 
-  * ![](docs/meth.gif) **_Screen.Json.CursorStructure(cCursorName *[, nDataSessionID] [, tbCopyExtended]*):** Dump the json structure of the given cursor or alias.
+* ![](docs/meth.gif) **_Screen.Json.CursorStructure(cCursorName *[, nDataSessionID] [, tbCopyExtended]*):** Dump the json structure of the given cursor or alias.
   * **cCursorName:** your cursor name.
   * **nDataSessionID:** if you are using private sessions please provide it here. Otherwise default session will be assumed.  
   * **tbCopyExtended:** generates the extended version of the cursor structure.
   
-  * ![](docs/meth.gif) **_Screen.Json.Stringify(tvNewVal *[, cFlags]*):** Return an indented JSON string corresponding to the specified value.
+* ![](docs/meth.gif) **_Screen.Json.Stringify(tvNewVal *[, cFlags]*):** Return an indented JSON string corresponding to the specified value.
   * **tvNewVal:** either an object or a raw JSONString.
   * **cFlags:** like `AMEMBERS()` functions flags. You may also pass any combinations of them.
 
@@ -154,7 +154,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
   | B         | Base          |
   | R         | Read Only     |
 
-  * ![](docs/meth.gif) **_Screen.Json.JsonViewer(cJsonStr *[, bStopExecution]*):** Open your JSON inside an Editor.
+* ![](docs/meth.gif) **_Screen.Json.JsonViewer(cJsonStr *[, bStopExecution]*):** Open your JSON inside an Editor.
   * **cJsonStr:** JSON string format.
   * **bStopExecution:** waits until editor windows ends.
 
