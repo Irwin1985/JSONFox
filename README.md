@@ -113,9 +113,6 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * ![](docs/meth.gif) **_Screen.Json.Parse(tcJsonStr AS MEMO):** Parse the string text as JSON (Visual Foxpro Empty class object representation)
   * **tcJsonStr:** represents a valid JSON string format.
 
-* ![](docs/meth.gif) **_Screen.Json.Stringify(tvNewVal As Variant):** Return an indented JSON string corresponding to the specified value.
-  * **tvNewVal:** you can pass either an object or a raw JSONString.
-
 * ![](docs/meth.gif) **_Screen.Json.Encode(vNewProp as variant):** Encode a JSON object into string.
   * **vNewProp:** represents any value type.
 
@@ -141,10 +138,10 @@ Insert into cGames Values('The Legend of Zelda', 1986)
   * **cCursorName:** your cursor name.
   * **nDataSessionID:** if you are using private sessions please provide it here. Otherwise default session will be assumed.  
   * **tbCopyExtended:** generates the extended version of the cursor structure.
-
-  * ![](docs/meth.gif) **_Screen.Json.JsonStringify(cJsonStr *[, cFlags]*):** Pretty prints the JSON format.
-  * **cJsonStr:** JSON string format.
-  * **cFlags:** like AMEMBERS() functions flags. You may also pass any combinations of them.
+  
+  * ![](docs/meth.gif) **_Screen.Json.Stringify(tvNewVal *[, cFlags]*):** Return an indented JSON string corresponding to the specified value.
+  * **tvNewVal:** either an object or a raw JSONString.
+  * **cFlags:** like `AMEMBERS()` functions flags. You may also pass any combinations of them.
 
   | Parameter | Description   |
   | --------- | ------------- |
