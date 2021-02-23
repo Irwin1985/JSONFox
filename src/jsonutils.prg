@@ -101,11 +101,12 @@ define class jsonutils as custom
 	&& Check the string content in case it is a date or datetime.
 	&& String itself or string date / datetime format.
 	&& ======================================================================== &&
-	function CheckString(tcString)
+	function CheckString(tcString)		
 		date_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])$"
 		datetime_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
 		iso_8601_pattern = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[+-](\d{2})\:(\d{2})$"
 		java_datetime = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[.](\d{3})(\w{1})$"
+		dmy_pattern = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4}$"
 		_screen.oRegEx.Global = .T.
 
 		* Regular Date Format
@@ -128,6 +129,11 @@ define class jsonutils as custom
 		if _screen.oRegEx.Test(tcString)
 			return this.formatDate(tcString)
 		endif
+		* dd-mm-YYYY or dd/mm/YYYY date format.
+		_screen.oRegEx.Pattern = dmy_pattern
+		if _screen.oRegEx.Test(tcString)
+			return this.formatDate(tcString, .T.)
+		endif
 		
 		* Normal String
 		return tcString
@@ -137,7 +143,7 @@ define class jsonutils as custom
 	&& return a valid date or datetime date type.
 	&& ======================================================================== &&
 	function formatdate as variant
-		lparameters tcdate as string
+		lparameters tcdate as string, tlUseDMY as Boolean
 		local ldate
 		ldate = .null.
 		if occurs(':', tcdate) >= 2 .and. len(alltrim(tcdate)) <= 25
@@ -160,7 +166,11 @@ define class jsonutils as custom
 		else
 			try
 				setDateAct = set("Date")
-				set date ymd
+				if !tlUseDMY
+					set date ymd
+				else
+					set date dmy
+				endif
 				ldate = ctod(tcdate)
 			catch
 				ldate = {//}

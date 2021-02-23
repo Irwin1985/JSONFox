@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "5.2"
+	version 		= "5.3"
 	hidden lInternal
 	hidden lTablePrompt
 
@@ -20,6 +20,7 @@ define class JSONClass as session
 	function Parse as memo
 		lparameters tcJsonStr as memo
 		local loJSONObj as object
+		set step on 
 		loJSONObj = .null.
 		try
 			this.ResetError()
