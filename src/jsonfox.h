@@ -1,5 +1,5 @@
 * JSONFox Constants
-#Define T_NONE	0
+#Define T_NONE	'ÿ'
 #Define T_LBRACE	1
 #Define T_RBRACE	2
 #Define T_LBRACKET	3

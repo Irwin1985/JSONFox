@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "5.3"
+	version 		= "6.0"
 	hidden lInternal
 	hidden lTablePrompt
 
@@ -16,21 +16,27 @@ define class JSONClass as session
 			set tableprompt off
 		endwith
 	endfunc
+
 	* Parse the string text as JSON
 	function Parse as memo
 		lparameters tcJsonStr as memo
 		local loJSONObj as object
-		set step on 
 		loJSONObj = .null.
 		try
 			this.ResetError()
-			_screen.tokenizer.tokenize(tcJsonStr)
-			loJSONObj = _screen.Parser.Parse()
+			local lexer, parser
+			lexer = createobject("Tokenizer", tcJsonStr)
+			parser = createobject("Parser", lexer)
+			loJSONObj = parser.Parse()
 		catch to loEx
 			this.ShowExceptionError(loEx)
+		finally
+			store .null. to lexer, parser
+			release lexer, parser
 		endtry
 		return loJSONObj
 	endfunc
+
 	* Stringify
 	function Stringify as memo
 		lparameters tvNewVal as Variant, tcFlags as string
@@ -41,13 +47,19 @@ define class JSONClass as session
 		local loJSONStr as memo
 		loJSONStr = ""
 		try
-			_screen.tokenizer.tokenize(tvNewVal)
-			loJSONStr = _screen.JSONStringify.Stringify()
+			local lexer, parser
+			lexer = createobject("Tokenizer", tvNewVal)
+			parser = createobject("JSONStringify", lexer)		
+			loJSONStr = parser.Stringify()
 		catch to loEx
 			this.ShowExceptionError(loEx)
+		finally
+			store .null. to lexer, parser
+			release lexer, parser
 		endtry
 		return loJSONStr
 	endfunc
+
 	* JSONToRTF
 	function JSONToRTF as memo
 		lparameters tvNewVal as Variant, tnIndent as Boolean
@@ -60,18 +72,24 @@ define class JSONClass as session
 		try
 			this.lError = .f.
 			this.LastErrorText = ''
-			_screen.tokenizer.tokenize(tvNewVal)
-			_screen.JSONToRTF.lShowErrors = this.lShowErrors
-			loJSONStr = _screen.JSONToRTF.StrToRTF(tnIndent)
-			this.lError = _screen.JSONToRTF.lError
-			this.LastErrorText = _screen.JSONToRTF.cErrorMsg
+			local lexer, parser
+			lexer = createobject("Tokenizer", tvNewVal)
+			parser = createobject("JSONToRTF", lexer)
+			parser.lShowErrors = this.lShowErrors
+			loJSONStr = parser.StrToRTF(tnIndent)
+			this.lError = parser.lError
+			this.LastErrorText = parser.cErrorMsg
 		catch to loEx
 			this.ShowExceptionError(loEx)
 			this.lError = .t.
 			this.LastErrorText = loEx.message
+		finally
+			store .null. to lexer, parser
+			release lexer, parser
 		endtry
 		return loJSONStr
 	endfunc
+
 	* JSONViewer
 	function JSONViewer as Void
 		lparameters tcJsonStr as memo, tlStopExecution as Boolean
@@ -88,23 +106,16 @@ define class JSONClass as session
 	&& <<Deprecated>> please use Stringify function instead.
 	&& ======================================================================== &&
 	function Encode(toObj as object, tcFlags as string) as memo
-		return _screen.ObjectToJson.Encode(@toObj, tcFlags)
+		local loEncode
+		loEncode = createobject("ObjectToJson")
+		return loEncode.Encode(@toObj, tcFlags)
 	endfunc
 	&& ======================================================================== &&
 	&& Function decode
 	&& <<Deprecated>> please use Parse function instead.
 	&& ======================================================================== &&
 	function Decode(tcJsonStr as memo) as object
-		local loJSONObj as object
-		loJSONObj = .null.
-		try
-			this.ResetError()
-			_screen.tokenizer.tokenize(tcJsonStr)
-			loJSONObj = _screen.Parser.Parse()
-		catch to loEx
-			this.ShowExceptionError(loEx)
-		endtry
-		return loJSONObj
+		return this.parse(tcJsonStr)
 	endfunc
 	&& ======================================================================== &&
 	&& Function LoadFile
@@ -118,11 +129,7 @@ define class JSONClass as session
 		local lcOut as string
 		lcOut = ''
 		try
-			this.ResetError()
-			_screen.tokenizer.tokenize(tcArray)
-			_screen.ArrayToCursor.CurName 	 = "qResult"
-			_screen.ArrayToCursor.nSessionID = set("Datasession")
-			_screen.ArrayToCursor.array()
+			this.jsonToCursor(tcArray, "qResult", set("Datasession"))
 			=cursortoxml('qResult','lcOut', 1, 0, 0, '1')
 		catch to loEx
 			this.ShowExceptionError(loEx)
@@ -133,17 +140,20 @@ define class JSONClass as session
 	endfunc
 	* XMLToJson
 	function XMLToJson(tcXML as memo) as memo
-		local lcJsonXML as memo
+		local lcJsonXML as memo, loParser
 		lcJsonXML = ''
 		try
 			this.ResetError()
 			=xmltocursor(tcXML, 'qXML')
-			_screen.CursorToArray.CurName 	 = "qXML"
-			_screen.CursorToArray.nSessionID = set("Datasession")
-			lcJsonXML = _screen.CursorToArray.CursorToArray()
+			loParser = createobject("CursorToArray")
+			loParser.CurName 	 = "qXML"
+			loParser.nSessionID = set("Datasession")
+			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
+			loParser = .Null.
+			release loParser
 			use in (select("qXML"))
 		endtry
 		return lcJsonXML
@@ -151,7 +161,7 @@ define class JSONClass as session
 	* CursorToJSON
 	function CursorToJSON as memo
 		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean
-		local lcJsonXML as memo
+		local lcJsonXML as memo, loParser
 		lcJsonXML = ''
 		try
 			this.ResetError()
@@ -163,13 +173,15 @@ define class JSONClass as session
 			else
 				select * from (tcCursor) into cursor qResult
 			endif
-
-			_screen.CursorToArray.CurName 	 = "qResult"
-			_screen.CursorToArray.nSessionID = tnDataSession
-			lcJsonXML = _screen.CursorToArray.CursorToArray()
+			loParser = createobject("CursorToArray")
+			loParser.CurName 	 = "qResult"
+			loParser.nSessionID  = tnDataSession
+			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
+			loParser = .Null.
+			release loParser
 			use in (select("qResult"))
 		endtry
 		lcOutput = iif(tlJustArray, lcJsonXML, '{"' + lower(alltrim(tcCursor)) + '":' + lcJsonXML + '}')
@@ -178,13 +190,15 @@ define class JSONClass as session
 	* JSONToCursor
 	function JSONToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
 		try
+			local lexer, parser
 			this.ResetError()
 			if !empty(tcCursor)
 				tnDataSession = evl(tnDataSession, set("Datasession"))
-				_screen.tokenizer.tokenize(tcJsonStr)
-				_screen.ArrayToCursor.CurName 	 = tcCursor
-				_screen.ArrayToCursor.nSessionID = tnDataSession
-				_screen.ArrayToCursor.array()
+				lexer = createobject("Tokenizer", tcJsonStr)
+				parser = createobject("ArrayToCursor", lexer)
+				parser.CurName 	  = tcCursor
+				parser.nSessionID = tnDataSession
+				parser.array()
 			else
 				if this.lShowErrors
 					wait "Invalid cursor name." window nowait
@@ -192,6 +206,9 @@ define class JSONClass as session
 			endif
 		catch to loEx
 			this.ShowExceptionError(loEx)
+		finally
+			store .null. to lexer, parser
+			release lexer, parser
 		endtry
 	endfunc
 	* CursorStructure
@@ -241,7 +258,6 @@ define class JSONClass as session
 	endfunc
 	* ResetError
 	hidden function ResetError as Void
-		_screen.curtokenpos = 1
 		this.lError = .f.
 	endfunc
 	* Destroy

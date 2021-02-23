@@ -1,209 +1,234 @@
 #include "JSONFox.h"
+
+* Test
+*!*	clear
+*!*	*lcJsonStr = filetostr("f:\a1\test.json")
+*!*	lcJsonStr = '"15-11-1985"'
+*!*	lexer = createobject("Tokenizer", lcJsonStr)
+*!*	local myToken
+*!*	myToken = lexer.next_token()
+*!*	do while myToken.Value != T_NONE
+*!*		?"type: ", myToken.Type, "value: ", myToken.Value
+*!*		myToken = lexer.next_token()
+*!*	enddo
+* Test
+
 * Tokenizer
 define class Tokenizer as custom
-	source 	= ""
-	start 	= 0
-	current = 0
-	line 	= 0
-	counter = 0
-	* Tokenize
-	function Tokenize(tcSource)		
+	pos = 0
+	source = ''
+	current_char = ''
+	line = 0
+	function init(tcSource)
 		this.source = tcSource
-		this.start = 0
-		this.current = 1
+		this.pos = 1
 		this.line = 1
-
-		this.counter = 0
-		dimension _screen.tokens[1]
-		do while !this.isAtEnd()
-			this.start = this.current
-			this.scanToken()
-		enddo
-		* EOF Token
-		*This.newToken(T_EOF, "EOF")
+		this.current_char = substr(this.source, this.pos, 1)
 	endfunc
 
-	* isAtEnd
-	function isAtEnd
-		return this.current > len(this.source)
-	endfunc
-
-	* scanToken
-	function scanToken
-		local ch
-		ch = this.advance()
-		do case
-		case ch == '{'
-			this.newToken(T_LBRACE, '{')
-		case ch == '}'
-			this.newToken(T_RBRACE, '}')
-		case ch == '['
-			this.newToken(T_LBRACKET, '[')
-		case ch == ']'
-			this.newToken(T_RBRACKET, ']')
-		case ch == ':'
-			this.newToken(T_COLON, ':')
-		case ch == ','
-			this.newToken(T_COMMA, ',')
-		case ch == LF
-			this.line = this.line + 1
-		case inlist(asc(ch), 13, 9, 32)
-			* break
-		case ch == '"'
-			this.string()
-		otherwise
-			do case
-			case isdigit(ch)
-				this.number()
-			case this.isLetter(ch)
-				this.identifier()
-			otherwise
-				this.showError(this.line, "Unexpected character '" + transform(ch) + "'")
-			endcase
-		endcase
-	endfunc
-	* identifier
-	function identifier
-		do while this.isLetter(this.peek())
-			this.advance()
-		enddo
-		lexeme = substr(this.source, this.start, this.current - this.start)
-		if inlist(lexeme, "true", "false", "null")
-			this.newToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
+	function advance
+		this.pos = this.pos + 1
+		if this.pos > len(this.source)
+			this.current_char = T_NONE
 		else
-			this.showError(this.line, "Unexpected identifier '" + lexeme + "'")
+			this.current_char = substr(this.source, this.pos, 1)
 		endif
 	endfunc
-	* number
+	
+	function peek
+		lnPeekPos = this.pos + 1
+		if lnPeekPos > len(this.source)
+			return T_NONE
+		else
+			return substr(this.source, lnPeekPos, 1)
+		endif		
+	endfunc
+	
+	function isLetter(tcLetter)
+		return 'a' <= tcLetter and tcLetter <= 'z' or 'A' <= tcLetter and tcLetter <= 'Z'
+	endfunc
+	
+	function isspace(tcChar)
+		return inlist(asc(this.current_char), 9, 10, 13, 32)
+	endfunc	
+	
+	function skip_whitespace
+		do while this.current_char != T_NONE and this.isspace(this.current_char)
+			this.advance()
+		enddo		
+	endfunc
+	
+	function identifier
+		local lexeme
+		lexeme = ''
+		do while this.current_char != T_NONE and this.isLetter(this.current_char)
+			lexeme = lexeme + this.current_char
+			this.advance()
+		enddo
+		if inlist(lexeme, "true", "false", "null")
+			return this.newToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
+		else
+			this.showError(this.line, "Lexer Error: Unexpected identifier '" + lexeme + "'")
+		endif
+	endfunc
+
 	function number
-		do while isdigit(this.peek())
+		local lexeme
+		lexeme = ''		
+		do while this.current_char != T_NONE and isdigit(this.current_char)
+			lexeme = lexeme + this.current_char
 			this.advance()
 		enddo
 
-		if this.peek() == '.' and isdigit(this.peekNext())
-			this.advance()
-			do while (isdigit(this.peek()))
+		if this.current_char == '.' and isdigit(this.peek())
+			lexeme = lexeme + this.current_char
+			this.advance() && eat the dot '.'
+			do while this.current_char != T_NONE and isdigit(this.current_char)
+				lexeme = lexeme + this.current_char
 				this.advance()
 			enddo
 		endif
-		literal = substr(this.source, this.start, this.current - this.start)
-		this.newToken(T_NUMBER, literal)
+		return this.newToken(T_NUMBER, lexeme)
 	endfunc
-	* string
+	
 	function string
-		local s, c
-		s = ''
-		do while !this.isAtEnd()
-			c = this.advance()
-			if c = '\'
-				peek = this.advance()
+		lexeme = ''
+		lcPeek = ''
+		this.advance() && advance the first '"'
+		do while this.current_char != T_NONE
+			if this.current_char = '\'
+				lcPeek = this.peek()
 				do case
-				case peek = '\'
-					s = s + '\'
-				case peek = 'n'
-					s = s + LF
-				case peek = 'r'
-					s = s + CR
-				case peek = 't'
-					s = s + T_TAB
-				case peek = '"'
-					s = s + '"'
-				case peek = 'u'
-					s = s + this.getUnicode()
+				case lcPeek = '\'
+					this.advance()
+					lexeme = lexeme + '\'
+				case lcPeek = 'n'
+					this.advance()
+					lexeme = lexeme + LF
+				case lcPeek = 'r'
+					this.advance()
+					lexeme = lexeme + CR
+				case lcPeek = 't'
+					this.advance()
+					lexeme = lexeme + T_TAB
+				case lcPeek = '"' and this.pos + 1 < len(this.source)
+					this.advance()
+					lexeme = lexeme + '"'
+				case lcPeek = 'u'
+					this.advance()
+					lexeme = lexeme + this.getUnicode()
 				otherwise
-					s = s + '\'
+					lexeme = lexeme + '\'
 				endcase
 			else
-				if c = '"'
+				if this.current_char = '"'
+					this.advance() && eat the last '"'
 					exit
 				else
-					s = s + c
+					lexeme = lexeme + this.current_char
 				endif
 			endif
+			this.advance()
 		enddo
-		this.newToken(T_STRING, s)
+		return this.newToken(T_STRING, lexeme)
 	endfunc
-	* peek
-	function peek
-		if this.current > len(this.source)
-			return chr(255)
-		endif
-		return substr(this.source, this.current, 1)
+
+	function next_token
+		do while this.current_char != T_NONE
+			if this.isspace(this.current_char)
+				this.skip_whitespace()
+				loop
+			endif
+			
+			if this.current_char == '{'
+				this.advance()
+				return this.newToken(T_LBRACE, '{')
+			endif
+			
+			if this.current_char == '}'
+				this.advance()
+				return this.newToken(T_RBRACE, '}')
+			endif
+			
+			if this.current_char == '['
+				this.advance()
+				return this.newToken(T_LBRACKET, '[')
+			endif
+			
+			if this.current_char == ']'
+				this.advance()
+				return this.newToken(T_RBRACKET, ']')
+			endif
+			
+			if this.current_char == ':'
+				this.advance()
+				return this.newToken(T_COLON, ':')
+			endif
+			
+			if this.current_char == ','
+				this.advance()
+				return this.newToken(T_COMMA, ',')
+			endif
+			
+			if this.current_char == '"'
+				return this.string()
+			endif
+			
+			if isdigit(this.current_char)
+				return this.number()
+			endif
+			
+			if this.isLetter(this.current_char)
+				return this.identifier()
+			endif
+
+			this.showError(0, "Lexer Error: Unknown character '" + transform(this.current_char) + "'")
+		enddo
+		return this.newToken(T_NONE, T_NONE)
 	endfunc
-	* peekNext
-	function peekNext
-		if this.current + 1 > len(this.source)
-			return chr(255)
-		endif
-		return substr(this.source, this.current + 1, 1)
-	endfunc
-	* advance
-	function advance
-		this.current = this.current + 1
-		return substr(this.source, this.current - 1, 1)
-	endfunc
-	* getUnicode
+
 	hidden function getUnicode as Void
 		lcHexStr = '\u'
-		local c
-		c = this.advance()
-		local lcUnicode as string
+		local lexeme, lcUnicode
+		lexeme = ''
 		lcUnicode = "0x"
-		do while !this.isAtEnd() and (this.isHex(c) or isdigit(c))
+		this.advance() && eat the 'u'
+		do while this.current_char != T_NONE and (this.isHex(this.current_char) or isdigit(this.current_char))
 			if len(lcUnicode) = 6
 				exit
 			endif
-			lcUnicode = lcUnicode + c
-			lcHexStr = lcHexStr + c
-			c = this.advance()
+			lcUnicode = lcUnicode + this.current_char
+			lcHexStr = lcHexStr + this.current_char
+			lexeme = lexeme + this.current_char
+			this.advance()
 		enddo
-		&& IRODG 01/28/21
-		this.current = this.current - 1 && shift back the character.
-		&& IRODG 01/28/21
+		this.pos = this.pos - 1 && shift back the character.
 		try
 			lcUnicode = chr(&lcUnicode)
 		catch
 			try
 				lcUnicode = strconv(lcHexStr, 16)
 			catch
-				error "parse error: invalid hex format '" + transform(lcUnicode) + "'"
+				error "Lexer Error: invalid hex format '" + transform(lcUnicode) + "'"
 			endtry
 		endtry
 		return lcUnicode
 	endfunc
-	* isHex
+
 	hidden function isHex as Boolean
 		lparameters tcLook as string
 		return between(asc(tcLook), asc("A"), asc("F")) or between(asc(tcLook), asc("a"), asc("f"))
 	endfunc
-	* Create new token
+
 	hidden function newToken(tnTokenType, tcTokenValue)
-		* Add token
-		lcTokenRef = "JsonToken" + SYS(2015)
-		&lcTokenRef = createobject("Empty")
-
-		=addproperty(&lcTokenRef, "type", tnTokenType)
-		=addproperty(&lcTokenRef, "lexeme", tcTokenValue)
-		=addproperty(&lcTokenRef, "literal", tcTokenValue)
-		=addproperty(&lcTokenRef, "line", this.start)
-
-		this.counter = this.counter + 1
-		dimension _screen.tokens[this.counter]
-		_screen.tokens[this.counter] = &lcTokenRef
+		local loToken
+		loToken = createobject("Empty")
+		=addproperty(loToken, "type", tnTokenType)
+		=addproperty(loToken, "value", tcTokenValue)
+		return loToken
 	endfunc
-	* PrettyPrint
-	function PrettyPrint
-		for i=1 to alen(_screen.tokens, 1)
-			token = _screen.tokens[i]
-			?"Type:",token.type, "Lit: ", token.literal, "Line: ", token.line
-		endfor
-	endfunc
-	* showError
+	
 	function showError(tnLine, tcMessage)
 		error "[line" + alltrim(str(tnLine)) + "] Error: " + tcMessage
-	endfunc
-	* isLetter
-	function isLetter(ch)
-		return 'a' <= ch and ch <= 'z' or 'A' <= ch and ch <= 'Z'
 	endfunc
 enddefine

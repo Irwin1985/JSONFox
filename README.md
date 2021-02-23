@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 6.0 - Release 2021-02-23 22:28:00
+
 **[JSONFox]** - 5.3 - Release 2021-02-23 17:26:58
 
 **[JSONFox]** - 5.2 - Release 2021-02-23 08:22:21
@@ -279,6 +281,10 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2021-02-23
+
+* Advance: lexical and parsing optimizations.
 
 2021-02-23
 

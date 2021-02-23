@@ -1,298 +1,310 @@
 #include "JSONFox.h"
 * ArrayToCursor
-Define Class ArrayToCursor As Session
-	#Define STRING_MAX_SIZE	254
+define class ArrayToCursor as session
+	#define STRING_MAX_SIZE	254
 
 	curname 	= ""
 	nSessionID 	= 0
 	nColumns 	= 0
-	hashMap 	= .Null.
+	hashMap 	= .null.
 	cFieldList 	= ""
 
-	Dimension aTableStruct(1)
+	dimension aTableStruct(1)
 	tableStructCounter = 0
 
-	* Init
-	Function Init
-		This.hashMap = Createobject("Empty")
-		=AddProperty(This.hashMap, "field", '')
-		=AddProperty(This.hashMap, "value", '')
-	Endfunc
+	lexer = .null.
+	cur_token = 0
+	peek_token = 0
+
+	function init(toLexer)
+		this.lexer = toLexer
+		this.hashMap = createobject("Empty")
+		=addproperty(this.hashMap, "field", '')
+		=addproperty(this.hashMap, "value", '')
+		this.next_token()
+		this.next_token()
+	endfunc
+
+	function next_token
+		this.cur_token = this.peek_token
+		this.peek_token = this.lexer.next_token()
+	endfunc
+
+	function eat(tnTokenType, tcErrorMessage)
+		if this.cur_token.type == tnTokenType
+			this.next_token()
+		else
+			if empty(tcErrorMessage)
+				tcErrorMessage = "Parser Error: expected token '" + transform(tnTokenType) + "' got = '" + transform(this.cur_token.type) + "'"
+			endif
+			error tcErrorMessage
+		endif
+	endfunc
+
 	&& ======================================================================== &&
 	&& Function Array
 	&& EBNF -> 	array  	= '[' object | { ',' object }  ']'
 	&& ======================================================================== &&
-	Function Array As Void
-		Private oMap, JSONUtils
-		oMap 		= This.hashMap
-		JSONUtils 	= _Screen.JSONUtils
+	function array as Void
+		private oMap, JSONUtils
+		oMap 		= this.hashMap
+		JSONUtils 	= _screen.JSONUtils
 
-		With This
-			If Empty(This.nSessionID)
-				This.nSessionID = Set("Datasession")
-			Endif
-			Set DataSession To (This.nSessionID)
+		if empty(this.nSessionID)
+			this.nSessionID = set("Datasession")
+		endif
+		set datasession to (this.nSessionID)
 
-			JSONUtils.Consume(T_LBRACKET, "Expect '[' before Array definition.")
-			nGlobalRow = 1
-			Dimension arrMap(nGlobalRow)
-			arrMap[nGlobalRow] = .Object()
+		this.eat(T_LBRACKET, "Expect '[' before Array definition.")
+		nGlobalRow = 1
+		dimension arrMap(nGlobalRow)
+		arrMap[nGlobalRow] = this.object()
 
-			Do While JSONUtils.match(T_COMMA)
-				nGlobalRow = nGlobalRow + 1
-				Dimension arrMap(nGlobalRow)
-				arrMap[nGlobalRow] = .Object()
-			Enddo
+		do while this.cur_token.type == T_COMMA
+			this.eat(T_COMMA)
+			nGlobalRow = nGlobalRow + 1
+			dimension arrMap(nGlobalRow)
+			arrMap[nGlobalRow] = this.object()
+		enddo
 
-			JSONUtils.Consume(T_RBRACKET, "Expect ']' after Array definition.")
-		Endwith
-		This.InsertData()
-	Endfunc
+		this.eat(T_RBRACKET, "Expect ']' after Array definition.")
+		this.InsertData()
+	endfunc
 	&& ======================================================================== &&
 	&& Function Object
 	&& EBNF -> 	object 	= '{' kvp | { ',' kvp} '}'
 	&& ======================================================================== &&
-	Hidden Function Object As Void
-		JSONUtils.Consume(T_LBRACE, "Expect '{' before json object.")
-		oCollection = Createobject("Collection")
+	hidden function object as Void
+		this.eat(T_LBRACE, "Expect '{' before json object.")
+		oCollection = createobject("Collection")
 
-		This.kvp()
-		oCollection.Add(oMap.Value, oMap.Field)
+		this.kvp()
+		oCollection.add(oMap.value, oMap.field)
 
-		Do While JSONUtils.match(T_COMMA)
-			This.kvp()
-			oCollection.Add(oMap.Value, oMap.Field)
-		Enddo
-		JSONUtils.Consume(T_RBRACE, "Expect '}' after json object.")
-		Return oCollection
-	Endfunc
+		do while this.cur_token.type == T_COMMA
+			this.eat(T_COMMA)
+			this.kvp()
+			oCollection.add(oMap.value, oMap.field)
+		enddo
+		this.eat(T_RBRACE, "Expect '}' after json object.")
+		return oCollection
+	endfunc
 	&& ======================================================================== &&
 	&& Function Kvp
 	&& EBNF -> 	kvp 	= KEY ':' value
 	&& 			value	= STRING | NUMBER | BOOLEAN	| NULL
 	&& ======================================================================== &&
-	Hidden Function kvp
-		loElement = JSONUtils.Consume(T_STRING, "Expect right key element")
-		lcProp 	  = loElement.Lexeme
-		JSONUtils.Consume(T_COLON, "Expect ':' after key element.")
-		If 		JSONUtils.match(T_STRING) 	Or ;
-				JSONUtils.match(T_NUMBER) 	Or ;
-				JSONUtils.match(T_BOOLEAN) 	Or ;
-				JSONUtils.match(T_NULL)
+	hidden function kvp
+		local lcProp, lxValue, lcType, lnFieldLength
+		lcProp = this.cur_token.value
 
-			lxValue = This.Value()
-			lcType  = Vartype(lxValue)
+		this.eat(T_STRING, "Expect right key element")
+		this.eat(T_COLON, "Expect ':' after key element.")
+
+		if inlist(this.cur_token.type, T_STRING, T_NUMBER, T_BOOLEAN, T_NULL)
+			lxValue = this.value()
+			lcType  = vartype(lxValue)
 			lnFieldLength = 0
-			Do Case
-			Case lcType = "N"
-				lcType = Iif(Occurs(".", Transform(lxValue)) > 0, "N", "I")
-			Case lcType = "C"
-				If Len(lxValue) > STRING_MAX_SIZE
-					lcType = "M"
-				Else
-					If Occurs('-', lxValue) >= 2 && Check for date or datetime.
-						lDate = JSONUtils.FormatDate(lxValue)
-						If !Isnull(lDate)
-							lxValue = lDate
-							lcType  = Vartype(lxValue)
-						Endif
-					Endif
+			do case
+			case lcType = 'N'
+				lcType = iif(occurs('.', transform(lxValue)) > 0, 'N', 'I')
+			case lcType = 'C'
+				if len(lxValue) > STRING_MAX_SIZE
+					lcType = 'M'
+				else
+					lxValue  = JSONUtils.CheckString(lxValue)
+					lcType   = vartype(lxValue)
 				endif
-				&& IRODG 01/28/21
-				if lcType == "C"
-					lnFieldLength = iif(empty(Len(lxValue)), 1, Len(lxValue))
+				if lcType == 'C'
+					lnFieldLength = iif(empty(len(lxValue)), 1, len(lxValue))
 				endif
-				&& IRODG 01/28/21
-			Endcase
-			lcFieldName = Lower(JSONUtils.CheckProp(lcProp))
-			
-			&& IRODG 01/28/21
-			*This.CheckStructure(lcFieldName, lcType, Iif(lcType == "C", Len(lxValue), 0))
-			This.CheckStructure(lcFieldName, lcType, lnFieldLength)
-			&& IRODG 01/28/21
-		Else
-			JSONUtils.jsonError(_Screen.oPeek, "Unknown token value")
-		Endif
+			endcase
+			lcFieldName = lower(JSONUtils.CheckProp(lcProp))
+			this.CheckStructure(lcFieldName, lcType, lnFieldLength)
+		else
+			error "Parser Error: Unknown token value '" + transform(this.cur_token.value) + "'"
+		endif
 		* Update Map
-		oMap.Field = lcFieldName
-		oMap.Value = lxValue
-	Endfunc
+		oMap.field = lcFieldName
+		oMap.value = lxValue
+	endfunc
 	&& ======================================================================== &&
 	&& Function Value
 	&& EBNF -> 	value = STRING | NUMBER | BOOLEAN | NULL
 	&& ======================================================================== &&
-	Hidden Function Value As Variant
-		With This
-			lnPrevType = _Screen.oPrevious.Type
-			Do Case
-			Case lnPrevType = T_STRING
-				Return _Screen.oPrevious.Lexeme
-
-			Case lnPrevType = T_NUMBER
-				nVal = Val(_Screen.oPrevious.Lexeme)
-				Return Iif(At('.', _Screen.oPrevious.Lexeme) > 0, nVal, Int(nVal))
-
-			Case lnPrevType = T_BOOLEAN
-				Return (_Screen.oPrevious.Lexeme == 'true')
-
-			Case lnPrevType = T_NULL
-				Return .Null.
-
-			Otherwise
-				JSONUtils.jsonError(_Screen.oPrevious, "Unknown token value")
-			Endcase
-		Endwith
-	Endfunc
+	hidden function value as Variant
+		local lexeme
+		do case
+		case this.cur_token.type == T_STRING
+			lexeme = this.cur_token.value
+			this.eat(T_STRING)
+			return lexeme
+		case this.cur_token.type == T_NUMBER
+			lexeme = this.cur_token.value
+			this.eat(T_NUMBER)
+			nVal = val(lexeme)
+			return iif(at('.', lexeme) > 0, nVal, int(nVal))
+		case this.cur_token.type == T_BOOLEAN
+			lexeme = this.cur_token.value
+			this.eat(T_BOOLEAN)
+			return (lexeme == 'true')
+		case this.cur_token.type == T_NULL
+			this.eat(T_BOOLEAN)
+			return .null.
+		otherwise
+			error "Parser Error: Unknown token value '" + transform(this.cur_token.value) + "'"
+		endcase
+	endfunc
 	* InsertData
-	Hidden Function InsertData
-		This.CreateCursor()
-		Dimension aValues(1)
+	hidden function InsertData
+		this.CreateCursor()
+		dimension aValues(1)
 		aValues[1] = ''
-		lcFieldList = This.cFieldList
-		For i = 1 To Alen(arrMap, 1)
+		lcFieldList = this.cFieldList
+		for i = 1 to alen(arrMap, 1)
 			o = arrMap[i]
 			cValues = ''
-			For j = 1 To Getwordcount(lcFieldList, ",")
-				cField = Getwordnum(lcFieldList, j, ",")
-				xValue = This.DefaultValue(cField)
-				Try
-					xValue = o.Item(cField)
-				Catch
-				Endtry
-				Dimension aValues(j)
+			for j = 1 to getwordcount(lcFieldList, ",")
+				cField = getwordnum(lcFieldList, j, ",")
+				xValue = this.defaultvalue(cField)
+				try
+					xValue = o.item(cField)
+				catch
+				endtry
+				dimension aValues(j)
 				aValues[j] = xValue
-				cValues = cValues + Iif(j > 1, ",", '') + "aValues(" + Alltrim(Str(j)) + ")"
-			Endfor
-			cInsert = "INSERT INTO " + This.curname + "(" + lcFieldList + ") VALUES(" + cValues + ")"
-			Try
+				cValues = cValues + iif(j > 1, ",", '') + "aValues(" + alltrim(str(j)) + ")"
+			endfor
+			cInsert = "INSERT INTO " + this.curname + "(" + lcFieldList + ") VALUES(" + cValues + ")"
+			try
 				&cInsert
-			Catch To loEx
-				Wait loEx.Message Window
-			Endtry
-		Endfor
-	Endfunc
+			catch to loEx
+				wait loEx.message window
+			endtry
+		endfor
+	endfunc
 	* CreateCursor
-	Hidden Function CreateCursor
-		cQuery  = "CREATE CURSOR " + This.curname + " ("
+	hidden function CreateCursor
+		cQuery  = "CREATE CURSOR " + this.curname + " ("
 		nIndex  = 0
 		lcComma = ""
-		Local lcFieldList
-		lcFieldList = This.cFieldList
-		
-		For j = 1 To Getwordcount(lcFieldList, ",")
+		local lcFieldList
+		lcFieldList = this.cFieldList
+
+		for j = 1 to getwordcount(lcFieldList, ",")
 			nIndex  = nIndex + 1
-			lcComma = Iif(nIndex > 1, ",", Space(1))
+			lcComma = iif(nIndex > 1, ",", space(1))
 
-			cField = Getwordnum(lcFieldList, j, ",")
-			lcType = This.FieldType(cField)
-			lcLen  = This.FieldLen(cField)
+			cField = getwordnum(lcFieldList, j, ",")
+			lcType = this.FieldType(cField)
+			lcLen  = this.FieldLen(cField)
 
-			cQuery = cQuery + lcComma + cField + Space(1)
+			cQuery = cQuery + lcComma + cField + space(1)
 
 			* Use Logical (faster) type for .Null. Columns.
-			lcType  = Strtran(lcType, "X", "L")
-			lcFlags = Iif(lcType == "C", "(" + Alltrim(Str(lcLen)) + ")", '')
-			If lcType == "N"
+			lcType  = strtran(lcType, "X", "L")
+			lcFlags = iif(lcType == "C", "(" + alltrim(str(lcLen)) + ")", '')
+			if lcType == "N"
 				lcFlags = "(18,5)" && Integer Length 18 and Decimal length 5
-			Endif
+			endif
 			cQuery = cQuery + lcType + lcFlags + " NULL"
-		Endfor
+		endfor
 		cQuery = cQuery + ")"
-		Try
+		try
 			&cQuery
-		Catch To loEx
-			Wait loEx.Message Window
-		Endtry
-	Endfunc
+		catch to loEx
+			wait loEx.message window
+		endtry
+	endfunc
 
 	* CheckStructure
-	Function CheckStructure(tcFieldName, tcType, tnLength)
+	function CheckStructure(tcFieldName, tcType, tnLength)
 		* Find or Insert the field.
-		nFieldIdx = Ascan(This.aTableStruct, tcFieldName)
-		If nFieldIdx > 0
+		nFieldIdx = ascan(this.aTableStruct, tcFieldName)
+		if nFieldIdx > 0
 			* Check for .NULL. type and Update
-			lcFieldType = Getwordnum(This.aTableStruct[nFieldIdx], 2, "|")
-			If lcFieldType = "X"
-				newVal = Getwordnum(This.aTableStruct[nFieldIdx], 1, "|")
+			lcFieldType = getwordnum(this.aTableStruct[nFieldIdx], 2, "|")
+			if lcFieldType = "X"
+				newVal = getwordnum(this.aTableStruct[nFieldIdx], 1, "|")
 				newVal = newVal + "|" + tcType
-				newVal = newVal + "|" + Alltrim(Str(tnLength))
-				This.aTableStruct[nFieldIdx] = newVal
-			Endif
+				newVal = newVal + "|" + alltrim(str(tnLength))
+				this.aTableStruct[nFieldIdx] = newVal
+			endif
 			* Check for Length and Update
-			If lcFieldType = "C"
-				lnFieldLen = Val(Getwordnum(This.aTableStruct[nFieldIdx], 3, "|"))
-				If tnLength > lnFieldLen
-					newVal = Getwordnum(This.aTableStruct[nFieldIdx], 1, "|")
+			if lcFieldType = "C"
+				lnFieldLen = val(getwordnum(this.aTableStruct[nFieldIdx], 3, "|"))
+				if tnLength > lnFieldLen
+					newVal = getwordnum(this.aTableStruct[nFieldIdx], 1, "|")
 					newVal = newVal + "|" + tcType
-					newVal = newVal + "|" + Alltrim(Str(tnLength))
-					This.aTableStruct[nFieldIdx] = newVal
-				Endif
-			Endif
-		Else
+					newVal = newVal + "|" + alltrim(str(tnLength))
+					this.aTableStruct[nFieldIdx] = newVal
+				endif
+			endif
+		else
 			* Insert new field.
-			This.tableStructCounter = This.tableStructCounter + 1
-			Dimension This.aTableStruct(This.tableStructCounter)
+			this.tableStructCounter = this.tableStructCounter + 1
+			dimension this.aTableStruct(this.tableStructCounter)
 			newVal = tcFieldName
 			newVal = newVal + "|" + tcType
-			If tcType == "C"
-				newVal = newVal + "|" + Alltrim(Str(tnLength))
-			Endif
-			This.aTableStruct(This.tableStructCounter) = newVal
-		Endif
-	EndFunc
+			if tcType == "C"
+				newVal = newVal + "|" + alltrim(str(tnLength))
+			endif
+			this.aTableStruct(this.tableStructCounter) = newVal
+		endif
+	endfunc
 
 	* FieldType
-	Hidden Function FieldType(tcField)
-		nFieldIdx = Ascan(This.aTableStruct, tcField)
+	hidden function FieldType(tcField)
+		nFieldIdx = ascan(this.aTableStruct, tcField)
 		lcType    = 'X'
-		If nFieldIdx > 0
-			lcType = Getwordnum(This.aTableStruct[nFieldIdx], 2, "|")
-		Endif
-		Return lcType
-	Endfunc
+		if nFieldIdx > 0
+			lcType = getwordnum(this.aTableStruct[nFieldIdx], 2, "|")
+		endif
+		return lcType
+	endfunc
 
 	* FieldLength
-	Hidden Function FieldLen(tcField)
-		nFieldIdx = Ascan(This.aTableStruct, tcField)
+	hidden function FieldLen(tcField)
+		nFieldIdx = ascan(this.aTableStruct, tcField)
 		lnLen     = 0
-		If nFieldIdx > 0
-			lnLen = Val(Getwordnum(This.aTableStruct[nFieldIdx], 3, "|"))
-		Endif
-		Return lnLen
-	Endfunc
+		if nFieldIdx > 0
+			lnLen = val(getwordnum(this.aTableStruct[nFieldIdx], 3, "|"))
+		endif
+		return lnLen
+	endfunc
 
 	* DefaultValue
-	Hidden Function DefaultValue(tcField)
-		lcType = This.FieldType(tcField)
-		Do Case
-		Case lcType $ "CDTBGMQVWX"
-			Do Case
-			Case lcType = "D"
-				Return Ctod("{}")
-			Case lcType = "T"
-				Return Ctot("{//::}")
-			Otherwise
-				If lcType = "X"
-					Return .Null.
-				Else
-					Return ""
-				Endif
-			Endcase
-		Case lcType $ "YFIN"
-			Return 0
-		Case lcType = 'L'
-			Return .F.
-		Otherwise
-			Return .Null.
-		Endcase
-	Endfunc
+	hidden function defaultvalue(tcField)
+		lcType = this.FieldType(tcField)
+		do case
+		case lcType $ "CDTBGMQVWX"
+			do case
+			case lcType = "D"
+				return ctod("{}")
+			case lcType = "T"
+				return ctot("{//::}")
+			otherwise
+				if lcType = "X"
+					return .null.
+				else
+					return ""
+				endif
+			endcase
+		case lcType $ "YFIN"
+			return 0
+		case lcType = 'L'
+			return .f.
+		otherwise
+			return .null.
+		endcase
+	endfunc
 	* cFieldList_Access
-	Function cFieldList_Access
-		Local lcFieldList
+	function cFieldList_Access
+		local lcFieldList
 		lcFieldList = ''
-		For i = 1 To Alen(This.aTableStruct, 1)
-			lcFieldList = lcFieldList + Iif(i > 1, ',', '') + Getwordnum(This.aTableStruct[i], 1, "|")
-		Endfor
-		Return lcFieldList
-	Endfunc
-Enddefine
+		for i = 1 to alen(this.aTableStruct, 1)
+			lcFieldList = lcFieldList + iif(i > 1, ',', '') + getwordnum(this.aTableStruct[i], 1, "|")
+		endfor
+		return lcFieldList
+	endfunc
+enddefine

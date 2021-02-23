@@ -7,14 +7,40 @@
 &&			value	= STRING | NUMBER | BOOLEAN | NULL | array | object
 && 			array	= '[' value | {',' value} ']'
 && ======================================================================== &&
-Define Class JSONStringify As Custom
-	#Define CRLF Chr(13) + Chr(10)
+define class JSONStringify as custom
+
+	lexer = .null.
+	cur_token = 0
+	peek_token = 0
+
+	function init(toLexer)
+		this.lexer = toLexer
+		this.next_token()
+		this.next_token()
+	endfunc
+
+	function next_token
+		this.cur_token = this.peek_token
+		this.peek_token = this.lexer.next_token()
+	endfunc
+
+	function eat(tnTokenType, tcErrorMessage)
+		if this.cur_token.type == tnTokenType
+			this.next_token()
+		else
+			if empty(tcErrorMessage)
+				tcErrorMessage = "Parser Error: expected token '" + transform(tnTokenType) + "' got = '" + transform(this.cur_token.type) + "'"
+			endif
+			error tcErrorMessage
+		endif
+	endfunc
+
 	* Stringify
-	Function Stringify As Memo
-		Private JSONUtils
-		JSONUtils = _Screen.JSONUtils
-		Return This.Value(0)
-	Endfunc
+	function Stringify as memo
+		private JSONUtils
+		JSONUtils = _screen.JSONUtils
+		return this.value(0)
+	endfunc
 	&& ======================================================================== &&
 	&& Function Object
 	&& EBNF		object 	= '{' format kvp | {',' format kvp} '}'
@@ -23,88 +49,89 @@ Define Class JSONStringify As Custom
 	&&			value	= STRING | NUMBER | BOOLEAN | NULL | array | object
 	&& 			array	= '[' value | {',' value} ']'
 	&& ======================================================================== &&
-	Hidden Function Object As VOID
-		Lparameters tnSpace As Integer
-		With This
-			If !JSONUtils.Check(T_RBRACE)
-				Local nSpaceBlock, lcJSON As String
-				nSpaceBlock = tnSpace + 1
-				lcJSON = '{' + CRLF + .JSFormat(nSpaceBlock)
-				lcJSON = lcJSON + .kvp(nSpaceBlock)
-				Do While JSONUtils.match(T_COMMA)
-					lcJSON = lcJSON + ',' + CRLF + .JSFormat(nSpaceBlock)
-					lcJSON = lcJSON + .kvp(nSpaceBlock)
-				Enddo
-				lcJSON = lcJSON + CRLF + .JSFormat(tnSpace) + '}'
-			Else
-				lcJSON = '{}'
-			Endif
-			JSONUtils.Consume(T_RBRACE, "Expect '}' after json object.")
-		Endwith
-		Return lcJSON
-	Endfunc
+	hidden function object(tnSpace)
+		this.eat(T_LBRACE)
+		if this.cur_token.type != T_RBRACE
+			local nSpaceBlock, lcJSON as string
+			nSpaceBlock = tnSpace + 1
+			lcJSON = '{' + CRLF + this.JSFormat(nSpaceBlock)
+			lcJSON = lcJSON + this.kvp(nSpaceBlock)
+			do while this.cur_token.type == T_COMMA
+				this.eat(T_COMMA)
+				lcJSON = lcJSON + ',' + CRLF + this.JSFormat(nSpaceBlock)
+				lcJSON = lcJSON + this.kvp(nSpaceBlock)
+			enddo
+			lcJSON = lcJSON + CRLF + this.JSFormat(tnSpace) + '}'
+		else
+			lcJSON = '{}'
+		endif
+		this.eat(T_RBRACE, "Expect '}' after json object.")
+		return lcJSON
+	endfunc
 	&& ======================================================================== &&
 	&& Hidden Function kvp
 	&& EBNF		kvp	= KEY ':' value | {',' KEY ':' value}
 	&& ======================================================================== &&
-	Hidden Function kvp
-		Lparameters tnSpaceIdent As Integer
-		Local lcProp As String
-		loElement = JSONUtils.Consume(T_STRING, "Expect right key element")
-		lcProp 	  = loElement.Lexeme
-		JSONUtils.Consume(T_COLON, "Expect ':' after key element.")
-		Return '"' + lcProp + '": ' + This.Value(tnSpaceIdent)
-	Endfunc
+	hidden function kvp
+		lparameters tnSpaceIdent as integer
+		local lcProp as string
+		lcProp = this.cur_token.value
+		this.eat(T_STRING, "Expect right key element")
+		this.eat(T_COLON, "Expect ':' after key element.")
+		return '"' + lcProp + '": ' + this.value(tnSpaceIdent)
+	endfunc
 	&& ======================================================================== &&
 	&& Function Value
 	&& EBNF -> 	value = STRING | NUMBER | BOOLEAN | array | object | NULL
 	&& ======================================================================== &&
-	Hidden Function Value As Variant
-		Lparameters tnSpaceBlock As Integer
+	hidden function value(tnSpaceBlock)
+		local vNewVal
 		vNewVal = ''
-		Do Case
-		Case JSONUtils.Match(T_LBRACE)
-			Return This.Object(tnSpaceBlock)
-		Case JSONUtils.Match(T_LBRACKET)
-			Return This.Array(tnSpaceBlock)
-		Case JSONUtils.Match(T_STRING)
-			Return JSONUtils.GetString(_Screen.oPrevious.Lexeme)
-		Otherwise
-			JSONUtils.advance()
-			Return _Screen.oPrevious.Lexeme
+		do case
+		case this.cur_token.type == T_LBRACE
+			return this.object(tnSpaceBlock)
+		case this.cur_token.type == T_LBRACKET
+			return this.array(tnSpaceBlock)
+		case this.cur_token.type == T_STRING
+			vNewVal = this.cur_token.value
+			this.eat(T_STRING)
+			return JSONUtils.GetString(vNewVal)
+		otherwise
+			this.eat(this.cur_token.type)
+			return this.cur_token.value
 		endcase
-	Endfunc
+	endfunc
 	&& ======================================================================== &&
 	&& Function Array
 	&& EBNF -> 	array = '[' value | { ',' value }  ']'
 	&& ======================================================================== &&
-	Hidden Function Array As VOID
-		Lparameters tnIdentation As Integer
-		Local lcArrayStr As String
+	hidden function array as VOID
+		lparameters tnIdentation as integer
+		local lcArrayStr as string
 		lcArrayStr = ''
-		With This
-			If !JSONUtils.Check(T_RBRACKET)
-				Local lnBlock As Integer
-				lnBlock = tnIdentation + 1
-				lcArrayStr = '[' + CRLF + .JSFormat(lnBlock)
-				lcArrayStr = lcArrayStr + .Value(lnBlock)
-				Do While JSONUtils.Match(T_COMMA)
-					lcArrayStr = lcArrayStr + ',' + CRLF + .JSFormat(lnBlock)
-					lcArrayStr = lcArrayStr + .Value(lnBlock)
-				Enddo
-				lcArrayStr = lcArrayStr + CRLF + .JSFormat(tnIdentation) + ']'
-			Else
-				lcArrayStr = '[]'
-			Endif
-			JSONUtils.Consume(T_RBRACKET, "Expect ']' after array elements.")
-		Endwith
-		Return lcArrayStr
-	Endfunc
+		this.eat(T_LBRACKET)
+		if this.cur_token.type != T_RBRACKET
+			local lnBlock as integer
+			lnBlock = tnIdentation + 1
+			lcArrayStr = '[' + CRLF + this.JSFormat(lnBlock)
+			lcArrayStr = lcArrayStr + this.value(lnBlock)
+			do while this.cur_token.type == T_COMMA
+				this.eat(T_COMMA)
+				lcArrayStr = lcArrayStr + ',' + CRLF + this.JSFormat(lnBlock)
+				lcArrayStr = lcArrayStr + this.value(lnBlock)
+			enddo
+			lcArrayStr = lcArrayStr + CRLF + this.JSFormat(tnIdentation) + ']'
+		else
+			lcArrayStr = '[]'
+		endif
+		this.eat(T_RBRACKET, "Expect ']' after array elements.")
+		return lcArrayStr
+	endfunc
 	&& ======================================================================== &&
 	&& Hidden Function JSFormat
 	&& ======================================================================== &&
-	Hidden Function JSFormat As String
-		Lparameters tnSpaceMult As Integer
-		Return Space(tnSpaceMult * 2)
-	Endfunc
-Enddefine
+	hidden function JSFormat as string
+		lparameters tnSpaceMult as integer
+		return space(tnSpaceMult * 2)
+	endfunc
+enddefine
