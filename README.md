@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 5.2 - Release 2021-02-23 08:22:21
+
 **[JSONFox]** - 5.1 - Release 2021-02-18 20:25:18
 
 **[JSONFox]** - 4.5 - Release 2021-01-28 21:35:58
@@ -275,6 +277,10 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2021-02-23
+
+* Bug fixed: Slash scape avoided in `Stringify()` method.
 
 2021-02-18
 

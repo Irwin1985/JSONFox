@@ -177,7 +177,7 @@ define class jsonutils as custom
 		lparameters tcstring as string
 		tcstring = allt(tcstring)
 		tcstring = strtran(tcstring, '\', '\\' )
-		tcstring = strtran(tcstring, '/', '\/' )
+		*tcstring = strtran(tcstring, '/', '\/' )
 		tcstring = strtran(tcstring, chr(9),  '\t' )
 		tcstring = strtran(tcstring, chr(10), '\n' )
 		tcstring = strtran(tcstring, chr(13), '\r' )
