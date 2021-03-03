@@ -149,7 +149,7 @@ define class ArrayToCursor as session
 			this.eat(T_BOOLEAN)
 			return (lexeme == 'true')
 		case this.cur_token.type == T_NULL
-			this.eat(T_BOOLEAN)
+			this.eat(T_NULL)
 			return .null.
 		otherwise
 			error "Parser Error: Unknown token value '" + transform(this.cur_token.value) + "'"

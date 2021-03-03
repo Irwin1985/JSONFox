@@ -34,7 +34,6 @@ define class Parser as custom
 	endfunc
 
 	function Parse
-		set step on 
 		lvNewVal = .null.
 		do case
 		case this.cur_token.type == T_STRING
