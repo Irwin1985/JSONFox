@@ -101,98 +101,149 @@ define class jsonutils as custom
 	&& Check the string content in case it is a date or datetime.
 	&& String itself or string date / datetime format.
 	&& ======================================================================== &&
-	function CheckString(tcString)		
+	function CheckString(tcString)
 		date_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])$"
-		datetime_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
-		iso_8601_pattern = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[+-](\d{2})\:(\d{2})$"
-		java_datetime = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[.](\d{3})(\w{1})$"
+		&& IRODG 20210313 ISSUE # 14
+		*datetime_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
+		*iso_8601_pattern = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[+-](\d{2})\:(\d{2})$"
+		datetime_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|0?[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
+		iso_8601_pattern = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?(Z|[+-](\d{2})\:(\d{2}))?$"
+		java_datetime = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?[.](\d{3})(\w{1})$"
 		dmy_pattern = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4}$"
-		_screen.oRegEx.Global = .T.
+		&& IRODG 20210313 ISSUE # 14
+
+		_screen.oRegEx.global = .t.
 
 		* Regular Date Format
-		_screen.oRegEx.Pattern = date_pattern
+		_screen.oRegEx.pattern = date_pattern
 		if _screen.oRegEx.Test(tcString)
 			return this.formatDate(tcString)
 		endif
 		* Regular Date Time Format
-		_screen.oRegEx.Pattern = datetime_pattern
+		_screen.oRegEx.pattern = datetime_pattern
 		if _screen.oRegEx.Test(tcString)
 			return this.formatDate(tcString)
 		endif
 		* ISO8601 Date Time Format
-		_screen.oRegEx.Pattern = iso_8601_pattern
+		_screen.oRegEx.pattern = iso_8601_pattern
 		if _screen.oRegEx.Test(tcString)
 			return this.formatDate(tcString)
 		endif
 		* JavaScript Date Time Format
-		_screen.oRegEx.Pattern = java_datetime
+		_screen.oRegEx.pattern = java_datetime
 		if _screen.oRegEx.Test(tcString)
 			return this.formatDate(tcString)
 		endif
 		* dd-mm-YYYY or dd/mm/YYYY date format.
-		_screen.oRegEx.Pattern = dmy_pattern
+		_screen.oRegEx.pattern = dmy_pattern
 		if _screen.oRegEx.Test(tcString)
-			return this.formatDate(tcString, .T.)
+			return this.formatDate(tcString, .t.)
 		endif
-		
-		* Normal String
+
+		* Regular String
 		return tcString
 	endfunc
 	&& ======================================================================== &&
 	&& Function FormatDate
 	&& return a valid date or datetime date type.
 	&& ======================================================================== &&
-	function formatdate as variant
-		lparameters tcdate as string, tlUseDMY as Boolean
-		local ldate
-		ldate = .null.
-		if occurs(':', tcdate) >= 2 .and. len(alltrim(tcdate)) <= 25
+	function formatDate as variant
+		lparameters tcDate as string, tlUseDMY as Boolean
+		local lDate
+		lDate = .null.
+		&& IRODG 20210313 ISSUE # 14
+		do case
+		case 'T' $ tcDate && JavaScript or ISO 8601 format.
 			do case
-			case '.' $ tcdate and 'T' $ tcdate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
-				tcdate = substr(strtran(tcdate, "T", space(1)), 1, at(".", tcdate) - 1)
-			case 'T' $ tcdate and occurs(':', tcdate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
-				tcdate = substr(strtran(tcdate, 'T', space(1)), 1, at('-', tcdate, 3) - 1)
-			otherwise && VFP Date Time Format. 'YYYY-mm-dd HH:mm:ss'
+			case '+' $ tcDate
+				tcDate = getwordnum(tcDate, 1, '+')
+			case at('-', tcDate, 3) > 0
+				tcDate = substr(tcDate, 1, at('-', tcDate, 3)-1)
+			otherwise
 			endcase
 			try
-				setDateAct = set("Date")
+				setDateAct = set('Date')
 				set date ymd
-				ldate = ctot(tcdate)
-			catch				
-				ldate = {//::}
+				lDate = ctot('^'+tcDate)
+			catch
+				lDate = {//::}
 			finally
 				set date &setDateAct
 			endtry
-		else
+		case occurs(':', tcDate) >= 2 && VFP Date Time Format. 'YYYY-mm-dd HH:mm:ss'
 			try
-				setDateAct = set("Date")
+				setDateAct = set('Date')
+				set date ymd
+				lDate = ctot(tcDate)
+			catch
+				lDate = {//::}
+			finally
+				set date &setDateAct
+			endtry
+		otherwise
+			try
+				setDateAct = set('Date')
 				if !tlUseDMY
 					set date ymd
 				else
 					set date dmy
 				endif
-				ldate = ctod(tcdate)
+				lDate = ctod(tcDate)
 			catch
-				ldate = {//}
+				lDate = {//}
 			finally
 				set date &setDateAct
 			endtry
-		endif
-		return ldate
+		endcase
+		return lDate
+		*!*			if occurs(':', tcdate) >= 2 .and. len(alltrim(tcdate)) <= 25
+		*!*				do case
+		*!*				case '.' $ tcdate and 'T' $ tcdate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
+		*!*					tcdate = substr(strtran(tcdate, 'T', space(1)), 1, at('.', tcdate) - 1)
+		*!*				case 'T' $ tcdate and occurs(':', tcdate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
+		*!*					tcdate = substr(strtran(tcdate, 'T', space(1)), 1, at('-', tcdate, 3) - 1)
+		*!*				otherwise && VFP Date Time Format. 'YYYY-mm-dd HH:mm:ss'
+		*!*				endcase
+		*!*				try
+		*!*					setDateAct = set("Date")
+		*!*					set date ymd
+		*!*					ldate = ctot(tcdate)
+		*!*				catch
+		*!*					ldate = {//::}
+		*!*				finally
+		*!*					set date &setDateAct
+		*!*				endtry
+		*!*			else
+		*!*				try
+		*!*					setDateAct = set("Date")
+		*!*					if !tlUseDMY
+		*!*						set date ymd
+		*!*					else
+		*!*						set date dmy
+		*!*					endif
+		*!*					ldate = ctod(tcdate)
+		*!*				catch
+		*!*					ldate = {//}
+		*!*				finally
+		*!*					set date &setDateAct
+		*!*				endtry
+		*!*			endif
+		*!*			return ldate
+		&& IRODG 20210313 ISSUE # 14
 	endfunc
 	&& ======================================================================== &&
 	&& Function GetString
 	&& ======================================================================== &&
 	function getstring as string
-		lparameters tcstring as string
-		tcstring = allt(tcstring)
-		tcstring = strtran(tcstring, '\', '\\' )
+		lparameters tcString as string
+		tcString = allt(tcString)
+		tcString = strtran(tcString, '\', '\\' )
 		*tcstring = strtran(tcstring, '/', '\/' )
-		tcstring = strtran(tcstring, chr(9),  '\t' )
-		tcstring = strtran(tcstring, chr(10), '\n' )
-		tcstring = strtran(tcstring, chr(13), '\r' )
-		tcstring = strtran(tcstring, '"', '\"' )
-		return '"' +tcstring + '"'
+		tcString = strtran(tcString, chr(9),  '\t' )
+		tcString = strtran(tcString, chr(10), '\n' )
+		tcString = strtran(tcString, chr(13), '\r' )
+		tcString = strtran(tcString, '"', '\"' )
+		return '"' +tcString + '"'
 	endfunc
 	&& ======================================================================== &&
 	&& Function CheckProp

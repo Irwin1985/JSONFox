@@ -8,7 +8,7 @@ define class ArrayToCursor as session
 	nColumns 	= 0
 	hashMap 	= .null.
 	cFieldList 	= ""
-
+	
 	dimension aTableStruct(1)
 	tableStructCounter = 0
 
@@ -179,7 +179,9 @@ define class ArrayToCursor as session
 			try
 				&cInsert
 			catch to loEx
-				wait loEx.message window
+			&& IRODG 20210313 ISSUE # 14 ERROR HANDLING
+				error loEx.message
+			&& IRODG 20210313 ISSUE # 14 ERROR HANDLING
 			endtry
 		endfor
 	endfunc
@@ -213,7 +215,9 @@ define class ArrayToCursor as session
 		try
 			&cQuery
 		catch to loEx
-			wait loEx.message window
+		&& IRODG 20210313 ISSUE # 14 ERROR HANDLING
+			error loEx.message
+		&& IRODG 20210313 ISSUE # 14 ERROR HANDLING
 		endtry
 	endfunc
 

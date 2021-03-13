@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "6.1"
+	version 		= "6.3"
 	hidden lInternal
 	hidden lTablePrompt
 
@@ -42,7 +42,16 @@ define class JSONClass as session
 		lparameters tvNewVal as Variant, tcFlags as string
 		this.ResetError()
 		if vartype(tvNewVal) = "O"
-			tvNewVal = _screen.ObjectToJson.Encode(@tvNewVal, tcFlags)
+			try
+				local objToJson
+				objToJson = createobject("ObjectToJson")
+				tvNewVal = objToJson.Encode(@tvNewVal, tcFlags)			
+			catch to loEx
+				this.ShowExceptionError(loEx)
+			finally
+				objToJson = .null.
+				release objToJson
+			endtry
 		endif
 		local loJSONStr as memo
 		loJSONStr = ""
@@ -64,8 +73,17 @@ define class JSONClass as session
 	function JSONToRTF as memo
 		lparameters tvNewVal as Variant, tnIndent as Boolean
 		this.ResetError()
-		if vartype(tvNewVal) = 'O'
-			tvNewVal = _screen.ObjToJson.Encode(@tvNewVal)
+		if vartype(tvNewVal) = 'O'			
+			try
+				local objToJson
+				objToJson = createobject("ObjectToJson")
+				tvNewVal = objToJson.Encode(@tvNewVal)
+			catch to loEx
+				this.ShowExceptionError(loEx)
+			finally
+				objToJson = .null.
+				release objToJson
+			endtry
 		endif
 		local loJSONStr as memo
 		loJSONStr = ''
@@ -218,7 +236,7 @@ define class JSONClass as session
 		lcOutput = ''
 		try
 			this.ResetError()
-			loStructureToJSON = _screen.StructureToJSON
+			loStructureToJSON = createobject("StructureToJSON")
 			tcCursor = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
 			loStructureToJSON.CurName 	= tcCursor

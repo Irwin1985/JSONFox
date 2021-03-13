@@ -88,14 +88,31 @@ define class JSONStringify as custom
 		local vNewVal
 		vNewVal = ''
 		do case
-		case this.cur_token.type == T_LBRACE
-			return this.object(tnSpaceBlock)
-		case this.cur_token.type == T_LBRACKET
-			return this.array(tnSpaceBlock)
 		case this.cur_token.type == T_STRING
 			vNewVal = this.cur_token.value
 			this.eat(T_STRING)
 			return JSONUtils.GetString(vNewVal)
+
+		case this.cur_token.type == T_NUMBER
+			lvNewVal = this.cur_token.value
+			this.eat(T_NUMBER)
+			return lvNewVal
+
+		case this.cur_token.type == T_BOOLEAN
+			lvNewVal = this.cur_token.value
+			this.eat(T_BOOLEAN)
+			return iif(lvNewVal, 'true', 'false')
+
+		case this.cur_token.type == T_LBRACKET
+			return this.array(tnSpaceBlock)
+
+		case this.cur_token.type == T_LBRACE
+			return this.object(tnSpaceBlock)
+
+		case this.cur_token.type == T_NULL
+			this.eat(T_NULL)
+			return "null"
+
 		otherwise
 			this.eat(this.cur_token.type)
 			return this.cur_token.value
