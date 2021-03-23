@@ -101,7 +101,7 @@ define class JSONStringify as custom
 		case this.cur_token.type == T_BOOLEAN
 			lvNewVal = this.cur_token.value
 			this.eat(T_BOOLEAN)
-			return iif(lvNewVal, 'true', 'false')
+			return lvNewVal
 
 		case this.cur_token.type == T_LBRACKET
 			return this.array(tnSpaceBlock)
