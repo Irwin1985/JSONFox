@@ -8,6 +8,8 @@
 
 ### Latest Release
 
+**[JSONFox]** - 6.5 - Release 2021-03-25 09:13:14
+
 **[JSONFox]** - 6.0 - Release 2021-02-23 22:28:00
 
 **[JSONFox]** - 5.3 - Release 2021-02-23 17:26:58
@@ -281,6 +283,10 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2021-03-25
+
+* Bug fixed: empty array and empty object.
 
 2021-02-23
 

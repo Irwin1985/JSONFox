@@ -7,7 +7,7 @@
 *!*	lexer = createobject("Tokenizer", lcJsonStr)
 *!*	local myToken
 *!*	myToken = lexer.next_token()
-*!*	do while myToken.Value != T_NONE
+*!*	do while myToken.Value != T_EOT
 *!*		?"type: ", myToken.Type, "value: ", myToken.Value
 *!*		myToken = lexer.next_token()
 *!*	enddo
@@ -29,7 +29,7 @@ define class Tokenizer as custom
 	function advance
 		this.pos = this.pos + 1
 		if this.pos > len(this.source)
-			this.current_char = T_NONE
+			this.current_char = T_EOT
 		else
 			this.current_char = substr(this.source, this.pos, 1)
 		endif
@@ -38,7 +38,7 @@ define class Tokenizer as custom
 	function peek
 		lnPeekPos = this.pos + 1
 		if lnPeekPos > len(this.source)
-			return T_NONE
+			return T_EOT
 		else
 			return substr(this.source, lnPeekPos, 1)
 		endif		
@@ -53,7 +53,7 @@ define class Tokenizer as custom
 	endfunc	
 	
 	function skip_whitespace
-		do while this.current_char != T_NONE and this.isspace(this.current_char)
+		do while this.current_char != T_EOT and this.isspace(this.current_char)
 			this.advance()
 		enddo		
 	endfunc
@@ -61,7 +61,7 @@ define class Tokenizer as custom
 	function identifier
 		local lexeme
 		lexeme = ''
-		do while this.current_char != T_NONE and this.isLetter(this.current_char)
+		do while this.current_char != T_EOT and this.isLetter(this.current_char)
 			lexeme = lexeme + this.current_char
 			this.advance()
 		enddo
@@ -75,7 +75,7 @@ define class Tokenizer as custom
 	function number
 		local lexeme
 		lexeme = ''		
-		do while this.current_char != T_NONE and isdigit(this.current_char)
+		do while this.current_char != T_EOT and isdigit(this.current_char)
 			lexeme = lexeme + this.current_char
 			this.advance()
 		enddo
@@ -83,7 +83,7 @@ define class Tokenizer as custom
 		if this.current_char == '.' and isdigit(this.peek())
 			lexeme = lexeme + this.current_char
 			this.advance() && eat the dot '.'
-			do while this.current_char != T_NONE and isdigit(this.current_char)
+			do while this.current_char != T_EOT and isdigit(this.current_char)
 				lexeme = lexeme + this.current_char
 				this.advance()
 			enddo
@@ -95,7 +95,7 @@ define class Tokenizer as custom
 		lexeme = ''
 		lcPeek = ''
 		this.advance() && advance the first '"'
-		do while this.current_char != T_NONE
+		do while this.current_char != T_EOT
 			if this.current_char = '\'
 				lcPeek = this.peek()
 				do case
@@ -134,7 +134,7 @@ define class Tokenizer as custom
 	endfunc
 
 	function next_token
-		do while this.current_char != T_NONE
+		do while this.current_char != T_EOT
 			if this.isspace(this.current_char)
 				this.skip_whitespace()
 				loop
@@ -184,7 +184,7 @@ define class Tokenizer as custom
 
 			this.showError(0, "Lexer Error: Unknown character '" + transform(this.current_char) + "'")
 		enddo
-		return this.newToken(T_NONE, T_NONE)
+		return this.newToken(T_NONE, T_EOT)
 	endfunc
 
 	hidden function getUnicode as Void
@@ -193,7 +193,7 @@ define class Tokenizer as custom
 		lexeme = ''
 		lcUnicode = "0x"
 		this.advance() && eat the 'u'
-		do while this.current_char != T_NONE and (this.isHex(this.current_char) or isdigit(this.current_char))
+		do while this.current_char != T_EOT and (this.isHex(this.current_char) or isdigit(this.current_char))
 			if len(lcUnicode) = 6
 				exit
 			endif

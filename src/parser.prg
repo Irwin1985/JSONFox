@@ -48,12 +48,17 @@ define class Parser as custom
 		case this.cur_token.type == T_LBRACKET
 			local MyArray, nIndex
 			MyArray = createobject("Empty")
-			=addproperty(MyArray, '_[1]', .null.)
+*!*				=addproperty(MyArray, '_[1]', .null.)
+			=addproperty(MyArray, '_[1]', 0)
 			this.eat(T_LBRACKET)
 			nIndex = 1
-			dimension MyArray._(1)
-			MyArray._[1] = this.value()
+*!*				dimension MyArray._(1)
+*!*				MyArray._[1] = this.value()
 			if this.cur_token.type != T_RBRACKET
+
+				dimension MyArray._(nIndex)
+				MyArray._[nIndex] = this.value()
+				
 				do while this.cur_token.type = T_COMMA
 					this.eat(T_COMMA)
 					nIndex = nIndex + 1
@@ -78,7 +83,7 @@ define class Parser as custom
 		local obj
 		obj = createobject('Empty')
 		this.eat(T_LBRACE)
-		if this.peek_token.type != T_RBRACE
+		if this.cur_token.type != T_RBRACE
 			this.kvp(@obj)
 			do while this.cur_token.type == T_COMMA
 				this.eat(T_COMMA)
