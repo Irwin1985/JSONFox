@@ -8,6 +8,10 @@
 
 ### Latest Release
 
+**[JSONFox]** - 6.7 - Release 2021-04-15 00:16:33
+
+**[JSONFox]** - 6.6 - Release 2021-04-15 11:25:17
+
 **[JSONFox]** - 6.5 - Release 2021-03-25 09:13:14
 
 **[JSONFox]** - 6.0 - Release 2021-02-23 22:28:00
@@ -283,6 +287,11 @@ _Screen.Json.JSONViewer(lcStr)
 ### Release History
 
 <hr>
+
+2021-04-15
+
+* Bug fixed: tokenize negative numbers.
+* Bug fixed: Stringify() receive a new parameter called tlParseutf8 to convert special characters.
 
 2021-03-25
 

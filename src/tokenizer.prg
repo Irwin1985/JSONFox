@@ -73,8 +73,14 @@ define class Tokenizer as custom
 	endfunc
 
 	function number
-		local lexeme
-		lexeme = ''		
+		local lexeme, isNegative
+		lexeme = ''
+		isNegative = (this.current_char == '-')
+		if isNegative
+			lexeme = '-'
+			this.advance()
+		endif
+		
 		do while this.current_char != T_EOT and isdigit(this.current_char)
 			lexeme = lexeme + this.current_char
 			this.advance()
@@ -174,7 +180,7 @@ define class Tokenizer as custom
 				return this.string()
 			endif
 			
-			if isdigit(this.current_char)
+			if (this.current_char == '-' and isdigit(this.peek())) or isdigit(this.current_char)
 				return this.number()
 			endif
 			

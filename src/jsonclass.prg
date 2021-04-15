@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "6.6"
+	version 		= "6.7"
 	hidden lInternal
 	hidden lTablePrompt
 
@@ -39,13 +39,18 @@ define class JSONClass as session
 
 	* Stringify
 	function Stringify as memo
-		lparameters tvNewVal as Variant, tcFlags as string
+		lparameters tvNewVal as Variant, tcFlags as string, tlParseUtf8
 		this.ResetError()
+		local llParseUtf8, lcTypeFlag, loJSONStr as memo
+		lcTypeFlag = type('tcFlags')
+		llParseUtf8 = iif(lcTypeFlag = 'L', tcFlags, tlParseUtf8)
+		loJSONStr = ""
+
 		if vartype(tvNewVal) = "O"
 			try
 				local objToJson
 				objToJson = createobject("ObjectToJson")
-				tvNewVal = objToJson.Encode(@tvNewVal, tcFlags)			
+				tvNewVal = objToJson.Encode(@tvNewVal, iif(lcTypeFlag != 'C', .F., tcFlags))
 			catch to loEx
 				this.ShowExceptionError(loEx)
 			finally
@@ -53,13 +58,12 @@ define class JSONClass as session
 				release objToJson
 			endtry
 		endif
-		local loJSONStr as memo
-		loJSONStr = ""
+
 		try
 			local lexer, parser
 			lexer = createobject("Tokenizer", tvNewVal)
-			parser = createobject("JSONStringify", lexer)		
-			loJSONStr = parser.Stringify()
+			parser = createobject("JSONStringify", lexer)	
+			loJSONStr = parser.Stringify(llParseUtf8)
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally

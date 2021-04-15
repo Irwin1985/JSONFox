@@ -235,14 +235,51 @@ define class jsonutils as custom
 	&& Function GetString
 	&& ======================================================================== &&
 	function getstring as string
-		lparameters tcString as string
+		lparameters tcString as string, tlParseUtf8 as Boolean
 		tcString = allt(tcString)
-		tcString = strtran(tcString, '\', '\\' )
-		*tcstring = strtran(tcstring, '/', '\/' )
+		tcString = strtran(tcString, '\', '\\' )		
 		tcString = strtran(tcString, chr(9),  '\t' )
 		tcString = strtran(tcString, chr(10), '\n' )
 		tcString = strtran(tcString, chr(13), '\r' )
 		tcString = strtran(tcString, '"', '\"' )
+
+		if tlParseUtf8
+			tcString = StrTran(tcString,"&","\u0026")
+			*tcString = StrTran(tcString,":","\u003a")
+			tcString = StrTran(tcString,"+","\u002b")
+			tcString = StrTran(tcString,"-","\u002d")
+			tcString = StrTran(tcString,"#","\u0023")
+			tcString = StrTran(tcString,"%","\u0025")
+			tcString = StrTran(tcString,"²","\u00b2")
+			tcString = StrTran(tcString,'à','\u00e0')
+			tcString = StrTran(tcString,'á','\u00e1')
+			tcString = StrTran(tcString,'è','\u00e8')
+			tcString = StrTran(tcString,'é','\u00e9')
+			tcString = StrTran(tcString,'ì','\u00ec')
+			tcString = StrTran(tcString,'í','\u00ed')
+			tcString = StrTran(tcString,'ò','\u00f2')
+			tcString = StrTran(tcString,'ó','\u00f3')
+			tcString = StrTran(tcString,'ù','\u00f9')
+			tcString = StrTran(tcString,'ú','\u00fa')
+			tcString = StrTran(tcString,'ü','\u00fc')
+			tcString = StrTran(tcString,'À','\u00c0')
+			tcString = StrTran(tcString,'Á','\u00c1')
+			tcString = StrTran(tcString,'È','\u00c8')
+			tcString = StrTran(tcString,'É','\u00c9')
+			tcString = StrTran(tcString,'Ì','\u00cc')
+			tcString = StrTran(tcString,'Í','\u00cd')
+			tcString = StrTran(tcString,'Ò','\u00d2')
+			tcString = StrTran(tcString,'Ó','\u00d3')
+			tcString = StrTran(tcString,'Ù','\u00d9')
+			tcString = StrTran(tcString,'Ú','\u00da')
+			tcString = StrTran(tcString,'Ü','\u00dc')
+			tcString = StrTran(tcString,'ñ','\u00f1')
+			tcString = StrTran(tcString,'Ñ','\u00d1')
+			tcString = StrTran(tcString,'©','\u00a9')
+			tcString = StrTran(tcString,'®','\u00ae')
+			tcString = StrTran(tcString,'ç','\u00e7')
+		endif
+
 		return '"' +tcString + '"'
 	endfunc
 	&& ======================================================================== &&

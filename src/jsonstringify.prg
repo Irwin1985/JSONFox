@@ -12,7 +12,8 @@ define class JSONStringify as custom
 	lexer = .null.
 	cur_token = 0
 	peek_token = 0
-
+	ParseUtf8 = .f.
+	
 	function init(toLexer)
 		this.lexer = toLexer
 		this.next_token()
@@ -37,6 +38,8 @@ define class JSONStringify as custom
 
 	* Stringify
 	function Stringify as memo
+		lparameters tlParseUtf8
+		this.ParseUtf8 = tlParseUtf8
 		private JSONUtils
 		JSONUtils = _screen.JSONUtils
 		return this.value(0)
@@ -91,7 +94,7 @@ define class JSONStringify as custom
 		case this.cur_token.type == T_STRING
 			vNewVal = this.cur_token.value
 			this.eat(T_STRING)
-			return JSONUtils.GetString(vNewVal)
+			return JSONUtils.GetString(vNewVal, this.ParseUtf8)
 
 		case this.cur_token.type == T_NUMBER
 			lvNewVal = this.cur_token.value
