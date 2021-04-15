@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "6.5"
+	version 		= "6.6"
 	hidden lInternal
 	hidden lTablePrompt
 
@@ -146,9 +146,23 @@ define class JSONClass as session
 	function ArrayToXML(tcArray as memo) as string
 		local lcOut as string
 		lcOut = ''
+		if vartype(tcArray) = 'O'
+			try
+				local objToJson
+				objToJson = createobject("ObjectToJson")
+				tcArray = objToJson.Encode(@tcArray)
+			catch to loEx
+				this.ShowExceptionError(loEx)
+			finally
+				objToJson = .null.
+				release objToJson
+			endtry
+		endif
 		try
-			this.jsonToCursor(tcArray, "qResult", set("Datasession"))
-			=cursortoxml('qResult','lcOut', 1, 0, 0, '1')
+			this.jsonToCursor(tcArray, 'qResult', set("Datasession"))
+			if used('qResult')
+				=cursortoxml('qResult','lcOut', 1, 0, 0, '1')
+			endif
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
