@@ -2,15 +2,18 @@
 
 * Test
 *!*	clear
-*!*	*lcJsonStr = filetostr("f:\a1\test.json")
-*!*	lcJsonStr = '"15-11-1985"'
+*!*	lcJsonStr = filetostr("C:\Users\irwin.SUBIFOR\Downloads\generated.json")
+*!*	*lcJsonStr = '"15-11-1985"'
+*!*	lnSec = SECONDS()
 *!*	lexer = createobject("Tokenizer", lcJsonStr)
 *!*	local myToken
 *!*	myToken = lexer.next_token()
 *!*	do while myToken.Value != T_EOT
-*!*		?"type: ", myToken.Type, "value: ", myToken.Value
+*!*		*?"type: ", myToken.Type, "value: ", myToken.Value
 *!*		myToken = lexer.next_token()
-*!*	enddo
+*!*	ENDDO
+*!*	?SECONDS() - lnSec
+*!*	MESSAGEBOX("listo")
 * Test
 
 * Tokenizer

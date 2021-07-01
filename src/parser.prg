@@ -18,6 +18,7 @@ define class Parser as custom
 	endfunc
 
 	function next_token
+		this.cur_token = .null.
 		this.cur_token = this.peek_token
 		this.peek_token = this.lexer.next_token()
 	endfunc

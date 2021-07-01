@@ -7,6 +7,10 @@ define class JSONClass as session
 	version 		= "6.7"
 	hidden lInternal
 	hidden lTablePrompt
+	&& >>>>>>> IRODG 07/01/21
+	* Set this property to .T. if you want the lexer uses JSONFoxHelper.dll
+	NETScanner = .f.
+	&& <<<<<<< IRODG 07/01/21
 
 	*Function Init
 	function init
@@ -25,7 +29,11 @@ define class JSONClass as session
 		try
 			this.ResetError()
 			local lexer, parser
-			lexer = createobject("Tokenizer", tcJsonStr)
+			if this.NETScanner
+				lexer = createobject("NetScanner", tcJsonStr)
+			else
+				lexer = createobject("Tokenizer", tcJsonStr)
+			endif
 			parser = createobject("Parser", lexer)
 			loJSONObj = parser.Parse()
 		catch to loEx
@@ -50,7 +58,7 @@ define class JSONClass as session
 			try
 				local objToJson
 				objToJson = createobject("ObjectToJson")
-				tvNewVal = objToJson.Encode(@tvNewVal, iif(lcTypeFlag != 'C', .F., tcFlags))
+				tvNewVal = objToJson.Encode(@tvNewVal, iif(lcTypeFlag != 'C', .f., tcFlags))
 			catch to loEx
 				this.ShowExceptionError(loEx)
 			finally
@@ -62,7 +70,7 @@ define class JSONClass as session
 		try
 			local lexer, parser
 			lexer = createobject("Tokenizer", tvNewVal)
-			parser = createobject("JSONStringify", lexer)	
+			parser = createobject("JSONStringify", lexer)
 			loJSONStr = parser.Stringify(llParseUtf8)
 		catch to loEx
 			this.ShowExceptionError(loEx)
@@ -77,7 +85,7 @@ define class JSONClass as session
 	function JSONToRTF as memo
 		lparameters tvNewVal as Variant, tnIndent as Boolean
 		this.ResetError()
-		if vartype(tvNewVal) = 'O'			
+		if vartype(tvNewVal) = 'O'
 			try
 				local objToJson
 				objToJson = createobject("ObjectToJson")
@@ -137,7 +145,7 @@ define class JSONClass as session
 	&& <<Deprecated>> please use Parse function instead.
 	&& ======================================================================== &&
 	function Decode(tcJsonStr as memo) as object
-		return this.parse(tcJsonStr)
+		return this.Parse(tcJsonStr)
 	endfunc
 	&& ======================================================================== &&
 	&& Function LoadFile
@@ -188,7 +196,7 @@ define class JSONClass as session
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
-			loParser = .Null.
+			loParser = .null.
 			release loParser
 			use in (select("qXML"))
 		endtry
@@ -203,6 +211,7 @@ define class JSONClass as session
 			this.ResetError()
 			tcCursor = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
+			set datasession to tnDataSession
 			if tbCurrentRow
 				lnRecno = recno(tcCursor)
 				select * from (tcCursor) where recno() = lnRecno into cursor qResult
@@ -216,7 +225,7 @@ define class JSONClass as session
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
-			loParser = .Null.
+			loParser = .null.
 			release loParser
 			use in (select("qResult"))
 		endtry
@@ -224,7 +233,7 @@ define class JSONClass as session
 		return lcOutput
 	endfunc
 	* JSONToCursor
-	function JSONToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
+	function jsonToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
 		try
 			local lexer, parser
 			this.ResetError()

@@ -3,6 +3,9 @@
 * load all classes
 Set Procedure To "src\JSONClass" 		Additive
 Set Procedure To "src\Tokenizer" 		Additive
+&& >>>>>>> IRODG 07/01/21  
+Set Procedure To "src\NetScanner" 		Additive
+&& <<<<<<< IRODG 07/01/21
 Set Procedure To "src\Parser" 			Additive
 Set Procedure To "src\JSONUtils" 		Additive
 Set Procedure To "src\ArrayToCursor" 	Additive
