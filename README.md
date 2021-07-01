@@ -6,7 +6,21 @@
 
 **Irwin Rodríguez** (Toledo, Spain)
 
+### New DLL JSONFoxHelper.dll
+If you want to speed up the lexing process then you should use the JSONFoxHelper dll built in C# that scans the tokens faster. In order to use this scanner instead of the native one you just need to active the *NetScanner* property.
+
+```xBase
+// activate the property before using any routing from json class.
+_Screen.netScanner = .T.
+_Screen.Json.Parse(myJSONString)
+```
+# NOTE
+Remember register the JSONFoxHelper.dll before using it. Check this article if you got stuck: https://stackoverflow.com/questions/7092553/turn-a-simple-c-sharp-dll-into-a-com-interop-component
+
+
 ### Latest Release
+
+**[JSONFox]** - 7.0 - Release 2021-07-01 20:38:15
 
 **[JSONFox]** - 6.7 - Release 2021-04-15 00:16:33
 
