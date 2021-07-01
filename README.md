@@ -14,6 +14,9 @@ If you want to speed up the lexing process then you should use the JSONFoxHelper
 _Screen.netScanner = .T.
 _Screen.Json.Parse(myJSONString)
 ```
+### How fast is the scanning process against the native way?
+I did a timing parsing a json file which size was 8mb. The native scanner lasts more than 15 minutes and the new scanner just 93 seconds. Pretty amazing isn't it?
+
 # NOTE
 Remember register the JSONFoxHelper.dll before using it. Check this article if you got stuck: https://stackoverflow.com/questions/7092553/turn-a-simple-c-sharp-dll-into-a-com-interop-component
 
