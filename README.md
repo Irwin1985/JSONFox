@@ -10,8 +10,8 @@
 If you want to speed up the lexing process then you should use the JSONFoxHelper dll built in C# that scans the tokens faster. In order to use this scanner instead of the native one you just need to active the *NetScanner* property.
 
 ```xBase
-// activate the property before using any routing from json class.
-_Screen.netScanner = .T.
+// activate the property before using any routine from json class.
+_Screen.Json.netScanner = .T.
 _Screen.Json.Parse(myJSONString)
 ```
 ### How fast is the scanning process against the native way?
