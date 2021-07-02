@@ -7,7 +7,7 @@
 **Irwin Rodríguez** (Toledo, Spain)
 
 ### New DLL JSONFoxHelper.dll
-If you want to speed up the lexing process then you should use the JSONFoxHelper dll built in C# that scans the tokens faster. In order to use this scanner instead of the native one you just need to active the *NetScanner* property.
+If you want to speed up the lexing process then you should use the JSONFoxHelper dll built in C# that scans the tokens faster. In order to use this scanner instead of the native one you just need to activate the *NetScanner* property like the example below:
 
 ```xBase
 // activate the property before using any routine from json class.
