@@ -11,7 +11,7 @@ If you want to speed up the lexing process then you should use the JSONFoxHelper
 
 ```xBase
 // activate the property before using any routing from json class.
-_Screen.netScanner = .T.
+_Screen.Json.netScanner = .T.
 _Screen.Json.Parse(myJSONString)
 ```
 ### How fast is the scanning process against the native way?
