@@ -43,7 +43,7 @@ define class ObjectToJSON as session
 			for k = 1 to alen(tValue)
 				lcArray = lcArray + iif(len(lcArray) > 1, ",", "")
 				try
-					local array aLista(alen(tValue[k], 1))
+					local array aLista(alen(tValue[k]))
 					=acopy(tValue[k], aLista)
 					lcArray = lcArray + this.AnyToJson(@aLista)
 				catch
@@ -62,7 +62,7 @@ define class ObjectToJSON as session
 				lcProp = lower(alltrim(gaMembers[j]))
 				lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ",", "") + '"' + lcProp + '":'
 				try
-					local array aCopia(alen(tValue. &gaMembers[j], 1))
+					local array aCopia(alen(tValue. &gaMembers[j]))
 					=acopy(tValue. &gaMembers[j], aCopia)
 					lcJSONStr = lcJSONStr + this.AnyToJson(@aCopia)
 				catch
