@@ -149,9 +149,16 @@ define class Parser as custom
 	&& EBNF -> 	array = '[' value | { ',' value }  ']'
 	&& ======================================================================== &&
 	hidden function array(toObjRef, tcPropertyName)
-		
+		local llReturnObj
+		llReturnObj = .f.
 		this.eat(T_LBRACKET)
-		tcPropertyName = _Screen.jsonUtils.CheckProp(tcPropertyName)
+		if empty(tcPropertyName)
+			toObjRef = createobject('Empty')
+			tcPropertyName = '_'
+			llReturnObj = .t.
+		else
+			tcPropertyName = _Screen.jsonUtils.CheckProp(tcPropertyName)
+		endif
 		=addproperty(toObjRef, tcPropertyName + "(1)", 0)
 		
 		if this.cur_token.type != T_RBRACKET
@@ -164,6 +171,10 @@ define class Parser as custom
 			enddo
 		endif
 		this.eat(T_RBRACKET, "Expect ']' after array elements.")
+
+		if llReturnObj
+			return toObjRef
+		endif
 	endfunc
 	&& ======================================================================== &&
 	&& Hidden Function ArrayPush

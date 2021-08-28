@@ -1,11 +1,11 @@
 * ObjectToJSON
 define class ObjectToJSON as session
-	#define USER_DEFINED_PEMS	"U"
+	#define USER_DEFINED_PEMS	'U'
 	#define ALL_MEMBERS			"PHGNUCIBR"
 	lCentury = .f.
-	cDateAct = ""
+	cDateAct = ''
 	nOrden   = 0
-	cFlags 	 = ""
+	cFlags 	 = ''
 	* Function Init
 	function init
 		this.lCentury = set("Century") == "OFF"
@@ -37,32 +37,60 @@ define class ObjectToJSON as session
 		catch
 		endtry
 		do case
-		case type("Alen(tValue, 1)") = "N"
-			local k, lcArray
-			lcArray = "["
-			for k = 1 to alen(tValue)
-				lcArray = lcArray + iif(len(lcArray) > 1, ",", "")
-				try
-					local array aLista(alen(tValue[k]))
-					=acopy(tValue[k], aLista)
-					lcArray = lcArray + this.AnyToJson(@aLista)
-				catch
-					lcArray = lcArray + this.AnyToJson(tValue[k])
-				endtry
-			endfor
-			lcArray = lcArray + "]"
+		*case type("Alen(tValue, 1)") = "N"
+		case type("tValue", 1) = 'A'
+			local k, j, lcArray
+			if alen(tValue, 2) == 0
+				*# Unidimensional array
+				lcArray = '['
+				for k = 1 to alen(tValue)
+					lcArray = lcArray + iif(len(lcArray) > 1, ',', '')
+					try
+						*local array aLista(alen(tValue[k]))
+						=acopy(tValue[k], aLista)
+						lcArray = lcArray + this.AnyToJson(@aLista)
+					catch
+						lcArray = lcArray + this.AnyToJson(tValue[k])
+					endtry
+				endfor
+				lcArray = lcArray + ']'
+			else
+				*# Multidimensional array support
+				lcArray = '['
+				for k = 1 to alen(tValue, 1)
+					lcArray = lcArray + iif(len(lcArray) > 1, ',', '')
+
+					* # begin of rows
+					lcArray = lcArray + '['
+					for j = 1 to alen(tValue, 2)
+						if j > 1
+							lcArray = lcArray + ','
+						endif
+						try
+							=acopy(tValue[k, j], aLista)
+							lcArray = lcArray + this.AnyToJson(@aLista)
+						catch
+							lcArray = lcArray + this.AnyToJson(tValue[k, j])
+						endtry
+					endfor
+					lcArray = lcArray + ']'
+					* # end of rows
+				endfor
+				lcArray = lcArray + ']'
+			endif
 			return lcArray
-		case vartype(tValue) = "O"
+
+		case vartype(tValue) = 'O'
 			local j, lcJSONStr, lnTot
 			local array gaMembers(1)
 
-			lcJSONStr = "{"
+			lcJSONStr = '{'
 			lnTot = amembers(gaMembers, tValue, 0, this.cFlags)
 			for j=1 to lnTot
 				lcProp = lower(alltrim(gaMembers[j]))
-				lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ",", "") + '"' + lcProp + '":'
+				lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcProp + '":'
 				try
-					local array aCopia(alen(tValue. &gaMembers[j]))
+					*local array aCopia(alen(tValue. &gaMembers[j]))
 					=acopy(tValue. &gaMembers[j], aCopia)
 					lcJSONStr = lcJSONStr + this.AnyToJson(@aCopia)
 				catch
@@ -84,13 +112,13 @@ define class ObjectToJSON as session
 				lcComma   = iif(right(lcJSONStr, 1) != '{', ',', '')
 				lcJSONStr = lcJSONStr + lcComma + '"Collection":['
 				for i=1 to tValue.Count
-					lcJSONStr = lcJSONStr + iif(i>1,",","") + this.AnyToJson(tValue.Item(i))
+					lcJSONStr = lcJSONStr + iif(i>1,',','') + this.AnyToJson(tValue.Item(i))
 				endfor
 				lcJSONStr = lcJSONStr + ']'
 			endif
 			*//> Collection based class object support
 
-			lcJSONStr = lcJSONStr + "}"
+			lcJSONStr = lcJSONStr + '}'
 			return lcJSONStr
 		otherwise
 			return _screen.JSONUtils.GetValue(tValue, vartype(tValue))
