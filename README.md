@@ -238,7 +238,19 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 	      "birthDate": "1985-11-15",
 	      "createdAt": "2019-03-31",
 	      "single": true
-	    }
+	    },
+      {
+          "id": 3,
+          "email": "oscaraguero85@gmail.com",
+          "name": "oscar",
+          "lastName": "aguero",
+          "sex": "1",
+          "salary": 1500.45,
+          "profesion_id": 1,
+          "birthDate": "1985-06-18",
+          "createdAt": "2021-10-11",
+          "single": true
+      }      
 	  ],
 	  "code": 200,
 	  "message": "success"
@@ -246,11 +258,12 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ENDTEXT
 
 obj = _Screen.Json.Parse(lcStr)
-* Encode just the Array attribute called (data)*
-lcJsonArray = _Screen.Json.Encode(obj.data)
 
-* Surround the lcJSONArray with array character delimiters '[' ']'.
-lcJsonArray = "[" + lcJsonArray + "]"
+* Make a copy of the internal array from obj.data
+Acopy(obj.data, aEmployeeList)
+
+* Now pass the aEmployeeList by reference with '@'
+lcJsonArray = _Screen.Json.Encode(@aEmployeeList)
 
 * Convert the JSONArray into VFP CURSOR **(this is cool)**
 _Screen.Json.JSONToCursor(lcJsonArray, "qEmployees")
