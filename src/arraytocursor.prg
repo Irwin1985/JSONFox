@@ -224,7 +224,11 @@ define class ArrayToCursor as session
 	* CheckStructure
 	function CheckStructure(tcFieldName, tcType, tnLength)
 		* Find or Insert the field.
-		nFieldIdx = ascan(this.aTableStruct, tcFieldName)
+		&& >>>>>>> IRODG 12/28/21
+		LOCAL nFieldIdx
+*!*			nFieldIdx = ascan(this.aTableStruct, tcFieldName)
+		nFieldIdx = ascan(this.aTableStruct, tcFieldName,-1,-1,0,4)
+		&& >>>>>>> IRODG 12/28/21
 		if nFieldIdx > 0
 			* Check for .NULL. type and Update
 			lcFieldType = getwordnum(this.aTableStruct[nFieldIdx], 2, "|")
@@ -259,7 +263,11 @@ define class ArrayToCursor as session
 
 	* FieldType
 	hidden function FieldType(tcField)
-		nFieldIdx = ascan(this.aTableStruct, tcField)
+		&& <<<<<<< IRODG 12/28/21
+		LOCAL nFieldIdx
+*!*			nFieldIdx = ascan(this.aTableStruct, tcField)
+		nFieldIdx = ascan(this.aTableStruct, tcField,-1,-1,0,4)
+		&& >>>>>>> IRODG 12/28/21
 		lcType    = 'X'
 		if nFieldIdx > 0
 			lcType = getwordnum(this.aTableStruct[nFieldIdx], 2, "|")
@@ -269,7 +277,11 @@ define class ArrayToCursor as session
 
 	* FieldLength
 	hidden function FieldLen(tcField)
-		nFieldIdx = ascan(this.aTableStruct, tcField)
+		&& <<<<<<< IRODG 12/28/21
+		LOCAL nFieldIdx
+*!*			nFieldIdx = ascan(this.aTableStruct, tcField)
+		nFieldIdx = ascan(this.aTableStruct, tcField,-1,-1,0,4)
+		&& >>>>>>> IRODG 12/28/21
 		lnLen     = 0
 		if nFieldIdx > 0
 			lnLen = val(getwordnum(this.aTableStruct[nFieldIdx], 3, "|"))
