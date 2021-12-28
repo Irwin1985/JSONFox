@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "7.3"
+	version 		= "7.4"
 	hidden lInternal
 	hidden lTablePrompt
 	&& >>>>>>> IRODG 07/01/21
@@ -314,5 +314,23 @@ define class JSONClass as session
 			endif
 		catch
 		endtry
+		&& >>>>>>> IRODG 12/28/21
+		try
+			removeproperty(_screen, 'json')
+		catch
+		endtry
+		try
+			removeproperty(_screen, 'jsonutils')
+		catch
+		endtry
+		try
+			removeproperty(_screen, 'oregex')
+		catch
+		endtry
+		try
+			removeproperty(_screen, 'toml')
+		catch
+		endtry
+		&& <<<<<<< IRODG 12/28/21
 	endfunc
 enddefine
