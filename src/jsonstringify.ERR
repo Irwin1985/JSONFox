@@ -1,2 +1,0 @@
-#define CRLF chr(13) + chr(10)
-Error in line 11: Constant is already created with #DEFINE.
