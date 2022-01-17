@@ -245,7 +245,6 @@ define class jsonutils as custom
 
 		if tlParseUtf8
 			tcString = StrTran(tcString,"&","\u0026")
-			*tcString = StrTran(tcString,":","\u003a")
 			tcString = StrTran(tcString,"+","\u002b")
 			tcString = StrTran(tcString,"-","\u002d")
 			tcString = StrTran(tcString,"#","\u0023")

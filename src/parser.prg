@@ -38,7 +38,7 @@ define class Parser as custom
 		lvNewVal = .null.
 		do case
 		case this.cur_token.type == T_STRING
-			return _Screen.jsonUtils.CheckString(this.cur_token.value)
+			return _screen.jsonUtils.CheckString(this.cur_token.value)
 		case this.cur_token.type == T_NUMBER
 			nVal = val(this.cur_token.value)
 			return iif(at('.', this.cur_token.value) > 0, nVal, int(nVal))
@@ -49,17 +49,14 @@ define class Parser as custom
 		case this.cur_token.type == T_LBRACKET
 			local MyArray, nIndex
 			MyArray = createobject("Empty")
-*!*				=addproperty(MyArray, '_[1]', .null.)
 			=addproperty(MyArray, '_[1]', 0)
 			this.eat(T_LBRACKET)
 			nIndex = 1
-*!*				dimension MyArray._(1)
-*!*				MyArray._[1] = this.value()
 			if this.cur_token.type != T_RBRACKET
 
 				dimension MyArray._(nIndex)
 				MyArray._[nIndex] = this.value()
-				
+
 				do while this.cur_token.type = T_COMMA
 					this.eat(T_COMMA)
 					nIndex = nIndex + 1
@@ -104,9 +101,9 @@ define class Parser as custom
 		lcKeyElement = this.cur_token.value
 		this.eat(T_STRING, "Expect right key element")
 		this.eat(T_COLON, "Expect ':' after key element.")
-		
+
 		if this.cur_token.type != T_LBRACKET
-			=addproperty(toObj, _Screen.jsonUtils.CheckProp(lcKeyElement), this.value(toObj, lcKeyElement))
+			=addproperty(toObj, _screen.jsonUtils.CheckProp(lcKeyElement), this.value(toObj, lcKeyElement))
 		else
 			this.value(toObj, lcKeyElement) &&Array element
 		endif
@@ -122,7 +119,7 @@ define class Parser as custom
 		case this.cur_token.type == T_STRING
 			lvNewVal = this.cur_token.value
 			this.eat(T_STRING)
-			return _Screen.jsonUtils.CheckString(lvNewVal)
+			return _screen.jsonUtils.CheckString(lvNewVal)
 		case this.cur_token.type == T_NUMBER
 			lvNewVal = this.cur_token.value
 			this.eat(T_NUMBER)
@@ -157,17 +154,22 @@ define class Parser as custom
 			tcPropertyName = '_'
 			llReturnObj = .t.
 		else
-			tcPropertyName = _Screen.jsonUtils.CheckProp(tcPropertyName)
+			tcPropertyName = _screen.jsonUtils.CheckProp(tcPropertyName)
 		endif
+		&& >>>>>>> IRODG 01/17/22
+		if inlist(tcPropertyName, 'update', 'delete') && these arrays names cause internal error on 'empty' based objects.
+			tcPropertyName = '_' + tcPropertyName
+		endif
+		&& <<<<<<< IRODG 01/17/22
 		=addproperty(toObjRef, tcPropertyName + "(1)", 0)
-		
+
 		if this.cur_token.type != T_RBRACKET
 			local nIndex
 			nIndex = 0
-			This.ArrayPush(toObjRef, tcPropertyName, @nIndex)
+			this.ArrayPush(toObjRef, tcPropertyName, @nIndex)
 			do while this.cur_token.type == T_COMMA
 				this.eat(T_COMMA)
-				This.ArrayPush(toObjRef, tcPropertyName, @nIndex)
+				this.ArrayPush(toObjRef, tcPropertyName, @nIndex)
 			enddo
 		endif
 		this.eat(T_RBRACKET, "Expect ']' after array elements.")
