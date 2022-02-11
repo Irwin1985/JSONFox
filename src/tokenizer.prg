@@ -94,6 +94,9 @@ define class Tokenizer as custom
 				case lcPeek = '\'
 					this.advance()
 					lexeme = lexeme + '\'
+				case lcPeek = '/'
+					this.advance()
+					lexeme = lexeme + '/'
 				case lcPeek = 'n'
 					this.advance()
 					lexeme = lexeme + LF

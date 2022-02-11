@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Web;
 
 namespace JSONFoxHelper
 {
@@ -68,6 +62,9 @@ namespace JSONFoxHelper
                         case 'u':
                             Consume();
                             lexeme += GetUnicode(); break;
+                        case '/':
+                            Consume();
+                            lexeme += "/"; break;
                         default:
                             var msg = String.Format("error: bad scape secuence at [{0}:{1}]", sr.GetLine(), sr.GetColumn());
                             throw new Exception(msg);
