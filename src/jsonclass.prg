@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "7.6"
+	version 		= "8.0"
 	hidden lInternal
 	hidden lTablePrompt
 	&& >>>>>>> IRODG 07/01/21
@@ -276,6 +276,31 @@ define class JSONClass as session
 			use in (select("qResult"))
 		endtry
 		return lcOutput
+	endfunc
+	* tokenize
+	function dumpTokens	
+		lparameters tcJsonStr as memo
+		local loJSONObj as object
+		loJSONObj = .null.
+		try
+			this.ResetError()
+			local loLexer, loToken, lcTokens as memo
+			loLexer = createobject("Tokenizer", tcJsonStr)
+			loToken = loLexer.Next_Token()
+			lcTokens = ''
+			do while loToken.type != 0
+				lcTokens = lcTokens + loLexer.tokenStr(loToken) + CHR(13) + CHR(10)
+				loToken = loLexer.Next_Token()
+			enddo
+			lcTokens = lcTokens + loLexer.tokenStr(loToken) + CHR(13) + CHR(10)
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			store .null. to lexer, parser
+			release lexer, parser
+		endtry
+		_cliptext = lcTokens
+		return lcTokens
 	endfunc
 	* LastErrorText_Assign
 	function LastErrorText_Assign
