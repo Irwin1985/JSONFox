@@ -262,7 +262,6 @@ define class JSONClass as session
 	function CursorStructure
 		lparameters tcCursor as string, tnDataSession as integer, tlCopyExtended as Boolean
 		local lcOutput as memo
-		SET STEP ON
 		lcOutput = ''
 		try
 			this.ResetError()
