@@ -156,8 +156,9 @@ define class JSONClass as session
 	endfunc
 	* ArrayToXML
 	function ArrayToXML(tcArray as memo) as string
-		local lcOut as string
+		local lcOut as string, lcCursor
 		lcOut = ''
+		lcCursor = SYS(2015)
 		if vartype(tcArray) = 'O'
 			try
 				local objToJson
@@ -171,14 +172,14 @@ define class JSONClass as session
 			endtry
 		endif
 		try
-			this.jsonToCursor(tcArray, 'qResult', set("Datasession"))
-			if used('qResult')
-				=cursortoxml('qResult','lcOut', 1, 0, 0, '1')
+			this.jsonToCursor(tcArray, lcCursor, set("Datasession"))
+			if used(lcCursor)
+				=cursortoxml(lcCursor, 'lcOut', 1, 0, 0, '1')
 			endif
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
-			use in (select("qResult"))
+			use in (select(lcCursor))
 		endtry
 		return lcOut
 	endfunc
@@ -205,8 +206,9 @@ define class JSONClass as session
 	* CursorToJSON
 	function CursorToJSON as memo
 		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean
-		local lcJsonXML as memo, loParser
+		local lcJsonXML as memo, loParser, lcCursor
 		lcJsonXML = ''
+		lcCursor  = SYS(2015)
 		try
 			this.ResetError()
 			tcCursor = evl(tcCursor, alias())
@@ -214,12 +216,12 @@ define class JSONClass as session
 			set datasession to tnDataSession
 			if tbCurrentRow
 				lnRecno = recno(tcCursor)
-				select * from (tcCursor) where recno() = lnRecno into cursor qResult
+				select * from (tcCursor) where recno() = lnRecno into cursor (lcCursor)
 			else
-				select * from (tcCursor) into cursor qResult
+				select * from (tcCursor) into cursor (lcCursor)
 			endif
 			loParser = createobject("CursorToArray")
-			loParser.CurName 	 = "qResult"
+			loParser.CurName 	 = lcCursor
 			loParser.nSessionID  = tnDataSession
 			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
@@ -227,7 +229,7 @@ define class JSONClass as session
 		finally
 			loParser = .null.
 			release loParser
-			use in (select("qResult"))
+			use in (select(lcCursor))
 		endtry
 		lcOutput = iif(tlJustArray, lcJsonXML, '{"' + lower(alltrim(tcCursor)) + '":' + lcJsonXML + '}')
 		return lcOutput
@@ -260,6 +262,7 @@ define class JSONClass as session
 	function CursorStructure
 		lparameters tcCursor as string, tnDataSession as integer, tlCopyExtended as Boolean
 		local lcOutput as memo
+		SET STEP ON
 		lcOutput = ''
 		try
 			this.ResetError()
@@ -272,8 +275,6 @@ define class JSONClass as session
 			lcOutput = loStructureToJSON.StructureToJSON()
 		catch to loEx
 			this.ShowExceptionError(loEx)
-		finally
-			use in (select("qResult"))
 		endtry
 		return lcOutput
 	endfunc
