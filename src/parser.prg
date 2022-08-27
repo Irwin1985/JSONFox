@@ -11,27 +11,11 @@ define class Parser as custom
 	lexer = .null.
 	cur_token = 0
 	peek_token = 0
+	
 	function init(toLexer)
 		this.lexer = toLexer
 		this.next_token()
 		this.next_token()
-	endfunc
-
-	function next_token
-		this.cur_token = .null.
-		this.cur_token = this.peek_token
-		this.peek_token = this.lexer.next_token()
-	endfunc
-
-	function eat(tnTokenType, tcErrorMessage)
-		if this.cur_token.type == tnTokenType
-			this.next_token()
-		else
-			if empty(tcErrorMessage)
-				tcErrorMessage = "Parser Error: expected token '" + transform(tnTokenType) + "' got = '" + transform(this.cur_token.type) + "'"
-			endif
-			error tcErrorMessage
-		endif
 	endfunc
 
 	function Parse
@@ -157,7 +141,7 @@ define class Parser as custom
 			tcPropertyName = _screen.jsonUtils.CheckProp(tcPropertyName)
 		endif
 		&& >>>>>>> IRODG 01/17/22
-		if inlist(tcPropertyName, 'update', 'delete') && these arrays names cause internal error on 'empty' based objects.
+		if inlist(tcPropertyName, 'update', 'delete') && these arrays names causes internal error on 'empty' based objects.
 			tcPropertyName = '_' + tcPropertyName
 		endif
 		&& <<<<<<< IRODG 01/17/22
@@ -182,10 +166,28 @@ define class Parser as custom
 	&& Hidden Function ArrayPush
 	&& ======================================================================== &&
 	hidden function ArrayPush(toObjRef, tcPropName, tnCurrentIndex)
+		Local lcCmd
 		tnCurrentIndex = tnCurrentIndex + 1
 		lcCmd = "DIMENSION toObjRef." + tcPropName + "(" + alltrim(str(tnCurrentIndex)) + ")"
 		&lcCmd
 		lcCmd = "toObjRef." + tcPropName + "[" + alltrim(str(tnCurrentIndex)) + "] = This.Value()"
 		&lcCmd
+	endfunc
+
+	function next_token
+		this.cur_token  = .null.
+		this.cur_token  = this.peek_token
+		this.peek_token = this.lexer.next_token()
+	endfunc
+
+	function eat(tnTokenType, tcErrorMessage)
+		if this.cur_token.type == tnTokenType
+			this.next_token()
+		else
+			if empty(tcErrorMessage)
+				tcErrorMessage = "Parser Error: expected token '" + transform(tnTokenType) + "' got = '" + transform(this.cur_token.type) + "'"
+			endif
+			error tcErrorMessage
+		endif
 	endfunc
 enddefine

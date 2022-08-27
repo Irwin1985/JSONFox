@@ -4,7 +4,10 @@ define class Tokenizer as custom
 	pos = 0
 	source = ''
 	current_char = ''
+	letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
+	hexLetters = 'abcdefABCDEF'
 	line = 0
+	
 	function init(tcSource)
 		this.source = tcSource
 		this.pos = 1
@@ -31,14 +34,15 @@ define class Tokenizer as custom
 	endfunc
 
 	function isLetter(tcLetter)
-		return 'a' <= tcLetter and tcLetter <= 'z' or 'A' <= tcLetter and tcLetter <= 'Z'
+		* return 'a' <= tcLetter and tcLetter <= 'z' or 'A' <= tcLetter and tcLetter <= 'Z'
+		Return At(tcLetter, this.letters) > 0
 	endfunc
 
 	function isspace(tcChar)
 		return inlist(asc(this.current_char), 9, 10, 13, 32)
 	endfunc
 
-	function skip_whitespace
+	function skipWhitespace
 		do while !this.isAtEnd() and this.isspace(this.current_char)
 			this.advance()
 		enddo
@@ -84,6 +88,7 @@ define class Tokenizer as custom
 	endfunc
 
 	function string
+		Local lexeme, lcPeek
 		lexeme = ''
 		lcPeek = ''
 		this.advance() && advance the first '"'
@@ -131,7 +136,7 @@ define class Tokenizer as custom
 	function next_token
 		do while !this.isAtEnd()
 			if this.isspace(this.current_char)
-				this.skip_whitespace()
+				this.skipWhitespace()
 				loop
 			endif
 
@@ -169,7 +174,7 @@ define class Tokenizer as custom
 				return this.string()
 			endif
 
-			if (this.current_char == '-' and isdigit(this.peek())) or isdigit(this.current_char)
+			if isdigit(this.current_char) or (this.current_char == '-' and isdigit(this.peek()))
 				return this.number()
 			endif
 
@@ -183,18 +188,18 @@ define class Tokenizer as custom
 	endfunc
 
 	hidden function getUnicode as Void
-		lcHexStr = '\u'
-		local lexeme, lcUnicode
-		lexeme = ''
-		lcUnicode = "0x"
+		local lcHexStr, lexeme, lcUnicode
+		lcHexStr  = '\u'		
+		lexeme    = ''
+		lcUnicode = '0x'
 		this.advance() && eat the 'u'
 		do while !this.isAtEnd() and (this.isHex(this.current_char) or isdigit(this.current_char))
 			if len(lcUnicode) = 6
 				exit
 			endif
 			lcUnicode = lcUnicode + this.current_char
-			lcHexStr = lcHexStr + this.current_char
-			lexeme = lexeme + this.current_char
+			lcHexStr  = lcHexStr  + this.current_char
+			lexeme    = lexeme    + this.current_char
 			this.advance()
 		enddo
 		this.pos = this.pos - 1 && shift back the character.
@@ -211,8 +216,9 @@ define class Tokenizer as custom
 	endfunc
 
 	hidden function isHex as Boolean
-		lparameters tcLook as string
-		return between(asc(tcLook), asc("A"), asc("F")) or between(asc(tcLook), asc("a"), asc("f"))
+		lparameters tcLook as string		
+		*return between(asc(tcLook), asc("A"), asc("F")) or between(asc(tcLook), asc("a"), asc("f"))
+		Return At(tcLook, this.hexLetters) > 0
 	endfunc
 
 	hidden function newToken(tnTokenType, tcTokenValue)

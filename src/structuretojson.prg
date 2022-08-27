@@ -3,6 +3,7 @@ Define Class StructureToJSON As Session
 	nSessionID = 0
 	curName = ""
 	lExtended = .F.
+	lJustArray = .F.
 * Field constants	
 	#Define FIELD_NAME							1
 	#Define FIELD_TYPE							2
@@ -33,7 +34,11 @@ Define Class StructureToJSON As Session
 		Private JSONUtils
 		JSONUtils = _Screen.JSONUtils
 		Local lcStructJSON As Memo, lcFieldJSON as memo, lnLength As Integer
-		lcStructJSON = '{"' + Lower(this.curName) + '":['
+		If !this.lJustArray
+			lcStructJSON = '{"' + Lower(this.curName) + '":['
+		Else
+			lcStructJSON = '['
+		EndIf
 		lcFieldJSON  = ''
 		lnLength 	 = 0
 		If Used(this.curName)
@@ -64,8 +69,11 @@ Define Class StructureToJSON As Session
 					lcFieldJSON = lcFieldJSON + '}'
 				Endfor
 			Endif
+		EndIf		
+		lcStructJSON = lcStructJSON + lcFieldJSON + ']'
+		If !this.lJustArray
+			lcStructJSON = lcStructJSON + '}'
 		EndIf
-		lcStructJSON = lcStructJSON + lcFieldJSON + ']}'
 		Return lcStructJSON
 	Endfunc
 Enddefine

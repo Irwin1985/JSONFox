@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "8.0"
+	version 		= "8.1"
 	hidden lInternal
 	hidden lTablePrompt
 	&& >>>>>>> IRODG 07/01/21
@@ -260,7 +260,7 @@ define class JSONClass as session
 	endfunc
 	* CursorStructure
 	function CursorStructure
-		lparameters tcCursor as string, tnDataSession as integer, tlCopyExtended as Boolean
+		lparameters tcCursor as string, tnDataSession as integer, tlCopyExtended as Boolean, tlJustArray As Boolean
 		local lcOutput as memo
 		lcOutput = ''
 		try
@@ -271,6 +271,7 @@ define class JSONClass as session
 			loStructureToJSON.CurName 	= tcCursor
 			loStructureToJSON.nSessionID  = tnDataSession
 			loStructureToJSON.lExtended   = tlCopyExtended
+			loStructureToJSON.lJustArray  = tlJustArray
 			lcOutput = loStructureToJSON.StructureToJSON()
 		catch to loEx
 			this.ShowExceptionError(loEx)

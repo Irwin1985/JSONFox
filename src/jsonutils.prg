@@ -4,71 +4,29 @@
 && JSON Utilities
 && ======================================================================== &&
 define class jsonutils as custom
-	* match
-	function match(tntype)
-		if this.check(tntype)
-			this.advance()
-			return .t.
-		endif
-		return .f.
-	endfunc
+	
+	Dimension aPattern[5, 2]
+	
+	Function init
+		this.aPattern[1,1] = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])$"
+		this.aPattern[1,2] = .f.
+		
+		this.aPattern[2,1] = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|0?[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
+		this.aPattern[2,2] = .f.
+		
+		this.aPattern[3,1] = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?(Z|[+-](\d{2})\:(\d{2}))?$"
+		this.aPattern[3,2] = .f.
+		
+		this.aPattern[4,1] = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?[.](\d{3})(\w{1})$"
+		this.aPattern[4,2] = .f.
 
-	* Consume
-	function consume
-		lparameters tntype as integer, tcmessage as string
-		if this.check(tntype)
-			return this.advance()
-		endif
-		error this.jsonerror(this.peek(), tcmessage)
-	endfunc
+		this.aPattern[5,1] = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4}$"
+		this.aPattern[5,2] = .t.
 
-	* Check
-	function check(tntype)
-		if this.isatend()
-			return .f.
-		else
-			return _screen.opeek.type == tntype
-		endif
-	endfunc
+		_screen.oRegEx.global = .t.
 
-	* Advance
-	function advance
-		if !this.isatend()
-			_screen.curtokenpos = _screen.curtokenpos + 1
-		endif
-		return this.previous() && retrieve the just eaten token.
-	endfunc
+	EndFunc
 
-	* Previous
-	function previous
-		_screen.oprevious = _screen.tokens[_screen.curtokenpos - 1]
-		return _screen.oprevious
-	endfunc
-
-	* IsAtEnd
-	function isatend
-		lopeek = this.peek()
-		return lopeek.type = t_eof
-	endfunc
-
-	* Peek
-	function peek
-		_screen.opeek = _screen.tokens[_screen.curtokenpos]
-		return _screen.opeek
-	endfunc
-
-	* Error
-	function jsonerror(totoken, tcmessage)
-		lcmsg = " at '" + totoken.lexeme + "'"
-		if totoken.type == t_eof
-			lcmsg = " at end"
-		endif
-		this.jsonreport(totoken.line, lcmsg, tcmessage)
-	endfunc
-	* Report
-	function jsonreport(tnline, tcwhere, tcmessage)
-		error "[line " + alltrim(str(tnline)) + "] Error " + tcwhere + ": " + tcmessage
-	endfunc
 	&& ======================================================================== &&
 	&& Function GetValue
 	&& ======================================================================== &&
@@ -77,21 +35,19 @@ define class jsonutils as custom
 		do case
 		case tctype $ "CDTBGMQVWX"
 			do case
-			case tctype = "D"
-				tcvalue = '"' + strtran(dtoc(tcvalue), ".", "-") + '"'
-			case tctype = "T"
-				tcvalue = '"' + strtran(ttoc(tcvalue), ".", "-") + '"'
-			otherwise
-				if tctype = "X"
-					tcvalue = "null"
-				else
-					tcvalue = this.getstring(tcvalue)
-				endif
+			case tctype == 'D'
+				tcvalue = '"' + strtran(dtoc(tcvalue), '.', '-') + '"'
+			case tctype == 'T'
+				tcvalue = '"' + strtran(ttoc(tcvalue), '.', '-') + '"'
+			Case tctype == 'X'
+				tcvalue = "null"
+			Otherwise
+				tcvalue = this.getstring(tcvalue)
 			endcase
 			tcvalue = alltrim(tcvalue)
 		case tctype $ "YFIN"
 			tcvalue = strtran(transform(tcvalue), ',', '.')
-		case tctype = "L"
+		case tctype == 'L'
 			tcvalue = iif(tcvalue, "true", "false")
 		endcase
 		return tcvalue
@@ -102,45 +58,18 @@ define class jsonutils as custom
 	&& String itself or string date / datetime format.
 	&& ======================================================================== &&
 	function CheckString(tcString)
-		date_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])$"
-		&& IRODG 20210313 ISSUE # 14
-		*datetime_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
-		*iso_8601_pattern = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[+-](\d{2})\:(\d{2})$"
-		datetime_pattern = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|0?[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
-		iso_8601_pattern = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?(Z|[+-](\d{2})\:(\d{2}))?$"
-		java_datetime = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?[.](\d{3})(\w{1})$"
-		dmy_pattern = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4}$"
-		&& IRODG 20210313 ISSUE # 14
-
-		_screen.oRegEx.global = .t.
-
-		* Regular Date Format
-		_screen.oRegEx.pattern = date_pattern
-		if _screen.oRegEx.Test(tcString)
-			return this.formatDate(tcString)
-		endif
-		* Regular Date Time Format
-		_screen.oRegEx.pattern = datetime_pattern
-		if _screen.oRegEx.Test(tcString)
-			return this.formatDate(tcString)
-		endif
-		* ISO8601 Date Time Format
-		_screen.oRegEx.pattern = iso_8601_pattern
-		if _screen.oRegEx.Test(tcString)
-			return this.formatDate(tcString)
-		endif
-		* JavaScript Date Time Format
-		_screen.oRegEx.pattern = java_datetime
-		if _screen.oRegEx.Test(tcString)
-			return this.formatDate(tcString)
-		endif
-		* dd-mm-YYYY or dd/mm/YYYY date format.
-		_screen.oRegEx.pattern = dmy_pattern
-		if _screen.oRegEx.Test(tcString)
-			return this.formatDate(tcString, .t.)
-		endif
-
-		* Regular String
+		If !IsDigit(Left(tcString, 1)) and !IsDigit(Right(tcString, 1))
+			Return tcString
+		EndIf
+		* We try to identify a date format
+		Local i
+		For i = 1 to Alen(this.aPattern, 1)
+			_screen.oRegEx.pattern = this.aPattern[i, 1]
+			if _screen.oRegEx.Test(tcString)
+				return this.formatDate(tcString, this.aPattern[i, 2])
+			endif
+		EndFor
+		* It is a normal String
 		return tcString
 	endfunc
 	&& ======================================================================== &&
@@ -196,39 +125,6 @@ define class jsonutils as custom
 			endtry
 		endcase
 		return lDate
-		*!*			if occurs(':', tcdate) >= 2 .and. len(alltrim(tcdate)) <= 25
-		*!*				do case
-		*!*				case '.' $ tcdate and 'T' $ tcdate && JavaScript built-in JSON object format. 'YYYY-mm-ddTHH:mm:ss.ms'
-		*!*					tcdate = substr(strtran(tcdate, 'T', space(1)), 1, at('.', tcdate) - 1)
-		*!*				case 'T' $ tcdate and occurs(':', tcdate) = 3 && ISO 8601 format. 'YYYY-mm-ddTHH:mm:ss-ms:00'
-		*!*					tcdate = substr(strtran(tcdate, 'T', space(1)), 1, at('-', tcdate, 3) - 1)
-		*!*				otherwise && VFP Date Time Format. 'YYYY-mm-dd HH:mm:ss'
-		*!*				endcase
-		*!*				try
-		*!*					setDateAct = set("Date")
-		*!*					set date ymd
-		*!*					ldate = ctot(tcdate)
-		*!*				catch
-		*!*					ldate = {//::}
-		*!*				finally
-		*!*					set date &setDateAct
-		*!*				endtry
-		*!*			else
-		*!*				try
-		*!*					setDateAct = set("Date")
-		*!*					if !tlUseDMY
-		*!*						set date ymd
-		*!*					else
-		*!*						set date dmy
-		*!*					endif
-		*!*					ldate = ctod(tcdate)
-		*!*				catch
-		*!*					ldate = {//}
-		*!*				finally
-		*!*					set date &setDateAct
-		*!*				endtry
-		*!*			endif
-		*!*			return ldate
 		&& IRODG 20210313 ISSUE # 14
 	endfunc
 	&& ======================================================================== &&
@@ -283,11 +179,11 @@ define class jsonutils as custom
 	endfunc
 	&& ======================================================================== &&
 	&& Function CheckProp
-	&& Check the object property name for invalid format (replace with '_')
+	&& Check the object property name for invalid format (replace space with '_')
 	&& ======================================================================== &&
 	function checkprop(tcprop as string) as string
-		local lcfinalprop as string
-		lcfinalprop = ""
+		local lcfinalprop, i, lcchar
+		lcfinalprop = ''
 		for i = 1 to len(tcprop)
 			lcchar = substr(tcprop, i, 1)
 			if (i = 1 and isdigit(lcchar)) or (!isalpha(lcchar) and !isdigit(lcchar))
