@@ -1,232 +1,264 @@
+* =========================================
+*!*	clear
+*!*	Cd f:\desarrollo\github\jsonfox\src\
+*!*	If Type('_SCREEN.oRegEx') != 'U'
+*!*		=Removeproperty(_Screen, 'oRegEx')
+*!*	Endif
+*!*	=AddProperty(_Screen, 'oRegEx', Createobject("VBScript.RegExp"))
+*!*	_Screen.oRegEx.Global = .T.
+
+*!*	#include "JSONFox.h"
+
+*!*	If File('c:\a1\tokens.txt')
+*!*		Delete File 'c:\a1\tokens.txt'
+*!*	EndIf
+
+*!*	*Set Step On
+*!*	sc = CreateObject("Tokenizer", FileToStr("c:\a1\test.json"))
+*!*	tokens = sc.scanTokens()
+*!*	For i = 1 to Alen(tokens)
+*!*		StrToFile(sc.tokenStr(tokens[i]) + Chr(13) + Chr(10), 'c:\a1\tokens.txt', 1)
+*!*		? sc.tokenStr(tokens[i])
+*!*	Endfor
+* =========================================
 #include "JSONFox.h"
 * Tokenizer
 define class Tokenizer as custom
-	pos = 0
-	source = ''
-	current_char = ''
-	letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
-	hexLetters = 'abcdefABCDEF'
-	line = 0
+	Hidden source	
+	Hidden start
+	Hidden current
+	Hidden letters
+	Hidden hexLetters
+	hidden line
+	
+	Hidden capacity
+	Hidden length
+	
+	Dimension tokens[1]
 	
 	function init(tcSource)
-		this.source = tcSource
-		this.pos = 1
-		this.line = 1
-		this.current_char = substr(this.source, this.pos, 1)
+		With this
+			.length = 1
+			.capacity = 0
+			.source = tcSource
+			.start = 0
+			.current = 1
+			.letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
+			.hexLetters = 'abcdefABCDEF'	
+			.line = 1
+		endwith
 	endfunc
 
-	function advance
-		this.pos = this.pos + 1
-		if this.pos > len(this.source)
-			this.current_char = T_EOT
-		else
-			this.current_char = substr(this.source, this.pos, 1)
-		endif
+	Hidden function advance
+		this.current = this.current + 1
+		Return substr(this.source, this.current-1, 1)
 	endfunc
 
-	function peek
-		lnPeekPos = this.pos + 1
-		if lnPeekPos > len(this.source)
-			return T_EOT
-		else
-			return substr(this.source, lnPeekPos, 1)
-		endif
-	endfunc
+	Hidden function peek
+		If this.isAtEnd() then
+			Return 'ÿ'
+		EndIf
+		return substr(this.source, this.current, 1)		
+	EndFunc
+	
+	Hidden function peekNext
+		If this.isAtEnd() then
+			Return 'ÿ'
+		EndIf
+		If (this.current + 1) > Len(this.source)
+			Return 'ÿ'
+		EndIf
+		return substr(this.source, this.current+1, 1)		
+	endfunc	
 
-	function isLetter(tcLetter)
-		* return 'a' <= tcLetter and tcLetter <= 'z' or 'A' <= tcLetter and tcLetter <= 'Z'
+	Hidden function isLetter(tcLetter)
 		Return At(tcLetter, this.letters) > 0
 	endfunc
-
-	function isspace(tcChar)
-		return inlist(asc(this.current_char), 9, 10, 13, 32)
-	endfunc
-
-	function skipWhitespace
-		do while !this.isAtEnd() and this.isspace(this.current_char)
+	
+	Hidden Function skipWhitespace
+		Do while !this.isAtEnd() and InList(this.peek(), Chr(9), Chr(10), Chr(13), Chr(32))
+			If this.peek() == Chr(10)
+				this.line = this.line + 1
+			endif
 			this.advance()
 		enddo
 	endfunc
 
-	function identifier
-		local lexeme
-		lexeme = ''
-		do while !this.isAtEnd() and this.isLetter(this.current_char)
-			lexeme = lexeme + this.current_char
+	Hidden function identifier
+		Local lexeme
+		do while !this.isAtEnd() and this.isLetter(this.peek())
 			this.advance()
-		enddo
+		EndDo
+		lexeme = Substr(this.source, this.start, this.current-this.start)
 		if inlist(lexeme, "true", "false", "null")
-			return this.newToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
+			return this.addToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
 		else
 			this.showError(this.line, "Lexer Error: Unexpected identifier '" + lexeme + "'")
 		endif
 	endfunc
 
-	function number
+	Hidden function number
 		local lexeme, isNegative
 		lexeme = ''
-		isNegative = (this.current_char == '-')
+		isNegative = (this.peek() == '-')
 		if isNegative
-			lexeme = '-'
 			this.advance()
 		endif
 
-		do while !this.isAtEnd() and isdigit(this.current_char)
-			lexeme = lexeme + this.current_char
+		do while !this.isAtEnd() and isdigit(this.peek())
 			this.advance()
 		enddo
 
-		if this.current_char == '.' and isdigit(this.peek())
-			lexeme = lexeme + this.current_char
+		if this.peek() == '.' and isdigit(this.peekNext())
 			this.advance() && eat the dot '.'
-			do while !this.isAtEnd() and isdigit(this.current_char)
-				lexeme = lexeme + this.current_char
+			do while !this.isAtEnd() and isdigit(this.peek())
 				this.advance()
 			enddo
-		endif
-		return this.newToken(T_NUMBER, lexeme)
+		EndIf
+		lexeme = Substr(this.source, this.start, this.current-this.start)
+		return this.addToken(T_NUMBER, lexeme)
 	endfunc
 
-	function string
-		Local lexeme, lcPeek
-		lexeme = ''
-		lcPeek = ''
-		this.advance() && advance the first '"'
-		do while !this.isAtEnd()
-			if this.current_char = '\'
-				lcPeek = this.peek()
+	Hidden function string
+		Local lexeme, ch
+		do while !this.isAtEnd()			
+			ch = this.peek()
+			if ch == '\'
 				do case
-				case lcPeek = '\'
+				case this.peekNext() == '\'
 					this.advance()
-					lexeme = lexeme + '\'
-				case lcPeek = '/'
+				case this.peekNext() == '/'
 					this.advance()
-					lexeme = lexeme + '/'
-				case lcPeek = 'n'
+				case this.peekNext() == 'n'
 					this.advance()
-					lexeme = lexeme + LF
-				case lcPeek = 'r'
+				case this.peekNext() == 'r'
 					this.advance()
-					lexeme = lexeme + CR
-				case lcPeek = 't'
+				case this.peekNext() == 't'
 					this.advance()
-					lexeme = lexeme + T_TAB
-				case lcPeek = '"' and this.pos + 1 < len(this.source)
+				case this.peekNext() == '"'
 					this.advance()
-					lexeme = lexeme + '"'
-				case lcPeek = 'u'
-					this.advance()
-					lexeme = lexeme + this.getUnicode()
-				otherwise
-					lexeme = lexeme + '\'
-				endcase
+				EndCase
 			else
-				if this.current_char = '"'
-					this.advance() && eat the last '"'
+				if ch = '"'
+					this.advance()
 					exit
-				else
-					lexeme = lexeme + this.current_char
 				endif
-			endif
+			EndIf
 			this.advance()
-		enddo
-		return this.newToken(T_STRING, lexeme)
+		EndDo
+		
+		lexeme = Substr(this.source, this.start+1, this.current-this.start-2)
+		this.escapeCharacters(@lexeme)
+		this.checkUnicodeFormat(@lexeme)
+		
+
+		return this.addToken(T_STRING, lexeme)
+	EndFunc
+
+	Procedure escapeCharacters(tcLexeme)
+		* Convert all escape sequences
+		tcLexeme = Strtran(tcLexeme, '\\', '\')
+		tcLexeme = Strtran(tcLexeme, '\/', '/')
+		tcLexeme = Strtran(tcLexeme, '\n', Chr(10))
+		tcLexeme = Strtran(tcLexeme, '\r', Chr(13))
+		tcLexeme = Strtran(tcLexeme, '\t', Chr(9))
+		tcLexeme = Strtran(tcLexeme, '\"', '"')
+	EndProc
+		
+	procedure checkUnicodeFormat(tcLexeme)		
+		* Look for unicode format
+		_Screen.oRegEx.Pattern = "\\u([a-fA-F0-9]{4})"
+		Local loResult, lcValue
+		_Screen.oRegEx.IgnoreCase = .t.
+		_Screen.oRegEx.global = .t.
+		loResult = _Screen.oRegEx.Execute(tcLexeme)
+		If Type('loResult') == 'O'
+			For i = 0 to loResult.Count-1
+				lcValue = loResult.Item[i].Value
+				Try
+					tcLexeme = Strtran(tcLexeme, lcValue, Strconv(lcValue, 16))
+				Catch
+				EndTry
+			EndFor
+		EndIf
+	EndProc
+
+	Function scanTokens
+		Dimension this.tokens[1]
+		Do while !this.isAtEnd()
+			this.skipWhitespace()
+			this.start = this.current
+			this.scanToken()
+		EndDo
+		this.addToken(T_EOF, "")
+		this.capacity = this.length-1
+		
+		* Shrink array
+		Dimension this.tokens[this.capacity]
+		
+		Return @this.tokens
 	endfunc
 
-	function next_token
-		do while !this.isAtEnd()
-			if this.isspace(this.current_char)
-				this.skipWhitespace()
-				loop
+	Hidden function scanToken
+		Local ch
+		ch = this.advance()
+		
+		Do case		
+		case ch == '{'
+			Return this.addToken(T_LBRACE, '{')
+
+		case ch == '}'
+			Return this.addToken(T_RBRACE, '}')
+		
+		case ch == '['
+			Return this.addToken(T_LBRACKET, '[')		
+
+		case ch == ']'
+			Return this.addToken(T_RBRACKET, ']')
+
+		case ch == ':'
+			Return this.addToken(T_COLON, ':')
+
+		case ch == ','
+			Return this.addToken(T_COMMA, ',')
+
+		Case ch == '"'
+			Return this.string()
+			
+		Otherwise
+			if isdigit(ch) or (ch == '-' and isdigit(this.peekNext()))
+				Return this.number()
 			endif
 
-			if this.current_char == '{'
-				this.advance()
-				return this.newToken(T_LBRACE, '{')
+			if this.isLetter(ch)
+				Return this.identifier()
 			endif
 
-			if this.current_char == '}'
-				this.advance()
-				return this.newToken(T_RBRACE, '}')
-			endif
+			this.showError(0, "Lexer Error: Unknown character '" + transform(ch) + "'")
+		endcase		
+	EndFunc
 
-			if this.current_char == '['
-				this.advance()
-				return this.newToken(T_LBRACKET, '[')
-			endif
-
-			if this.current_char == ']'
-				this.advance()
-				return this.newToken(T_RBRACKET, ']')
-			endif
-
-			if this.current_char == ':'
-				this.advance()
-				return this.newToken(T_COLON, ':')
-			endif
-
-			if this.current_char == ','
-				this.advance()
-				return this.newToken(T_COMMA, ',')
-			endif
-
-			if this.current_char == '"'
-				return this.string()
-			endif
-
-			if isdigit(this.current_char) or (this.current_char == '-' and isdigit(this.peek()))
-				return this.number()
-			endif
-
-			if this.isLetter(this.current_char)
-				return this.identifier()
-			endif
-
-			this.showError(0, "Lexer Error: Unknown character '" + transform(this.current_char) + "'")
-		enddo
-		return this.newToken(T_NONE, T_EOT)
-	endfunc
-
-	hidden function getUnicode as Void
-		local lcHexStr, lexeme, lcUnicode
-		lcHexStr  = '\u'		
-		lexeme    = ''
-		lcUnicode = '0x'
-		this.advance() && eat the 'u'
-		do while !this.isAtEnd() and (this.isHex(this.current_char) or isdigit(this.current_char))
-			if len(lcUnicode) = 6
-				exit
-			endif
-			lcUnicode = lcUnicode + this.current_char
-			lcHexStr  = lcHexStr  + this.current_char
-			lexeme    = lexeme    + this.current_char
-			this.advance()
-		enddo
-		this.pos = this.pos - 1 && shift back the character.
-		try
-			lcUnicode = chr(&lcUnicode)
-		catch
-			try
-				lcUnicode = strconv(lcHexStr, 16)
-			catch
-				error "Lexer Error: invalid hex format '" + transform(lcUnicode) + "'"
-			endtry
-		endtry
-		return lcUnicode
-	endfunc
-
-	hidden function isHex as Boolean
-		lparameters tcLook as string		
-		*return between(asc(tcLook), asc("A"), asc("F")) or between(asc(tcLook), asc("a"), asc("f"))
-		Return At(tcLook, this.hexLetters) > 0
-	endfunc
-
-	hidden function newToken(tnTokenType, tcTokenValue)
+	hidden function addToken(tnTokenType, tcTokenValue)
+		this.checkCapacity()
 		local loToken
 		loToken = createobject("Empty")
 		=addproperty(loToken, "type", tnTokenType)
 		=addproperty(loToken, "value", tcTokenValue)
-		return loToken
+		=AddProperty(loToken, "line", this.line)
+		
+		this.tokens[this.length] = loToken
+		this.length = this.length + 1		
+	EndFunc
+	
+	Hidden function checkCapacity
+		If this.capacity < this.length + 1
+			If Empty(this.capacity)
+				this.capacity = 8
+			Else
+				this.capacity = this.capacity * 2
+			EndIf			
+			Dimension this.tokens[this.capacity]
+		EndIf
 	endfunc
 
 	function showError(tnLine, tcMessage)
@@ -234,55 +266,13 @@ define class Tokenizer as custom
 	endfunc
 
 	function isAtEnd
-		return this.pos > len(this.source)
+		return this.current > len(this.source)
 	endfunc
 
 	function tokenStr(toToken)
 		local lcType, lcValue
-		lcType = ''
-		lcValue = alltrim(transform(toToken.value))
-		do case
-		case toToken.type = 0
-			lcType = 'EOF'
-			lcValue = ''
-		case toToken.type = 1
-			lcType = 'LBRACE'
-		case toToken.type = 2
-			lcType = 'RBRACE'
-		case toToken.type = 3
-			lcType = 'LBRACKET'
-		case toToken.type = 4
-			lcType = 'RBRACKET'
-		case toToken.type = 5
-			lcType = 'COMMA'
-		case toToken.type = 6
-			lcType = 'COLON'
-		case toToken.type = 7
-			lcType = 'TRUE'
-		case toToken.type = 8
-			lcType = 'FALSE'
-		case toToken.type = 9
-			lcType = 'NULL'
-		case toToken.type = 10
-			lcType = 'NUMBER'
-		case toToken.type = 11
-			lcType = 'KEY'
-		case toToken.type = 12
-			lcType = 'STRING'
-		case toToken.type = 13
-			lcType = 'LINE'
-		case toToken.type = 14
-			lcType = 'INTEGER'
-		case toToken.type = 15
-			lcType = 'FLOAT'
-		case toToken.type = 16
-			lcType = 'VALUE'
-		case toToken.type = 17
-			lcType = 'EOF'
-		case toToken.type = 18
-			lcType = 'BOOLEAN'
-		ENDCASE
-		
-		return "Token(" + lcType + ", '" + lcValue + "')"
-	endfunc
+		lcType = _screen.jsonUtils.tokenTypeToStr(toToken.type)
+		lcValue = alltrim(transform(toToken.value))		
+		return "Token(" + lcType + ", '" + lcValue + "') at Line(" + Alltrim(Str(toToken.Line)) + ")"
+	EndFunc
 enddefine

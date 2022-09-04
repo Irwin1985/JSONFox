@@ -8,53 +8,21 @@
 && array  = '[' value | { ',' value }  ']'
 && ======================================================================== &&
 define class Parser as custom
-	lexer = .null.
-	cur_token = 0
-	peek_token = 0
+	Dimension tokens[1]
+	Hidden current
+	Hidden previous
+	Hidden peek
 	
-	function init(toLexer)
-		this.lexer = toLexer
-		this.next_token()
-		this.next_token()
+	function init(toScanner)
+		Local laTokens
+		laTokens = toScanner.scanTokens()
+		=Acopy(laTokens, this.tokens)		
+		this.current = 1
 	endfunc
 
 	function Parse
-		lvNewVal = .null.
-		do case
-		case this.cur_token.type == T_STRING
-			return _screen.jsonUtils.CheckString(this.cur_token.value)
-		case this.cur_token.type == T_NUMBER
-			nVal = val(this.cur_token.value)
-			return iif(at('.', this.cur_token.value) > 0, nVal, int(nVal))
-		case this.cur_token.type == T_BOOLEAN
-			return (this.cur_token.value == 'true')
-		case this.cur_token.type == T_LBRACE
-			return this.object()
-		case this.cur_token.type == T_LBRACKET
-			local MyArray, nIndex
-			MyArray = createobject("Empty")
-			=addproperty(MyArray, '_[1]', 0)
-			this.eat(T_LBRACKET)
-			nIndex = 1
-			if this.cur_token.type != T_RBRACKET
-
-				dimension MyArray._(nIndex)
-				MyArray._[nIndex] = this.value()
-
-				do while this.cur_token.type = T_COMMA
-					this.eat(T_COMMA)
-					nIndex = nIndex + 1
-					dimension MyArray._(nIndex)
-					MyArray._[nIndex] = this.value()
-				enddo
-			endif
-			this.eat(T_RBRACKET, "Expect ']' after array elements.")
-			return MyArray
-		case this.cur_token.type == T_NULL
-			return .null.
-		otherwise
-			error "Parser Error: Unknown token type '" + transform(this.cur_token.type) + "'"
-		endcase
+		Set Step On	
+		Return this.value()
 	endfunc
 	&& ======================================================================== &&
 	&& Function Object
@@ -62,132 +30,169 @@ define class Parser as custom
 	&& 			kvp    = KEY ':' value
 	&& ======================================================================== &&
 	hidden function object as object
-		local obj
-		obj = createobject('Empty')
-		this.eat(T_LBRACE)
-		if this.cur_token.type != T_RBRACE
-			this.kvp(@obj)
-			do while this.cur_token.type == T_COMMA
-				this.eat(T_COMMA)
-				this.kvp(@obj)
+		local loObj, loPair, lcMacro
+		loObj = createobject('Empty')
+		
+		if !this.check(T_RBRACE)
+			loPair = this.kvp()
+			this.addKeyValuePair(@loObj, @loPair)
+			
+			do while this.match(T_COMMA)
+				loPair = this.kvp()
+				this.addKeyValuePair(@loObj, @loPair)
 			enddo
 		endif
-		this.eat(T_RBRACE, "Expect '}' after JSON body.")
+		this.consume(T_RBRACE, "Expect '}' after JSON body.")
 
-		return obj
+		return loObj
 	endfunc
 	&& ======================================================================== &&
 	&& Function Kvp
 	&& EBNF -> 	kvp = KEY ':' value
 	&& ======================================================================== &&
-	hidden function kvp(toObj)
-		local lcKeyElement
-		lcKeyElement = this.cur_token.value
-		this.eat(T_STRING, "Expect right key element")
-		this.eat(T_COLON, "Expect ':' after key element.")
+	hidden function kvp(toObj)		
+		local loPair, lvValue
+		
+		loPair = CreateObject('Empty')
+		=AddProperty(loPair, 'key', '')		
+		
+		this.consume(T_STRING, "Expect key name")
+		
+		loPair.key = _screen.jsonUtils.CheckProp(this.previous.value)
 
-		if this.cur_token.type != T_LBRACKET
-			=addproperty(toObj, _screen.jsonUtils.CheckProp(lcKeyElement), this.value(toObj, lcKeyElement))
-		else
-			this.value(toObj, lcKeyElement) &&Array element
+		this.consume(T_COLON, "Expect ':' after key element.")
+		
+		lvValue = this.value()
+		If Type('lvValue', 1) != 'A'
+			=AddProperty(loPair, 'value', lvValue)
+		Else
+			=AddProperty(loPair, 'value[1]', .Null.)			
+			Acopy(lvValue, loPair.value)			
 		endif
-	endfunc
+
+		Return loPair
+	EndFunc
+
+	Hidden function addKeyValuePair(toObject, toPair)
+		If Type('toPair.value', 1) != 'A'
+			=AddProperty(toObject, toPair.key, toPair.value)
+		Else
+			Local lcMacro
+			lcMacro = "AddProperty(toObject, '" + toPair.key + "[1]', .Null.)"
+			&lcMacro
+			lcMacro = "Acopy(toPair.value, toObject." + toPair.key + ")"
+			&lcMacro
+		EndIf
+	EndFunc
+		
 	&& ======================================================================== &&
 	&& Function Value
 	&& EBNF -> 	value = STRING | NUMBER | BOOLEAN | array | object | NULL
 	&& ======================================================================== &&
-	hidden function value(toObj2, tcProperty)
-		local lvNewVal
-		lvNewVal = .null.
+	hidden function value
 		do case
-		case this.cur_token.type == T_STRING
-			lvNewVal = this.cur_token.value
-			this.eat(T_STRING)
-			return _screen.jsonUtils.CheckString(lvNewVal)
-		case this.cur_token.type == T_NUMBER
-			lvNewVal = this.cur_token.value
-			this.eat(T_NUMBER)
-			local nVal
-			nVal = val(lvNewVal)
-			return iif(at('.', lvNewVal) > 0, nVal, int(nVal))
-		case this.cur_token.type == T_BOOLEAN
-			lvNewVal = this.cur_token.value
-			this.eat(T_BOOLEAN)
-			return (lvNewVal == 'true')
-		case this.cur_token.type == T_LBRACE
+		case this.match(T_STRING)
+			return _screen.jsonUtils.CheckString(this.previous.value)
+			
+		case this.match(T_NUMBER)
+			Local lcValue
+			lcValue = this.previous.value
+			return iif(at('.', lcValue) > 0, Val(lcValue), int(Val(lcValue)))
+			
+		case this.match(T_BOOLEAN)
+			return (this.previous.value == 'true')
+
+		case this.match(T_LBRACE)
 			return this.object()
-		case this.cur_token.type == T_LBRACKET
-			return this.array(toObj2, tcProperty)
-		case this.cur_token.type == T_NULL
-			this.eat(T_NULL)
+
+		case this.match(T_LBRACKET)
+			return @this.array()
+			
+		case this.match(T_NULL)
 			return .null.
 		otherwise
-			error "Parser Error: Unknown token value: '" + transform(this.cur_token.value) + "'"
+			error "Parser Error: Unknown token value: '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
 		endcase
 	endfunc
 	&& ======================================================================== &&
 	&& Function Array
 	&& EBNF -> 	array = '[' value | { ',' value }  ']'
 	&& ======================================================================== &&
-	hidden function array(toObjRef, tcPropertyName)
-		local llReturnObj
-		llReturnObj = .f.
-		this.eat(T_LBRACKET)
-		if empty(tcPropertyName)
-			toObjRef = createobject('Empty')
-			tcPropertyName = '_'
-			llReturnObj = .t.
-		else
-			tcPropertyName = _screen.jsonUtils.CheckProp(tcPropertyName)
-		endif
-		&& >>>>>>> IRODG 01/17/22
-		if inlist(tcPropertyName, 'update', 'delete') && these arrays names causes internal error on 'empty' based objects.
-			tcPropertyName = '_' + tcPropertyName
-		endif
-		&& <<<<<<< IRODG 01/17/22
-		=addproperty(toObjRef, tcPropertyName + "(1)", 0)
-
-		if this.cur_token.type != T_RBRACKET
-			local nIndex
-			nIndex = 0
-			this.ArrayPush(toObjRef, tcPropertyName, @nIndex)
-			do while this.cur_token.type == T_COMMA
-				this.eat(T_COMMA)
-				this.ArrayPush(toObjRef, tcPropertyName, @nIndex)
+	hidden function array
+		local laArray
+		laArray = createobject("TParserInternalArray")
+		If !this.check(T_RBRACKET)
+			laArray.Push(this.value())
+			do while this.match(T_COMMA)
+				laArray.Push(this.value())
 			enddo
 		endif
-		this.eat(T_RBRACKET, "Expect ']' after array elements.")
+		this.consume(T_RBRACKET, "Expect ']' after array elements.")
 
-		if llReturnObj
-			return toObjRef
+		return @laArray.getArray()
+	endfunc
+	
+	Function match(tnTokenType)
+		If this.check(tnTokenType)
+			this.advance()
+			Return .t.
+		EndIf
+		Return .f.
+	EndFunc
+
+	Hidden Function consume(tnTokenType, tcMessage)
+		If this.check(tnTokenType)
+			Return this.advance()
+		EndIf
+		if empty(tcErrorMessage)
+			tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
 		endif
-	endfunc
-	&& ======================================================================== &&
-	&& Hidden Function ArrayPush
-	&& ======================================================================== &&
-	hidden function ArrayPush(toObjRef, tcPropName, tnCurrentIndex)
-		Local lcCmd
-		tnCurrentIndex = tnCurrentIndex + 1
-		lcCmd = "DIMENSION toObjRef." + tcPropName + "(" + alltrim(str(tnCurrentIndex)) + ")"
-		&lcCmd
-		lcCmd = "toObjRef." + tcPropName + "[" + alltrim(str(tnCurrentIndex)) + "] = This.Value()"
-		&lcCmd
+		error tcErrorMessage
 	endfunc
 
-	function next_token
-		this.cur_token  = .null.
-		this.cur_token  = this.peek_token
-		this.peek_token = this.lexer.next_token()
+	Hidden Function check(tnTokenType)
+		If this.isAtEnd()
+			Return .f.
+		EndIf
+		Return this.peek.type == tnTokenType
+	EndFunc 
+
+	Hidden Function advance
+		If !this.isAtEnd()
+			this.current = this.current + 1
+		EndIf
+		Return this.tokens[this.current-1]
 	endfunc
 
-	function eat(tnTokenType, tcErrorMessage)
-		if this.cur_token.type == tnTokenType
-			this.next_token()
-		else
-			if empty(tcErrorMessage)
-				tcErrorMessage = "Parser Error: expected token '" + transform(tnTokenType) + "' got = '" + transform(this.cur_token.type) + "'"
-			endif
-			error tcErrorMessage
-		endif
+	Hidden Function isAtEnd
+		Return this.peek.type == T_EOF
 	endfunc
-enddefine
+
+	Hidden Function peek_access
+		Return this.tokens[this.current]
+	endfunc
+
+	Hidden Function previous_access
+		Return this.tokens[this.current-1]
+	EndFunc
+	
+EndDefine
+
+* ============================================================ *
+* TParserInternalArray
+* ============================================================ *
+Define Class TParserInternalArray As Custom
+	Dimension aCustomArray[1]
+	nIndex = 0
+	
+	Function Push(tvItem)
+		this.nIndex = this.nIndex + 1
+		Dimension This.aCustomArray[this.nIndex]
+		This.aCustomArray[this.nIndex] = tvItem
+	Endfunc
+	
+	Function GetArray
+		Return @this.aCustomArray
+	EndFunc
+
+Enddefine
