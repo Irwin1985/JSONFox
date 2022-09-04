@@ -9,39 +9,24 @@
 && ======================================================================== &&
 define class JSONStringify as custom
 
-	lexer = .null.
-	cur_token = 0
-	peek_token = 0
 	ParseUtf8 = .f.
+
+	Dimension tokens[1]
+	Hidden current
+	Hidden previous
+	Hidden peek
 	
-	function init(toLexer)
-		this.lexer = toLexer
-		this.next_token()
-		this.next_token()
+	function init(toScanner)
+		Local laTokens
+		laTokens = toScanner.scanTokens()
+		=Acopy(laTokens, this.tokens)		
+		this.current = 1
 	endfunc
-
-	function next_token
-		this.cur_token = this.peek_token
-		this.peek_token = this.lexer.next_token()
-	endfunc
-
-	function eat(tnTokenType, tcErrorMessage)
-		if this.cur_token.type == tnTokenType
-			this.next_token()
-		else
-			if empty(tcErrorMessage)
-				tcErrorMessage = "Parser Error: expected token '" + transform(tnTokenType) + "' got = '" + transform(this.cur_token.type) + "'"
-			endif
-			error tcErrorMessage
-		endif
-	endfunc
-
+	
 	* Stringify
 	function Stringify as memo
 		lparameters tlParseUtf8
 		this.ParseUtf8 = tlParseUtf8
-		private JSONUtils
-		JSONUtils = _screen.JSONUtils
 		return this.value(0)
 	endfunc
 	&& ======================================================================== &&
@@ -53,14 +38,12 @@ define class JSONStringify as custom
 	&& 			array	= '[' value | {',' value} ']'
 	&& ======================================================================== &&
 	hidden function object(tnSpace)
-		this.eat(T_LBRACE)
-		if this.cur_token.type != T_RBRACE
+		if !this.check(T_RBRACE)
 			local nSpaceBlock, lcJSON as string
 			nSpaceBlock = tnSpace + 1
 			lcJSON = '{' + CRLF + this.JSFormat(nSpaceBlock)
 			lcJSON = lcJSON + this.kvp(nSpaceBlock)
-			do while this.cur_token.type == T_COMMA
-				this.eat(T_COMMA)
+			do while this.match(T_COMMA)
 				lcJSON = lcJSON + ',' + CRLF + this.JSFormat(nSpaceBlock)
 				lcJSON = lcJSON + this.kvp(nSpaceBlock)
 			enddo
@@ -68,7 +51,7 @@ define class JSONStringify as custom
 		else
 			lcJSON = '{}'
 		endif
-		this.eat(T_RBRACE, "Expect '}' after json object.")
+		this.consume(T_RBRACE, "Expect '}' after json object.")
 		return lcJSON
 	endfunc
 	&& ======================================================================== &&
@@ -78,9 +61,9 @@ define class JSONStringify as custom
 	hidden function kvp
 		lparameters tnSpaceIdent as integer
 		local lcProp as string
-		lcProp = this.cur_token.value
-		this.eat(T_STRING, "Expect right key element")
-		this.eat(T_COLON, "Expect ':' after key element.")
+		this.consume(T_STRING, "Expect right key element")
+		lcProp = this.previous.value
+		this.consume(T_COLON, "Expect ':' after key element.")
 		return '"' + lcProp + '": ' + this.value(tnSpaceIdent)
 	endfunc
 	&& ======================================================================== &&
@@ -88,37 +71,28 @@ define class JSONStringify as custom
 	&& EBNF -> 	value = STRING | NUMBER | BOOLEAN | array | object | NULL
 	&& ======================================================================== &&
 	hidden function value(tnSpaceBlock)
-		local vNewVal
-		vNewVal = ''
 		do case
-		case this.cur_token.type == T_STRING
-			vNewVal = this.cur_token.value
-			this.eat(T_STRING)
-			return JSONUtils.GetString(vNewVal, this.ParseUtf8)
+		case this.match(T_STRING)
+			return _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
 
-		case this.cur_token.type == T_NUMBER
-			lvNewVal = this.cur_token.value
-			this.eat(T_NUMBER)
-			return lvNewVal
+		case this.match(T_NUMBER)
+			return this.previous.value
 
-		case this.cur_token.type == T_BOOLEAN
-			lvNewVal = this.cur_token.value
-			this.eat(T_BOOLEAN)
-			return lvNewVal
+		case this.match(T_BOOLEAN)
+			return this.previous.value
 
-		case this.cur_token.type == T_LBRACKET
+		case this.match(T_LBRACKET)
 			return this.array(tnSpaceBlock)
 
-		case this.cur_token.type == T_LBRACE
+		case this.match(T_LBRACE)
 			return this.object(tnSpaceBlock)
 
-		case this.cur_token.type == T_NULL
-			this.eat(T_NULL)
+		case this.match(T_NULL)
 			return "null"
 
 		otherwise
-			this.eat(this.cur_token.type)
-			return this.cur_token.value
+			this.consume(this.cur_token.type, '')
+			return this.previous.value
 		endcase
 	endfunc
 	&& ======================================================================== &&
@@ -129,14 +103,12 @@ define class JSONStringify as custom
 		lparameters tnIdentation as integer
 		local lcArrayStr as string
 		lcArrayStr = ''
-		this.eat(T_LBRACKET)
-		if this.cur_token.type != T_RBRACKET
+		if !this.check(T_RBRACKET)
 			local lnBlock as integer
 			lnBlock = tnIdentation + 1
 			lcArrayStr = '[' + CRLF + this.JSFormat(lnBlock)
 			lcArrayStr = lcArrayStr + this.value(lnBlock)
-			do while this.cur_token.type == T_COMMA
-				this.eat(T_COMMA)
+			do while this.match(T_COMMA)
 				lcArrayStr = lcArrayStr + ',' + CRLF + this.JSFormat(lnBlock)
 				lcArrayStr = lcArrayStr + this.value(lnBlock)
 			enddo
@@ -144,7 +116,7 @@ define class JSONStringify as custom
 		else
 			lcArrayStr = '[]'
 		endif
-		this.eat(T_RBRACKET, "Expect ']' after array elements.")
+		this.consume(T_RBRACKET, "Expect ']' after array elements.")
 		return lcArrayStr
 	endfunc
 	&& ======================================================================== &&
@@ -153,5 +125,50 @@ define class JSONStringify as custom
 	hidden function JSFormat as string
 		lparameters tnSpaceMult as integer
 		return space(tnSpaceMult * 2)
+	EndFunc
+
+	Function match(tnTokenType)
+		If this.check(tnTokenType)
+			this.advance()
+			Return .t.
+		EndIf
+		Return .f.
+	EndFunc
+
+	Hidden Function consume(tnTokenType, tcMessage)
+		If this.check(tnTokenType)
+			Return this.advance()
+		EndIf
+		if empty(tcErrorMessage)
+			tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
+		endif
+		error tcErrorMessage
 	endfunc
+
+	Hidden Function check(tnTokenType)
+		If this.isAtEnd()
+			Return .f.
+		EndIf
+		Return this.peek.type == tnTokenType
+	EndFunc 
+
+	Hidden Function advance
+		If !this.isAtEnd()
+			this.current = this.current + 1
+		EndIf
+		Return this.tokens[this.current-1]
+	endfunc
+
+	Hidden Function isAtEnd
+		Return this.peek.type == T_EOF
+	endfunc
+
+	Hidden Function peek_access
+		Return this.tokens[this.current]
+	endfunc
+
+	Hidden Function previous_access
+		Return this.tokens[this.current-1]
+	EndFunc
+	
 enddefine

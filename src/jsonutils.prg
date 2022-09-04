@@ -193,5 +193,48 @@ define class jsonutils as custom
 			endif
 		endfor
 		return alltrim(lcfinalprop)
-	endfunc
+	EndFunc
+	
+	Function tokenTypeToStr(tnType)
+		do case
+		case tnType = 0
+			Return 'EOF'
+		case tnType = 1
+			Return 'LBRACE'
+		case tnType = 2
+			Return 'RBRACE'
+		case tnType = 3
+			Return 'LBRACKET'
+		case tnType = 4
+			Return 'RBRACKET'
+		case tnType = 5
+			Return 'COMMA'
+		case tnType = 6
+			Return 'COLON'
+		case tnType = 7
+			Return 'TRUE'
+		case tnType = 8
+			Return 'FALSE'
+		case tnType = 9
+			Return 'NULL'
+		case tnType = 10
+			Return 'NUMBER'
+		case tnType = 11
+			Return 'KEY'
+		case tnType = 12
+			Return 'STRING'
+		case tnType = 13
+			Return 'LINE'
+		case tnType = 14
+			Return 'INTEGER'
+		case tnType = 15
+			Return 'FLOAT'
+		case tnType = 16
+			Return 'VALUE'
+		case tnType = 17
+			Return 'EOF'
+		case tnType = 18
+			return 'BOOLEAN'
+		ENDCASE
+	EndFunc
 enddefine

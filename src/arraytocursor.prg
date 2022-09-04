@@ -10,16 +10,26 @@ Define Class ArrayToCursor As Session
 	Dimension aRows(1)
 	nRowCount = 0
 
-	lexer = .Null.
-	cur_token = 0
-	peek_token = 0
+	Dimension tokens[1]
+	Hidden current
+	Hidden previous
+	Hidden peek
+	
+	Hidden capacity
+	Hidden length
 
-	Function Init(toLexer)
-		This.lexer = toLexer
+
+	function init(toScanner)
+		Local laTokens
+		laTokens = toScanner.scanTokens()
+		=Acopy(laTokens, this.tokens)		
+		this.current = 1
 		This.oTableStruct = Createobject('Collection')
-		This.next_token()
-		This.next_token()
-	Endfunc
+
+		this.length = 1
+		this.capacity = 0
+
+	endfunc
 
 	&& ======================================================================== &&
 	&& Function Array
@@ -32,39 +42,61 @@ Define Class ArrayToCursor As Session
 		Endif
 		Set DataSession To (This.nSessionID)
 
-		This.eat(T_LBRACKET, "Expect '[' before Array definition.")
-		this.nRowCount = 1
-		Dimension this.aRows(this.nRowCount)
-		this.aRows[this.nRowCount] = This.Object()
+		This.consume(T_LBRACKET, "Expect '[' before Array definition.")
+		
+		If !this.match(T_RBRACKET)
+			this.addRow(this.Object())
 
-		Do While This.cur_token.Type == T_COMMA
-			This.eat(T_COMMA)
-			this.nRowCount = this.nRowCount + 1
-			Dimension this.aRows[this.nRowCount]
-			this.aRows[this.nRowCount] = This.Object()
-		Enddo
+			Do While This.match(T_COMMA)
+				this.addRow(this.Object())
+			Enddo
+		EndIf
+		This.consume(T_RBRACKET, "Expect ']' after Array definition.")
 
-		This.eat(T_RBRACKET, "Expect ']' after Array definition.")
+		* Shrink array
+		this.capacity = this.length-1
+		Dimension this.aRows[this.capacity]
+		
 		This.InsertData()
-	Endfunc
+	EndFunc
+	
+	hidden function addRow(toValue)
+		this.checkCapacity()
+
+		this.aRows[this.length] = toValue
+		this.length = this.length + 1		
+	EndFunc	
+
+	Hidden function checkCapacity
+		If this.capacity < this.length + 1
+			If Empty(this.capacity)
+				this.capacity = 8
+			Else
+				this.capacity = this.capacity * 2
+			EndIf			
+			Dimension this.aRows[this.capacity]
+		EndIf
+	endfunc
+	
 	&& ======================================================================== &&
 	&& Function Object
 	&& EBNF -> 	object 	= '{' kvp | { ',' kvp} '}'
 	&& ======================================================================== &&
 	Hidden Function Object As Void
 		Local loCollection, loPair
-		This.eat(T_LBRACE, "Expect '{' before json object.")
+		This.consume(T_LBRACE, "Expect '{' before json object.")
 		loCollection = Createobject("Collection")
-
-		loPair = This.kvp()
-		loCollection.Add(loPair.Value, loPair.Field)
-
-		Do While This.cur_token.Type == T_COMMA
-			This.eat(T_COMMA)
+		
+		If !this.check(T_RBRACE)
 			loPair = This.kvp()
 			loCollection.Add(loPair.Value, loPair.Field)
-		Enddo
-		This.eat(T_RBRACE, "Expect '}' after json object.")
+
+			Do While This.match(T_COMMA)
+				loPair = This.kvp()
+				loCollection.Add(loPair.Value, loPair.Field)
+			EndDo
+		endif
+		This.consume(T_RBRACE, "Expect '}' after json object.")
 		
 		Return loCollection
 	Endfunc
@@ -75,37 +107,32 @@ Define Class ArrayToCursor As Session
 	&& ======================================================================== &&
 	Hidden Function kvp
 		Local lcProp, lxValue, lcType, lnFieldLength, lcFieldName, loPair
-		lcProp = This.cur_token.Value
-				
-		This.eat(T_STRING, "Expect right key element")
-		This.eat(T_COLON, "Expect ':' after key element.")
+
+		This.consume(T_STRING, "Expect right key element")
+		lcProp = this.previous.value
 		
-		lcFieldName = Space(1)
-		lxValue = .f.
+		This.consume(T_COLON, "Expect ':' after key element.")
 		
-		If Inlist(This.cur_token.Type, T_STRING, T_NUMBER, T_BOOLEAN, T_NULL)
-			lxValue = This.Value()
-			lcType  = Vartype(lxValue)
-			lnFieldLength = 0
-			Do Case
-			Case lcType == 'N'
-				lcType = Iif(Occurs('.', Transform(lxValue)) > 0, 'N', 'I')
-			Case lcType == 'C'
-				If Len(lxValue) > STRING_MAX_SIZE
-					lcType = 'M'
-				Else
-					lxValue = _Screen.JSONUtils.CheckString(lxValue)
-					lcType  = Vartype(lxValue)
-				Endif
-				If lcType == 'C'
-					lnFieldLength = Iif(Empty(Len(lxValue)), 1, Len(lxValue))
-				Endif
-			Endcase
-			lcFieldName = Lower(_Screen.JSONUtils.CheckProp(lcProp))
-			This.CheckStructure(lcFieldName, lcType, lnFieldLength)
-		Else
-			Error "Parser Error: Unknown token value '" + Transform(This.cur_token.Value) + "'"
-		EndIf
+		lcFieldName = Space(1)		
+		lxValue = This.Value()
+		lcType  = Vartype(lxValue)
+		lnFieldLength = 0
+		Do Case
+		Case lcType == 'N'
+			lcType = Iif(Occurs('.', Transform(lxValue)) > 0, 'N', 'I')
+		Case lcType == 'C'
+			If Len(lxValue) > STRING_MAX_SIZE
+				lcType = 'M'
+			Else
+				lxValue = _Screen.JSONUtils.CheckString(lxValue)
+				lcType  = Vartype(lxValue)
+			Endif
+			If lcType == 'C'
+				lnFieldLength = Iif(Empty(Len(lxValue)), 1, Len(lxValue))
+			Endif
+		Endcase
+		lcFieldName = Lower(_Screen.JSONUtils.CheckProp(lcProp))
+		This.CheckStructure(lcFieldName, lcType, lnFieldLength)
 
 		* Set Key-Value pair object
 		loPair = CreateObject("Empty")
@@ -119,26 +146,23 @@ Define Class ArrayToCursor As Session
 	&& EBNF -> 	value = STRING | NUMBER | BOOLEAN | NULL
 	&& ======================================================================== &&
 	Hidden Function Value As Variant
-		Local lexeme
 		Do Case
-		Case This.cur_token.Type == T_STRING
-			lexeme = This.cur_token.Value
-			This.eat(T_STRING)
-			Return lexeme
-		Case This.cur_token.Type == T_NUMBER
-			lexeme = This.cur_token.Value
-			This.eat(T_NUMBER)
-			nVal = Val(lexeme)
-			Return Iif(At('.', lexeme) > 0, nVal, Int(nVal))
-		Case This.cur_token.Type == T_BOOLEAN
-			lexeme = This.cur_token.Value
-			This.eat(T_BOOLEAN)
-			Return (lexeme == 'true')
-		Case This.cur_token.Type == T_NULL
-			This.eat(T_NULL)
-			Return .Null.
+		Case This.match(T_STRING)
+			Return this.previous.value
+			
+		case this.match(T_NUMBER)
+			Local lcValue
+			lcValue = this.previous.value
+			return iif(at('.', lcValue) > 0, Val(lcValue), int(Val(lcValue)))
+
+		case this.match(T_BOOLEAN)
+			return (this.previous.value == 'true')
+
+		case this.match(T_NULL)
+			return .null.
+
 		Otherwise
-			Error "Parser Error: Unknown token value '" + Transform(This.cur_token.Value) + "'"
+			Error "Parser Error: This token is invalid in for cursor conversion: '" + _screen.jsonUtils.tokenTypeToStr(This.peek.type) + "'"
 		Endcase
 	Endfunc
 	* InsertData
@@ -225,43 +249,50 @@ Define Class ArrayToCursor As Session
 			AddProperty(loPair, 'fieldLength', tnLength)
 			This.oTableStruct.Add(loPair, tcFieldName)
 		Endif
-	Endfunc
-	* DefaultValue
-	Hidden Function DefaultValue(tcType)
-		Do Case
-		Case tcType $ "CDTBGMQVWX"
-			Do Case
-			Case tcType == 'D'
-				Return Ctod("{}")
-			Case tcType == 'T'
-				Return Ctot("{//::}")
-			case tcType == 'X'
-				Return .Null.
-			Otherwise
-				Return ''
-			Endcase
-		Case tcType $ "YFIN"
-			Return 0
-		Case tcType = 'L'
-			Return .F.
-		Otherwise
-			Return .Null.
-		Endcase
 	EndFunc
-	
-	Function next_token
-		This.cur_token = This.peek_token
-		This.peek_token = This.lexer.next_token()
-	Endfunc
+		
+	Function match(tnTokenType)
+		If this.check(tnTokenType)
+			this.advance()
+			Return .t.
+		EndIf
+		Return .f.
+	EndFunc
 
-	Function eat(tnTokenType, tcErrorMessage)
-		If This.cur_token.Type == tnTokenType
-			This.next_token()
-		Else
-			If Empty(tcErrorMessage)
-				tcErrorMessage = "Parser Error: expected token '" + Transform(tnTokenType) + "' got = '" + Transform(This.cur_token.Type) + "'"
-			Endif
-			Error tcErrorMessage
-		Endif
-	Endfunc
+	Hidden Function consume(tnTokenType, tcMessage)
+		If this.check(tnTokenType)
+			Return this.advance()
+		EndIf
+		if empty(tcErrorMessage)
+			tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
+		endif
+		error tcErrorMessage
+	endfunc
+
+	Hidden Function check(tnTokenType)
+		If this.isAtEnd()
+			Return .f.
+		EndIf
+		Return this.peek.type == tnTokenType
+	EndFunc 
+
+	Hidden Function advance
+		If !this.isAtEnd()
+			this.current = this.current + 1
+		EndIf
+		Return this.tokens[this.current-1]
+	endfunc
+
+	Hidden Function isAtEnd
+		Return this.peek.type == T_EOF
+	endfunc
+
+	Hidden Function peek_access
+		Return this.tokens[this.current]
+	endfunc
+
+	Hidden Function previous_access
+		Return this.tokens[this.current-1]
+	EndFunc
+
 Enddefine

@@ -4,9 +4,10 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "8.1"
+	version 		= "9.0"
 	hidden lInternal
 	hidden lTablePrompt
+	Dimension aCustomArray[1]
 	&& >>>>>>> IRODG 07/01/21
 	* Set this property to .T. if you want the lexer uses JSONFoxHelper.dll
 	NETScanner = .f.
@@ -24,8 +25,11 @@ define class JSONClass as session
 	* Parse the string text as JSON
 	function Parse as memo
 		lparameters tcJsonStr as memo
-		local loJSONObj as object
+		local loJSONObj
 		loJSONObj = .null.
+		Dimension this.aCustomArray[1]
+		this.aCustomArray[1] = .Null.
+		
 		try
 			this.ResetError()
 			local lexer, parser
@@ -36,13 +40,23 @@ define class JSONClass as session
 			endif
 			parser = createobject("Parser", lexer)
 			loJSONObj = parser.Parse()
+			
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
 			store .null. to lexer, parser
 			release lexer, parser
 		endtry
-		return loJSONObj
+		If Type('loJSONObj', 1) == 'A'
+			Local i
+			For i = 1 to Alen(loJSONObj, 1)
+				Dimension this.aCustomArray[i]
+				this.aCustomArray[i] = loJSONObj[i]
+			endfor
+			return @this.aCustomArray
+		Else
+			return loJSONObj
+		EndIf		
 	endfunc
 
 	* Stringify
@@ -285,15 +299,13 @@ define class JSONClass as session
 		loJSONObj = .null.
 		try
 			this.ResetError()
-			local loLexer, loToken, lcTokens as memo
+			local loLexer, laToken, lcTokens as memo, i
 			loLexer = createobject("Tokenizer", tcJsonStr)
-			loToken = loLexer.Next_Token()
+			laTokens = loLexer.scanTokens()
 			lcTokens = ''
-			do while loToken.type != 0
-				lcTokens = lcTokens + loLexer.tokenStr(loToken) + CHR(13) + CHR(10)
-				loToken = loLexer.Next_Token()
+			For i = 1 to Alen(laTokens)
+				lcTokens = lcTokens + loLexer.tokenStr(laTokens[i]) + CHR(13) + CHR(10)
 			enddo
-			lcTokens = lcTokens + loLexer.tokenStr(loToken) + CHR(13) + CHR(10)
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
