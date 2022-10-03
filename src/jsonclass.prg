@@ -29,7 +29,6 @@ define class JSONClass as session
 		loJSONObj = .null.
 		Dimension this.aCustomArray[1]
 		this.aCustomArray[1] = .Null.
-		
 		try
 			this.ResetError()
 			local lexer, parser
@@ -295,17 +294,15 @@ define class JSONClass as session
 	* tokenize
 	function dumpTokens	
 		lparameters tcJsonStr as memo
-		local loJSONObj as object
-		loJSONObj = .null.
 		try
 			this.ResetError()
-			local loLexer, laToken, lcTokens as memo, i
+			local loLexer, laTokens, lcTokens as memo, i
 			loLexer = createobject("Tokenizer", tcJsonStr)
 			laTokens = loLexer.scanTokens()
 			lcTokens = ''
 			For i = 1 to Alen(laTokens)
 				lcTokens = lcTokens + loLexer.tokenStr(laTokens[i]) + CHR(13) + CHR(10)
-			enddo
+			endfor
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
