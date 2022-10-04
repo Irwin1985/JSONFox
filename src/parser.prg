@@ -21,7 +21,7 @@ define class Parser as custom
 	endfunc
 
 	function Parse
-		Set Step On	
+		*Set Step On	
 		Return this.value()
 	endfunc
 	&& ======================================================================== &&
@@ -95,9 +95,14 @@ define class Parser as custom
 			return _screen.jsonUtils.CheckString(this.previous.value)
 			
 		case this.match(T_NUMBER)
-			Local lcValue
+			Local lcValue, lcPoint
 			lcValue = this.previous.value
-			return iif(at('.', lcValue) > 0, Val(lcValue), int(Val(lcValue)))
+			lcPoint = Set("Point")
+			
+			If lcPoint != '.'
+				lcValue = Strtran(lcValue, '.', lcPoint)
+			EndIf
+			return iif(at(lcPoint, lcValue) > 0, Val(lcValue), int(Val(lcValue)))
 			
 		case this.match(T_BOOLEAN)
 			return (this.previous.value == 'true')
