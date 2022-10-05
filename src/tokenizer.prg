@@ -35,6 +35,8 @@ define class Tokenizer as custom
 	Hidden length
 	
 	Dimension tokens[1]
+	sourceLen = 0
+	
 	
 	function init(tcSource)
 		With this
@@ -46,113 +48,105 @@ define class Tokenizer as custom
 			.letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
 			.hexLetters = 'abcdefABCDEF'	
 			.line = 1
+			.sourceLen = Len(tcSource)
 		endwith
 	endfunc
 
 	Hidden function advance
-		this.current = this.current + 1
-		Return substr(this.source, this.current-1, 1)
+		With this
+			.current = .current + 1
+			Return substr(.source, .current-1, 1)
+		endwith
 	endfunc
 
 	Hidden function peek
-		If this.isAtEnd() then
-			Return 'ÿ'
-		EndIf
-		return substr(this.source, this.current, 1)		
+		With this
+			If .isAtEnd()
+				Return 'ÿ'
+			EndIf
+			return substr(.source, .current, 1)
+		endwith
 	EndFunc
 	
 	Hidden function peekNext
-		If this.isAtEnd() then
-			Return 'ÿ'
-		EndIf
-		If (this.current + 1) > Len(this.source)
-			Return 'ÿ'
-		EndIf
-		return substr(this.source, this.current+1, 1)		
+		With this
+			If (.current + 1) > .sourceLen
+				Return 'ÿ'
+			EndIf
+			return substr(.source, .current+1, 1)
+		endwith
 	endfunc	
-
-	Hidden function isLetter(tcLetter)
-		Return At(tcLetter, this.letters) > 0
-	endfunc
 	
 	Hidden Function skipWhitespace
-		Do while !this.isAtEnd() and InList(this.peek(), Chr(9), Chr(10), Chr(13), Chr(32))
-			If this.peek() == Chr(10)
-				this.line = this.line + 1
-			endif
-			this.advance()
-		enddo
+		With this
+			Do while InList(.peek(), Chr(9), Chr(10), Chr(13), Chr(32))
+				If .peek() == Chr(10)
+					.line = .line + 1
+				endif
+				.advance()
+			EndDo
+		endwith
 	endfunc
 
 	Hidden function identifier
-		Local lexeme
-		do while !this.isAtEnd() and this.isLetter(this.peek())
-			this.advance()
-		EndDo
-		lexeme = Substr(this.source, this.start, this.current-this.start)
-		if inlist(lexeme, "true", "false", "null")
-			return this.addToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
-		else
-			this.showError(this.line, "Lexer Error: Unexpected identifier '" + lexeme + "'")
-		endif
+		With this
+			Local lexeme
+			do while At(.peek(), .letters) > 0
+				.advance()
+			EndDo
+			lexeme = Substr(.source, .start, .current-.start)
+			if inlist(lexeme, "true", "false", "null")
+				return .addToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
+			else
+				.showError(.line, "Lexer Error: Unexpected identifier '" + lexeme + "'")
+			EndIf
+		EndWith
 	endfunc
 
 	Hidden function number
-		local lexeme, isNegative
-		lexeme = ''
-		isNegative = (this.peek() == '-')
-		if isNegative
-			this.advance()
-		endif
+		With this
+			local lexeme, isNegative
+			lexeme = ''
+			isNegative = (.peek() == '-')
+			if isNegative
+				.advance()
+			endif
 
-		do while !this.isAtEnd() and isdigit(this.peek())
-			this.advance()
-		enddo
-
-		if this.peek() == '.' and isdigit(this.peekNext())
-			this.advance() && eat the dot '.'
-			do while !this.isAtEnd() and isdigit(this.peek())
-				this.advance()
+			do while isdigit(.peek())
+				.advance()
 			enddo
-		EndIf
-		lexeme = Substr(this.source, this.start, this.current-this.start)
-		return this.addToken(T_NUMBER, lexeme)
+
+			if .peek() == '.' and isdigit(.peekNext())
+				.advance() && eat the dot '.'
+				do while isdigit(.peek())
+					.advance()
+				enddo
+			EndIf
+			lexeme = Substr(.source, .start, .current-.start)
+			return .addToken(T_NUMBER, lexeme)
+		endwith
 	endfunc
 
 	Hidden function string
-		Local lexeme, ch
-		do while !this.isAtEnd()			
-			ch = this.peek()
-			if ch == '\'
-				do case
-				case this.peekNext() == '\'
-					this.advance()
-				case this.peekNext() == '/'
-					this.advance()
-				case this.peekNext() == 'n'
-					this.advance()
-				case this.peekNext() == 'r'
-					this.advance()
-				case this.peekNext() == 't'
-					this.advance()
-				case this.peekNext() == '"'
-					this.advance()
-				EndCase
-			else
-				if ch = '"'
-					this.advance()
+		With this
+			Local lexeme, ch
+			do while !.isAtEnd()			
+				ch = .peek()
+				Do case
+				case ch == '\' and InList(.peekNext(), '\', '/', 'n', 'r', 't', '"', "'")
+					.advance()
+				Case ch = '"'
+					.advance()
 					exit
-				endif
-			EndIf
-			this.advance()
-		EndDo
-		
-		lexeme = Substr(this.source, this.start+1, this.current-this.start-2)
-		this.escapeCharacters(@lexeme)
-		this.checkUnicodeFormat(@lexeme)
-		
-
-		return this.addToken(T_STRING, lexeme)
+				endcase
+				.advance()
+			EndDo
+			
+			lexeme = Substr(.source, .start+1, .current-.start-2)
+			.escapeCharacters(@lexeme)
+			.checkUnicodeFormat(@lexeme)			
+			return .addToken(T_STRING, lexeme)
+		endwith
 	EndFunc
 
 	Procedure escapeCharacters(tcLexeme)
@@ -163,6 +157,7 @@ define class Tokenizer as custom
 		tcLexeme = Strtran(tcLexeme, '\r', Chr(13))
 		tcLexeme = Strtran(tcLexeme, '\t', Chr(9))
 		tcLexeme = Strtran(tcLexeme, '\"', '"')
+		tcLexeme = Strtran(tcLexeme, "\'", "'")
 	EndProc
 		
 	procedure checkUnicodeFormat(tcLexeme)		
@@ -184,80 +179,86 @@ define class Tokenizer as custom
 	EndProc
 
 	Function scanTokens
-		Dimension this.tokens[1]
-		Do while !this.isAtEnd()
-			this.skipWhitespace()
-			this.start = this.current
-			this.scanToken()
-		EndDo
-		this.addToken(T_EOF, "")
-		this.capacity = this.length-1
-		
-		* Shrink array
-		Dimension this.tokens[this.capacity]
-		
-		Return @this.tokens
+		With this
+			Dimension .tokens[1]	
+			Do while !.isAtEnd()
+				.skipWhitespace()
+				.start = .current
+				.scanToken()
+			EndDo
+			.addToken(T_EOF, "")
+			.capacity = .length-1
+			
+			* Shrink array
+			Dimension .tokens[.capacity]
+			
+			Return @.tokens
+		EndWith
 	endfunc
 
 	Hidden function scanToken
-		Local ch
-		ch = this.advance()
-		
-		Do case		
-		case ch == '{'
-			Return this.addToken(T_LBRACE, '{')
+		With this
+			Local ch
+			ch = .advance()			
+			Do case		
+			case ch == '{'
+				Return .addToken(T_LBRACE, ch)
 
-		case ch == '}'
-			Return this.addToken(T_RBRACE, '}')
-		
-		case ch == '['
-			Return this.addToken(T_LBRACKET, '[')		
-
-		case ch == ']'
-			Return this.addToken(T_RBRACKET, ']')
-
-		case ch == ':'
-			Return this.addToken(T_COLON, ':')
-
-		case ch == ','
-			Return this.addToken(T_COMMA, ',')
-
-		Case ch == '"'
-			Return this.string()
+			case ch == '}'
+				Return .addToken(T_RBRACE, ch)
 			
-		Otherwise
-			if isdigit(ch) or (ch == '-' and isdigit(this.peek()))
-				Return this.number()
-			endif
+			case ch == '['
+				Return .addToken(T_LBRACKET, ch)		
 
-			if this.isLetter(ch)
-				Return this.identifier()
-			endif
-			this.showError(0, "Lexer Error: Unknown character '" + transform(ch) + "'")
-		endcase		
+			case ch == ']'
+				Return .addToken(T_RBRACKET, ch)
+
+			case ch == ':'
+				Return .addToken(T_COLON, ch)
+
+			case ch == ','
+				Return .addToken(T_COMMA, ch)
+
+			Case ch == '"'
+				Return .string()				
+			Otherwise
+				if isdigit(ch) or (ch == '-' and isdigit(.peek()))
+					Return .number()
+				endif
+
+				if At(ch, .letters) > 0
+					Return .identifier()
+				endif
+				.showError(0, "Lexer Error: Unknown character '" + transform(ch) + "'")
+			EndCase
+		EndWith
 	EndFunc
 
 	hidden function addToken(tnTokenType, tcTokenValue)
-		this.checkCapacity()
-		local loToken
-		loToken = createobject("Empty")
-		=addproperty(loToken, "type", tnTokenType)
-		=addproperty(loToken, "value", tcTokenValue)
-		=AddProperty(loToken, "line", this.line)
-		
-		this.tokens[this.length] = loToken
-		this.length = this.length + 1		
+		With this
+			.checkCapacity()
+			local loToken
+			loToken = createobject("Empty")
+			=addproperty(loToken, "type", tnTokenType)
+			=addproperty(loToken, "value", tcTokenValue)
+			=AddProperty(loToken, "line", .line)
+			
+			.tokens[.length] = loToken
+			.length = .length + 1
+		EndWith
 	EndFunc
 	
 	Hidden function checkCapacity
-		If this.capacity < this.length + 1
-			If Empty(this.capacity)
-				this.capacity = 8
-			Else
-				this.capacity = this.capacity * 2
-			EndIf			
-			Dimension this.tokens[this.capacity]
-		EndIf
+		With this
+			If .capacity < .length + 1
+				If Empty(.capacity)
+					.capacity = 8
+				Else
+					.capacity = .capacity * 2
+				EndIf			
+				Dimension .tokens[.capacity]
+			EndIf
+		endwith
 	endfunc
 
 	function showError(tnLine, tcMessage)
@@ -265,7 +266,9 @@ define class Tokenizer as custom
 	endfunc
 
 	function isAtEnd
-		return this.current > len(this.source)
+		With this
+		return .current > .sourceLen
+		EndWith
 	endfunc
 
 	function tokenStr(toToken)
