@@ -226,14 +226,13 @@ define class Tokenizer as custom
 			Return this.string()
 			
 		Otherwise
-			if isdigit(ch) or (ch == '-' and isdigit(this.peekNext()))
+			if isdigit(ch) or (ch == '-' and isdigit(this.peek()))
 				Return this.number()
 			endif
 
 			if this.isLetter(ch)
 				Return this.identifier()
 			endif
-
 			this.showError(0, "Lexer Error: Unknown character '" + transform(ch) + "'")
 		endcase		
 	EndFunc
