@@ -7,4 +7,14 @@
 && ******************************************************************************************* &&
 
 * load all classes
+
+&& DUMMY CODE FOR QUITE COMPILATION
+PUBLIC ARRAY LOJSONOBJ[1]
+PUBLIC ARRAY LATOKENS[1]
+&& DUMMY CODE FOR QUITE COMPILATION
+
 Do loader
+
+&& DUMMY CODE FOR QUITE COMPILATION
+RELEASE LOJSONOBJ, LATOKENS
+&& DUMMY CODE FOR QUITE COMPILATION

@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.2"
+	version 		= "9.3"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -24,7 +24,7 @@ define class JSONClass as session
 
 	* Parse the string text as JSON
 	function Parse as memo
-		lparameters tcJsonStr as memo	
+		lparameters tcJsonStr as memo
 		local loJSONObj
 		loJSONObj = .null.
 		Dimension this.aCustomArray[1]
@@ -45,7 +45,7 @@ define class JSONClass as session
 		finally
 			store .null. to lexer, parser
 			release lexer, parser
-		endtry
+		ENDTRY
 		If Type('loJSONObj', 1) == 'A'
 			Local i
 			For i = 1 to Alen(loJSONObj, 1)

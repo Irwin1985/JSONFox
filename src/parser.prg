@@ -14,15 +14,18 @@ define class Parser as custom
 	Hidden peek
 	
 	function init(toScanner)
-		Local laTokens
-		laTokens = toScanner.scanTokens()
-		=Acopy(laTokens, this.tokens)		
-		this.current = 1
+		With this
+			Local laTokens
+			laTokens = toScanner.scanTokens()
+			=Acopy(laTokens, .tokens)		
+			.current = 1
+		endwith
 	endfunc
 
-	function Parse
-		*Set Step On	
-		Return this.value()
+	function Parse	
+		With this
+			Return .value()
+		endwith
 	endfunc
 	&& ======================================================================== &&
 	&& Function Object
@@ -30,47 +33,51 @@ define class Parser as custom
 	&& 			kvp    = KEY ':' value
 	&& ======================================================================== &&
 	hidden function object as object
-		local loObj, loPair, lcMacro
-		loObj = createobject('Empty')
-		
-		if !this.check(T_RBRACE)
-			loPair = this.kvp()
-			this.addKeyValuePair(@loObj, @loPair)
+		With this
+			local loObj, loPair, lcMacro
+			loObj = createobject('Empty')
 			
-			do while this.match(T_COMMA)
-				loPair = this.kvp()
-				this.addKeyValuePair(@loObj, @loPair)
-			enddo
-		endif
-		this.consume(T_RBRACE, "Expect '}' after JSON body.")
+			if !.check(T_RBRACE)
+				loPair = .kvp()
+				.addKeyValuePair(@loObj, @loPair)
+				
+				do while .match(T_COMMA)
+					loPair = .kvp()
+					.addKeyValuePair(@loObj, @loPair)
+				enddo
+			endif
+			.consume(T_RBRACE, "Expect '}' after JSON body.")
 
-		return loObj
+			return loObj
+		endwith
 	endfunc
 	&& ======================================================================== &&
 	&& Function Kvp
 	&& EBNF -> 	kvp = KEY ':' value
 	&& ======================================================================== &&
 	hidden function kvp(toObj)		
-		local loPair, lvValue
-		
-		loPair = CreateObject('Empty')
-		=AddProperty(loPair, 'key', '')		
-		
-		this.consume(T_STRING, "Expect key name")
-		
-		loPair.key = _screen.jsonUtils.CheckProp(this.previous.value)
+		With this
+			local loPair, lvValue
+			
+			loPair = CreateObject('Empty')
+			=AddProperty(loPair, 'key', '')		
+			
+			.consume(T_STRING, "Expect key name")
+			
+			loPair.key = _screen.jsonUtils.CheckProp(.previous.value)
 
-		this.consume(T_COLON, "Expect ':' after key element.")
-		
-		lvValue = this.value()
-		If Type('lvValue', 1) != 'A'
-			=AddProperty(loPair, 'value', lvValue)
-		Else
-			=AddProperty(loPair, 'value[1]', .Null.)			
-			Acopy(lvValue, loPair.value)			
-		endif
+			.consume(T_COLON, "Expect ':' after key element.")
+			
+			lvValue = .value()
+			If Type('lvValue', 1) != 'A'
+				=AddProperty(loPair, 'value', lvValue)
+			Else
+				=AddProperty(loPair, 'value[1]', .Null.)			
+				Acopy(lvValue, loPair.value)			
+			endif
 
-		Return loPair
+			Return loPair
+		EndWith
 	EndFunc
 
 	Hidden function addKeyValuePair(toObject, toPair)
@@ -90,95 +97,113 @@ define class Parser as custom
 	&& EBNF -> 	value = STRING | NUMBER | BOOLEAN | array | object | NULL
 	&& ======================================================================== &&
 	hidden function value
-		do case
-		case this.match(T_STRING)
-			return _screen.jsonUtils.CheckString(this.previous.value)
-			
-		case this.match(T_NUMBER)
-			Local lcValue, lcPoint
-			lcValue = this.previous.value
-			lcPoint = Set("Point")
-			
-			If lcPoint != '.'
-				lcValue = Strtran(lcValue, '.', lcPoint)
-			EndIf
-			return iif(at(lcPoint, lcValue) > 0, Val(lcValue), int(Val(lcValue)))
-			
-		case this.match(T_BOOLEAN)
-			return (this.previous.value == 'true')
+		With this
+			do case
+			case .match(T_STRING)
+				return _screen.jsonUtils.CheckString(.previous.value)
+				
+			case .match(T_NUMBER)
+				Local lcValue, lcPoint
+				lcValue = .previous.value
+				lcPoint = Set("Point")
+				
+				If lcPoint != '.'
+					lcValue = Strtran(lcValue, '.', lcPoint)
+				EndIf
+				return iif(at(lcPoint, lcValue) > 0, Val(lcValue), int(Val(lcValue)))
+				
+			case .match(T_BOOLEAN)
+				return (.previous.value == 'true')
 
-		case this.match(T_LBRACE)
-			return this.object()
+			case .match(T_LBRACE)
+				return .object()
 
-		case this.match(T_LBRACKET)
-			return @this.array()
-			
-		case this.match(T_NULL)
-			return .null.
-		otherwise
-			error "Parser Error: Unknown token value: '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
-		endcase
+			case .match(T_LBRACKET)
+				return @.array()
+				
+			case .match(T_NULL)
+				return .null.
+			otherwise
+				error "Parser Error: Unknown token value: '" + _screen.jsonUtils.tokenTypeToStr(.peek.type) + "'"
+			EndCase
+		EndWith
 	endfunc
 	&& ======================================================================== &&
 	&& Function Array
 	&& EBNF -> 	array = '[' value | { ',' value }  ']'
 	&& ======================================================================== &&
 	hidden function array
-		local laArray
-		laArray = createobject("TParserInternalArray")
-		If !this.check(T_RBRACKET)
-			laArray.Push(this.value())
-			do while this.match(T_COMMA)
-				laArray.Push(this.value())
-			enddo
-		endif
-		this.consume(T_RBRACKET, "Expect ']' after array elements.")
+		With this
+			local laArray
+			laArray = createobject("TParserInternalArray")
+			If !.check(T_RBRACKET)
+				laArray.Push(.value())
+				do while .match(T_COMMA)
+					laArray.Push(.value())
+				enddo
+			endif
+			.consume(T_RBRACKET, "Expect ']' after array elements.")
 
-		return @laArray.getArray()
+			return @laArray.getArray()
+		endwith
 	endfunc
 	
 	Function match(tnTokenType)
-		If this.check(tnTokenType)
-			this.advance()
-			Return .t.
-		EndIf
-		Return .f.
+		With this
+			If .check(tnTokenType)
+				.advance()
+				Return .t.
+			EndIf
+			Return .f.
+		endwith
 	EndFunc
 
 	Hidden Function consume(tnTokenType, tcMessage)
-		If this.check(tnTokenType)
-			Return this.advance()
-		EndIf
-		if empty(tcErrorMessage)
-			tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
-		endif
-		error tcErrorMessage
+		With this
+			If .check(tnTokenType)
+				Return .advance()
+			EndIf
+			if empty(tcErrorMessage)
+				tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(.peek.type) + "'"
+			endif
+			error tcErrorMessage
+		EndWith
 	endfunc
 
 	Hidden Function check(tnTokenType)
-		If this.isAtEnd()
-			Return .f.
-		EndIf
-		Return this.peek.type == tnTokenType
+		With this
+			If .isAtEnd()
+				Return .f.
+			EndIf
+			Return .peek.type == tnTokenType
+		endwith
 	EndFunc 
 
 	Hidden Function advance
-		If !this.isAtEnd()
-			this.current = this.current + 1
-		EndIf
-		Return this.tokens[this.current-1]
+		With this
+			If !.isAtEnd()
+				.current = .current + 1
+			EndIf
+			Return .tokens[.current-1]
+		endwith
 	endfunc
 
 	Hidden Function isAtEnd
-		Return this.peek.type == T_EOF
+		With this.peek
+			Return .type == T_EOF
+		endwith
 	endfunc
 
 	Hidden Function peek_access
-		Return this.tokens[this.current]
+		With this
+			Return .tokens[.current]
+		endwith
 	endfunc
 
 	Hidden Function previous_access
-		Return this.tokens[this.current-1]
+		With this
+			Return .tokens[.current-1]
+		endwith
 	EndFunc
 	
 EndDefine
@@ -191,13 +216,16 @@ Define Class TParserInternalArray As Custom
 	nIndex = 0
 	
 	Function Push(tvItem)
-		this.nIndex = this.nIndex + 1
-		Dimension This.aCustomArray[this.nIndex]
-		This.aCustomArray[this.nIndex] = tvItem
+		With this
+			.nIndex = .nIndex + 1
+			Dimension .aCustomArray[.nIndex]
+			.aCustomArray[.nIndex] = tvItem
+		EndWith
 	Endfunc
 	
 	Function GetArray
-		Return @this.aCustomArray
+		With this
+			Return @.aCustomArray
+		endwith
 	EndFunc
-
 Enddefine
