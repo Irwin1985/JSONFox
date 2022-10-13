@@ -79,11 +79,12 @@ define class Tokenizer as custom
 	
 	Hidden Function skipWhitespace
 		With this
+			LOCAL ch
 			Do while InList(.peek(), Chr(9), Chr(10), Chr(13), Chr(32))
-				If .peek() == Chr(10)
+				ch = .advance()
+				If ch == Chr(10)
 					.line = .line + 1
 				endif
-				.advance()
 			EndDo
 		endwith
 	endfunc
@@ -229,7 +230,7 @@ define class Tokenizer as custom
 				if At(ch, .letters) > 0
 					Return .identifier()
 				endif
-				.showError(0, "Lexer Error: Unknown character '" + transform(ch) + "'")
+				.showError(.line, "Unknown character ['" + transform(ch) + "'], ascii: [" + TRANSFORM(ASC(ch)) + "]")
 			EndCase
 		EndWith
 	EndFunc
@@ -262,12 +263,12 @@ define class Tokenizer as custom
 	endfunc
 
 	function showError(tnLine, tcMessage)
-		error "[line" + alltrim(str(tnLine)) + "] Error: " + tcMessage
+		error "SYNTAX ERROR: (" + TRANSFORM(tnLine) + ":" + TRANSFORM(this.current) + ")" + tcMessage
 	endfunc
 
 	function isAtEnd
 		With this
-		return .current > .sourceLen
+		return .current >= .sourceLen
 		EndWith
 	endfunc
 
