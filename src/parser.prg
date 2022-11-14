@@ -163,10 +163,10 @@ define class Parser as custom
 			If .check(tnTokenType)
 				Return .advance()
 			EndIf
-			if empty(tcErrorMessage)
-				tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(.peek.type) + "'"
+			if empty(tcMessage)
+				tcMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(.peek.type) + "'"
 			endif
-			error tcErrorMessage
+			error tcMessage
 		EndWith
 	endfunc
 

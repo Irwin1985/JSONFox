@@ -1,26 +1,15 @@
+* <<DEBUG>>
 * =========================================
-*!*	clear
+*!*	Clear
 *!*	Cd f:\desarrollo\github\jsonfox\src\
-*!*	If Type('_SCREEN.oRegEx') != 'U'
-*!*		=Removeproperty(_Screen, 'oRegEx')
-*!*	Endif
-*!*	=AddProperty(_Screen, 'oRegEx', Createobject("VBScript.RegExp"))
-*!*	_Screen.oRegEx.Global = .T.
-
-*!*	#include "JSONFox.h"
-
-*!*	If File('c:\a1\tokens.txt')
-*!*		Delete File 'c:\a1\tokens.txt'
-*!*	EndIf
-
-*!*	*Set Step On
-*!*	sc = CreateObject("Tokenizer", FileToStr("c:\a1\test.json"))
+*!*	sc = CreateObject("Tokenizer", '"string"')
 *!*	tokens = sc.scanTokens()
 *!*	For i = 1 to Alen(tokens)
-*!*		StrToFile(sc.tokenStr(tokens[i]) + Chr(13) + Chr(10), 'c:\a1\tokens.txt', 1)
 *!*		? sc.tokenStr(tokens[i])
 *!*	Endfor
 * =========================================
+* <<DEBUG>>
+
 #include "JSONFox.h"
 * Tokenizer
 define class Tokenizer as custom
@@ -96,6 +85,11 @@ define class Tokenizer as custom
 				.advance()
 			EndDo
 			lexeme = Substr(.source, .start, .current-.start)
+*!*				If .current == Len(.source)
+*!*					lexeme = Substr(.source, .start, (.current+1)-.start)
+*!*				Else
+*!*					lexeme = Substr(.source, .start, .current-.start)
+*!*				endif
 			if inlist(lexeme, "true", "false", "null")
 				return .addToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
 			else
@@ -268,7 +262,7 @@ define class Tokenizer as custom
 
 	function isAtEnd
 		With this
-		return .current >= .sourceLen
+		return .current > .sourceLen
 		EndWith
 	endfunc
 
