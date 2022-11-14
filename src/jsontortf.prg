@@ -159,10 +159,10 @@ define class JSONToRTF as custom
 		If this.check(tnTokenType)
 			Return this.advance()
 		EndIf
-		if empty(tcErrorMessage)
-			tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
+		if empty(tcMessage)
+			tcMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
 		endif
-		error tcErrorMessage
+		error tcMessage
 	endfunc
 
 	Hidden Function check(tnTokenType)
