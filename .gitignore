@@ -1,3 +1,6 @@
 
 src/jsonstringify.ERR
 *.ERR
+*.zip
+*.PJT
+*.pjx
