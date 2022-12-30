@@ -81,7 +81,7 @@ define class ObjectToJSON as session
 			return lcArray
 
 		case vartype(tValue) = 'O'
-			local j, lcJSONStr, lnTot
+			local j, lcJSONStr, lnTot, i
 			local array gaMembers(1)
 
 			lcJSONStr = '{'

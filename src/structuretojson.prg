@@ -33,7 +33,7 @@ Define Class StructureToJSON As Session
 		Endif
 		Private JSONUtils
 		JSONUtils = _Screen.JSONUtils
-		Local lcStructJSON As Memo, lcFieldJSON as memo, lnLength As Integer
+		Local lcStructJSON As Memo, lcFieldJSON as memo, lnLength As Integer, i as Integer
 		If !this.lJustArray
 			lcStructJSON = '{"' + Lower(this.curName) + '":['
 		Else

@@ -132,7 +132,10 @@ define class Tokenizer as custom
 					.advance()
 				Case ch = '"'
 					.advance()
-					exit
+					Exit
+				Case ch == ',' and InList(.peekNext(), '"', "'") and Type('This._anyType_') == 'C' and Alltrim(this._anyType_) == 'anyType'
+					.advance()
+					Exit
 				endcase
 				.advance()
 			EndDo
@@ -143,6 +146,44 @@ define class Tokenizer as custom
 			return .addToken(T_STRING, lexeme)
 		endwith
 	EndFunc
+
+	Hidden function currency
+		With this
+			local lexeme, isNegative
+			lexeme = ''
+			isNegative = (.peek() == '-')
+			if isNegative
+				.advance()
+			endif
+
+			do while isdigit(.peek())
+				.advance()
+			EndDo
+
+			* Loop while there is a comma ','
+			Do while .t.				
+				If .peek() == ',' and IsDigit(.peekNext())
+					.advance() && eat the comma ','
+					do while isdigit(.peek())
+						.advance()
+					EndDo
+				Else
+					exit
+				EndIf
+			enddo		
+
+			* Check for decimal part
+			if .peek() == '.' and isdigit(.peekNext())
+				.advance() && eat the dot '.'
+				do while isdigit(.peek())
+					.advance()
+				enddo
+			EndIf
+			lexeme = Substr(.source, .start+1, .current-.start)
+			return .addToken(T_NUMBER, Strtran(lexeme, ','))
+		endwith
+	endfunc
+
 
 	Procedure escapeCharacters(tcLexeme)
 		* Convert all escape sequences
@@ -158,7 +199,7 @@ define class Tokenizer as custom
 	procedure checkUnicodeFormat(tcLexeme)		
 		* Look for unicode format
 		_Screen.oRegEx.Pattern = "\\u([a-fA-F0-9]{4})"
-		Local loResult, lcValue
+		Local loResult, lcValue, i
 		_Screen.oRegEx.IgnoreCase = .t.
 		_Screen.oRegEx.global = .t.
 		loResult = _Screen.oRegEx.Execute(tcLexeme)
@@ -215,7 +256,9 @@ define class Tokenizer as custom
 				Return .addToken(T_COMMA, ch)
 
 			Case ch == '"'
-				Return .string()				
+				Return .string()
+			Case ch == '$'
+				Return .Currency()
 			Otherwise
 				if isdigit(ch) or (ch == '-' and isdigit(.peek()))
 					Return .number()

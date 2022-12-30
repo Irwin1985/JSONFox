@@ -9,7 +9,7 @@ define class CursorToArray as session
 		endif
 		private JSONUtils
 		JSONUtils = _screen.JSONUtils
-		local lcOutput as memo
+		local lcOutput as memo, i as Integer
 		lcOutput = "["
 		llCentury = set("Century") == "OFF"
 		llDeleted = set("Deleted") == "OFF"

@@ -247,7 +247,7 @@ Define Class TomlParser As Custom
 	endfunc
 
 	Function parse_date(tcDate)
-		Local cStr, lIsDateTime, lDate
+		Local cStr, lIsDateTime, lDate, i
 		cStr 		= ''
 		lIsDateTime = .F.
 		lDate		= .Null.
