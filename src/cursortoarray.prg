@@ -37,7 +37,7 @@ define class CursorToArray as session
 					lcValue  = evaluate(.CurName + "." + aColumns[i, 1])
 					if vartype(lcValue) = 'X'
 						lcValue = "null"
-						lcOutput = lcOutput + alltrim(lcValue)
+						lcOutput = lcOutput + lcValue
 					else
 						do case
 						case aColumns[i, 2] $ "CDTBGMQVW"
@@ -54,10 +54,16 @@ define class CursorToArray as session
 								else
 									lcValue = 'null'
 								endif
-							otherwise
-								lcValue = JSONUtils.GetString(alltrim(lcValue))
+							Otherwise
+								&& IRODG 08/08/2023 Inicio
+								*lcValue = JSONUtils.GetString(alltrim(lcValue))
+								lcValue = JSONUtils.GetString(lcValue)
+								&& IRODG 08/08/2023 Fin
 							endcase
-							lcOutput = lcOutput + alltrim(lcValue)
+							&& IRODG 08/08/2023 Inicio
+							*lcOutput = lcOutput + alltrim(lcValue)
+							lcOutput = lcOutput + lcValue
+							&& IRODG 08/08/2023 Fin
 						case aColumns[i, 2] $ "YFIN"
 							lcOutput = lcOutput + transform(lcValue)
 						case aColumns[i, 2] = "L"
