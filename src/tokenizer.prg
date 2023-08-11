@@ -1,15 +1,3 @@
-* <<DEBUG>>
-* =========================================
-*!*	Clear
-*!*	Cd f:\desarrollo\github\jsonfox\src\
-*!*	sc = CreateObject("Tokenizer", '"string"')
-*!*	tokens = sc.scanTokens()
-*!*	For i = 1 to Alen(tokens)
-*!*		? sc.tokenStr(tokens[i])
-*!*	Endfor
-* =========================================
-* <<DEBUG>>
-
 #include "JSONFox.h"
 * Tokenizer
 define class Tokenizer as custom
@@ -26,11 +14,16 @@ define class Tokenizer as custom
 	Dimension tokens[1]
 	sourceLen = 0
 	
-	
 	function init(tcSource)
 		With this
 			.length = 1
 			.capacity = 0
+			&& IRODG 11/08/2023 Inicio
+			* We remove possible invalid characters from the input source.
+			tcSource = STRTRAN(tcSource, CHR(0))
+			tcSource = STRTRAN(tcSource, CHR(10))
+			tcSource = STRTRAN(tcSource, CHR(13))
+			&& IRODG 11/08/2023 Fin
 			.source = tcSource
 			.start = 0
 			.current = 1
