@@ -44,7 +44,9 @@ define class jsonutils as custom
 			Otherwise
 				tcvalue = this.getstring(tcvalue)
 			endcase
-			tcvalue = alltrim(tcvalue)
+			&& IRODG 08/08/2023 Inicio
+			*tcvalue = alltrim(tcValue)
+			&& IRODG 08/08/2023 Fin
 		case tctype $ "YFIN"
 			tcvalue = strtran(transform(tcvalue), ',', '.')
 		case tctype == 'L'
@@ -132,7 +134,9 @@ define class jsonutils as custom
 	&& ======================================================================== &&
 	function getstring as string
 		lparameters tcString as string, tlParseUtf8 as Boolean
-		tcString = allt(tcString)
+		&& IRODG 08/08/2023 Inicio
+		*tcString = Alltrim(tcString)
+		&& IRODG 08/08/2023 Fin		
 		tcString = strtran(tcString, '\', '\\' )		
 		tcString = strtran(tcString, chr(9),  '\t' )
 		tcString = strtran(tcString, chr(10), '\n' )
