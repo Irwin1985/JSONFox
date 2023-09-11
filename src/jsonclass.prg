@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.9"
+	version 		= "9.10"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -56,7 +56,33 @@ define class JSONClass as session
 		Else
 			return loJSONObj
 		EndIf		
-	endfunc
+	ENDFUNC
+	
+	* tokenize
+	FUNCTION dumpTokens
+		lparameters tcJsonStr as memo, tcOutput as string
+		try
+			this.ResetError()
+			local lexer
+			if this.NETScanner
+				lexer = createobject("NetScanner", tcJsonStr)
+			else
+				lexer = createobject("Tokenizer", tcJsonStr)
+			endif
+			Local laTokens
+			laTokens = lexer.scanTokens()
+			IF FILE(tcOutput)
+				DELETE FILE (tcOutput)
+			ENDIF
+			FOR EACH loToken IN laTokens
+				STRTOFILE(tokenStr(loToken), tcOutput, 1)
+			ENDFOR
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			release lexer, laTokens
+		ENDTRY
+	ENDFUNC
 
 	* Stringify
 	function Stringify as memo
@@ -292,7 +318,7 @@ define class JSONClass as session
 		return lcOutput
 	endfunc
 	* tokenize
-	function dumpTokens	
+	function dumpTokens2	
 		lparameters tcJsonStr as memo
 		try
 			this.ResetError()
