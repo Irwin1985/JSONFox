@@ -95,7 +95,7 @@ define class ObjectToJSON as session
 					*local array aCopia(alen(tValue. &gaMembers[j]))
 					local array laLista[1]
 					=acopy(tValue. &gaMembers[j], laLista)
-					lcJSONStr = lcJSONStr + this.AnyToJson(@aCopia)
+					lcJSONStr = lcJSONStr + this.AnyToJson(@laLista)
 				catch
 					try
 						lcJSONStr = lcJSONStr + this.AnyToJson(tValue. &gaMembers[j])
