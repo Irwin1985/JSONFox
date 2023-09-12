@@ -109,7 +109,18 @@ define class Tokenizer as custom
 				do while isdigit(.peek())
 					.advance()
 				enddo
-			EndIf
+			endif
+
+			&& Check if number is a Scientific Notation in Tokenizer.Number()
+			IF .peek() + .peekNext() == "e+" 
+			  .advance()
+			  .advance()
+			  do while isdigit(.peek())
+				  .advance()
+			  enddo	
+			endif
+			*****************************************************************			
+			
 			lexeme = Substr(.source, .start, .current-.start)
 			return .addToken(T_NUMBER, lexeme)
 		endwith
