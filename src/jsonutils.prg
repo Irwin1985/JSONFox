@@ -5,24 +5,45 @@
 && ======================================================================== &&
 define class jsonutils as custom
 	
-	Dimension aPattern[5, 2]
+	Dimension aPattern[8, 2]
 	
 	Function init
+		&& Match a date format in the following pattern 
+		&& "YYYY-MM-DD"
 		this.aPattern[1,1] = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])$"
 		this.aPattern[1,2] = .f.
 		
+		&& Match a date and time format in the following pattern
+		&& "YYYY-MM-DD HH:MM:SS"
 		this.aPattern[2,1] = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01]) (00|0?[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
 		this.aPattern[2,2] = .f.
 		
+		&& Match ISO 8601 date and time formats that include a time zone offset
+		&& "YYYY-MM-DDTHH:MM:SSZ" OR "YYYY-MM-DDTHH:MM:SS+HH:MM" OR "YYYY-MM-DDTHH:MM:SS-HH:MM"
 		this.aPattern[3,1] = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?(Z|[+-](\d{2})\:(\d{2}))?$"
 		this.aPattern[3,2] = .f.
 		
+		&& Match a date and time format in ISO 8601 combined with a single-character time zone identifier
+		&& "YYYY-MM-DDTHH:MM(:SS)?.SSS(W)" 
 		this.aPattern[4,1] = "^(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})(\:(\d{2}))?[.](\d{3})(\w{1})$"
 		this.aPattern[4,2] = .f.
-
+		
+		&& "DD/MM/YYYY" OR "DD-MM-YYYY"
 		this.aPattern[5,1] = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4}$"
 		this.aPattern[5,2] = .t.
-
+		
+		&& "DD/MM/YYYY HH:MM:SS" or "DD-MM-YYYY HH:MM:SS"
+		this.aPattern[6,1] = "^(\d{2})([\/-])(\d{2})\2(\d{4}) (\d{2}):(\d{2}):(\d{2})$"
+		this.aPattern[6,2] = .t.
+		
+		&& "DD/MM/YY HH:MM:SS" or "DD-MM-YY HH:MM:SS"
+		this.aPattern[7,1] = "^(\d{2})([\/-])(\d{2})\2(\d{2}) ([0-1]\d|2[0-3]):([0-5]\d):([0-5]\d)$"
+		this.aPattern[7,2] = .t.
+		
+		&& "DD/MM/YY" or "DD-MM-YY"
+		this.aPattern[8,1] = "^(\d{2})([\/-])(\d{2})\2(\d{2})$"
+		this.aPattern[8,2] = .t.
+		
 		_screen.oRegEx.global = .t.
 
 	EndFunc
@@ -101,10 +122,17 @@ define class jsonutils as custom
 			finally
 				set date &setDateAct
 			endtry
-		case occurs(':', tcDate) >= 2 && VFP Date Time Format. 'YYYY-mm-dd HH:mm:ss'
+		case occurs(':', tcDate) >= 2 && VFP Date Time Format. 'YYYY-mm-dd HH:mm:ss' and also 'dd-mm-yyyy hh:mm:ss'
 			try
 				setDateAct = set('Date')
-				set date ymd
+				*	set date ymd
+				&& (DCA) - 12/09/2023 - Also verify if the DateTime is DMY Format
+				if !tlUseDMY
+					set date ymd
+				else
+					set date dmy
+				endif
+				
 				lDate = ctot(tcDate)
 			catch
 				lDate = {//::}
