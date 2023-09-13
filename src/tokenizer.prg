@@ -112,7 +112,7 @@ define class Tokenizer as custom
 			endif
 
 			&& Check if number is a Scientific Notation in Tokenizer.Number()
-			IF .peek() + .peekNext() == "e+" 
+			IF Lower(.peek() + .peekNext()) == "e+" 
 			  .advance()
 			  .advance()
 			  do while isdigit(.peek())
