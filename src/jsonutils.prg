@@ -33,16 +33,16 @@ define class jsonutils as custom
 		this.aPattern[5,2] = .t.
 		
 		&& "DD/MM/YYYY HH:MM:SS" or "DD-MM-YYYY HH:MM:SS"
-		this.aPattern[6,1] = "^(\d{2})([\/-])(\d{2})\2(\d{4}) (\d{2}):(\d{2}):(\d{2})$"
-		this.aPattern[6,2] = .t.
-		
-		&& "DD/MM/YY HH:MM:SS" or "DD-MM-YY HH:MM:SS"
-		this.aPattern[7,1] = "^(\d{2})([\/-])(\d{2})\2(\d{2}) ([0-1]\d|2[0-3]):([0-5]\d):([0-5]\d)$"
-		this.aPattern[7,2] = .t.
-		
+		this.aPattern[06,1] = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4} (\d{2}):(\d{2}):(\d{2})$"
+		this.aPattern[06,2] = .t.
+
 		&& "DD/MM/YY" or "DD-MM-YY"
-		this.aPattern[8,1] = "^(\d{2})([\/-])(\d{2})\2(\d{2})$"
-		this.aPattern[8,2] = .t.
+		this.aPattern[07,1] = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{2}$" 
+		this.aPattern[07,2] = .t.
+
+		&& "DD/MM/YY HH:MM:SS" or "DD-MM-YY HH:MM:SS"
+		this.aPattern[08,1] =  "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{2} (\d{2}):(\d{2}):(\d{2})$" 
+		this.aPattern[08,2] = .t.
 		
 		_screen.oRegEx.global = .t.
 
