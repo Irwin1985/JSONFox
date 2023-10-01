@@ -33,7 +33,7 @@ define class jsonutils as custom
 		this.aPattern[5,2] = .t.
 		
 		&& "DD/MM/YYYY HH:MM:SS" or "DD-MM-YYYY HH:MM:SS"
-		this.aPattern[06,1] = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4} (\d{2}):(\d{2}):(\d{2})$"
+		this.aPattern[06,1] = "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{4} (00|0?[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
 		this.aPattern[06,2] = .t.
 
 		&& "DD/MM/YY" or "DD-MM-YY"
@@ -41,7 +41,7 @@ define class jsonutils as custom
 		this.aPattern[07,2] = .t.
 
 		&& "DD/MM/YY HH:MM:SS" or "DD-MM-YY HH:MM:SS"
-		this.aPattern[08,1] =  "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{2} (\d{2}):(\d{2}):(\d{2})$" 
+		this.aPattern[08,1] =  "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{2} (00|0?[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$" 
 		this.aPattern[08,2] = .t.
 		
 		_screen.oRegEx.global = .t.
@@ -89,7 +89,7 @@ define class jsonutils as custom
 		For i = 1 to Alen(this.aPattern, 1)
 			_screen.oRegEx.pattern = this.aPattern[i, 1]
 			if _screen.oRegEx.Test(tcString)
-				return this.formatDate(tcString, this.aPattern[i, 2])
+				return Evl(this.formatDate(tcString, this.aPattern[i, 2]), tcString)
 			endif
 		EndFor
 		* It is a normal String
