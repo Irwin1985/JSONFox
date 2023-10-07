@@ -2,6 +2,9 @@
 define class CursorToArray as session
 	nSessionID = 0
 	CurName    = ""
+	&& IRODG 07/10/2023 Inicio
+	ParseUTF8 = .f.
+	&& IRODG 07/10/2023 Fin
 	* Function CursorToArray
 	function CursorToArray as memo
 		if !empty(this.nSessionID)
@@ -9,7 +12,17 @@ define class CursorToArray as session
 		endif
 		private JSONUtils
 		JSONUtils = _screen.JSONUtils
-		local lcOutput as memo, i as Integer
+		local lcOutput as memo, ;
+			i as Integer, ;
+			lcValue as Variant, ;
+			llCentury as Boolean, ;
+			llDeleted as Boolean, ;
+			lcDateAct as string, ;
+			nCounter as Integer, ;
+			lnTotField as Integer, ;
+			lnTotal as Integer, ;
+			lnRecNo as Integer
+
 		lcOutput = "["
 		llCentury = set("Century") == "OFF"
 		llDeleted = set("Deleted") == "OFF"
@@ -57,7 +70,10 @@ define class CursorToArray as session
 							Otherwise
 								&& IRODG 08/08/2023 Inicio
 								*lcValue = JSONUtils.GetString(alltrim(lcValue))
-								lcValue = JSONUtils.GetString(lcValue)
+								&& IRODG 07/10/2023 Inicio
+*!*									lcValue = JSONUtils.GetString(lcValue)
+								lcValue = JSONUtils.GetString(lcValue, this.ParseUTF8)
+								&& IRODG 07/10/2023 Fin
 								&& IRODG 08/08/2023 Fin
 							endcase
 							&& IRODG 08/08/2023 Inicio
