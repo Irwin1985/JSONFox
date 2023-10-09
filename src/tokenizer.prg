@@ -202,24 +202,46 @@ define class Tokenizer as custom
 		
 	procedure checkUnicodeFormat(tcLexeme)		
 		* Look for unicode format
-		_Screen.oRegEx.Pattern = "\\u([a-fA-F0-9]{4})"
-		Local loResult, lcValue, i
-		_Screen.oRegEx.IgnoreCase = .t.
-		_Screen.oRegEx.global = .t.
-		loResult = _Screen.oRegEx.Execute(tcLexeme)
-		If Type('loResult') == 'O'
-			For i = 0 to loResult.Count-1
-				lcValue = loResult.Item[i].Value
-				try
-					&& IRODG 09/10/2023 Inicio
-					** Replace null character (chr(0)) from conversion result (strconv(lcValue, 16))
-*!*						tcLexeme = Strtran(tcLexeme, lcValue, (strconv(lcValue, 16)))
-					tcLexeme = Strtran(tcLexeme, lcValue, strtran((strconv(lcValue, 16)), chr(0)))
-					&& IRODG 09/10/2023 Fin
-				Catch
-				EndTry
-			EndFor
-		EndIf
+		** This conversion is better (in performance) than Regular Expressions.
+		&& IRODG 09/10/2023 Inicio
+		local lcUnicode, lcConversion, lbReplace, lnPos
+		lnPos = 1
+		do while .T.
+			lbReplace = .F.
+			lcUnicode = substr(tcLexeme, at('\u', tcLexeme, lnPos), 6)
+			if len(lcUnicode) == 6
+				lbReplace = .T.
+			else
+				lcUnicode = substr(tcLexeme, at('\U', tcLexeme, lnPos), 6)
+				if len(lcUnicode) == 6
+					lbReplace = .T.
+				endif
+			endif
+			if lbReplace
+				tcLexeme = strtran(tcLexeme, lcUnicode, strtran(strconv(lcUnicode,16), chr(0)))
+			else
+				exit
+			endif
+		enddo
+		&& IRODG 09/10/2023 Fin
+*!*			_Screen.oRegEx.Pattern = "\\u([a-fA-F0-9]{4})"
+*!*			Local loResult, lcValue, i
+*!*			_Screen.oRegEx.IgnoreCase = .t.
+*!*			_Screen.oRegEx.global = .t.
+*!*			loResult = _Screen.oRegEx.Execute(tcLexeme)
+*!*			If Type('loResult') == 'O'
+*!*				For i = 0 to loResult.Count-1
+*!*					lcValue = loResult.Item[i].Value
+*!*					try
+*!*						&& IRODG 09/10/2023 Inicio
+*!*						** Replace null character (chr(0)) from conversion result (strconv(lcValue, 16))
+*!*	*!*						tcLexeme = Strtran(tcLexeme, lcValue, (strconv(lcValue, 16)))
+*!*						tcLexeme = Strtran(tcLexeme, lcValue, strtran((strconv(lcValue, 16)), chr(0)))
+*!*						&& IRODG 09/10/2023 Fin
+*!*					Catch
+*!*					EndTry
+*!*				EndFor
+*!*			EndIf
 	EndProc
 
 	Function scanTokens
