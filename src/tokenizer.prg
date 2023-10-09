@@ -210,8 +210,12 @@ define class Tokenizer as custom
 		If Type('loResult') == 'O'
 			For i = 0 to loResult.Count-1
 				lcValue = loResult.Item[i].Value
-				Try
-					tcLexeme = Strtran(tcLexeme, lcValue, Strconv(lcValue, 16))
+				try
+					&& IRODG 09/10/2023 Inicio
+					** Replace null character (chr(0)) from conversion result (strconv(lcValue, 16))
+*!*						tcLexeme = Strtran(tcLexeme, lcValue, (strconv(lcValue, 16)))
+					tcLexeme = Strtran(tcLexeme, lcValue, strtran((strconv(lcValue, 16)), chr(0)))
+					&& IRODG 09/10/2023 Fin
 				Catch
 				EndTry
 			EndFor
