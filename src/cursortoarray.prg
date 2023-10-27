@@ -5,6 +5,9 @@ define class CursorToArray as session
 	&& IRODG 07/10/2023 Inicio
 	ParseUTF8 = .f.
 	&& IRODG 07/10/2023 Fin
+	&& IRODG 27/10/2023 Inicio
+	TrimChars = .F.
+	&& IRODG 27/10/2023 Fin
 	* Function CursorToArray
 	function CursorToArray as memo
 		if !empty(this.nSessionID)
@@ -72,13 +75,19 @@ define class CursorToArray as session
 								*lcValue = JSONUtils.GetString(alltrim(lcValue))
 								&& IRODG 07/10/2023 Inicio
 *!*									lcValue = JSONUtils.GetString(lcValue)
-								lcValue = JSONUtils.GetString(lcValue, this.ParseUTF8)
+								&& IRODG 27/10/2023 Inicio
+								* lcValue = JSONUtils.GetString(lcValue, this.ParseUTF8)
+								lcValue = JSONUtils.GetString(Iif(this.TrimChars, Alltrim(lcValue), lcValue), this.ParseUTF8)
+								&& IRODG 27/10/2023 Fin
 								&& IRODG 07/10/2023 Fin
 								&& IRODG 08/08/2023 Fin
 							endcase
 							&& IRODG 08/08/2023 Inicio
 							*lcOutput = lcOutput + alltrim(lcValue)
-							lcOutput = lcOutput + lcValue
+							&& IRODG 27/10/2023 Inicio
+*!*								lcOutput = lcOutput + lcValue
+							lcOutput = lcOutput + Iif(this.TrimChars, Alltrim(lcValue), lcValue)
+							&& IRODG 27/10/2023 Fin
 							&& IRODG 08/08/2023 Fin
 						case aColumns[i, 2] $ "YFIN"
 							lcOutput = lcOutput + transform(lcValue)

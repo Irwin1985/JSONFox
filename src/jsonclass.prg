@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.19"
+	version 		= "9.20"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -244,7 +244,7 @@ define class JSONClass as session
 	endfunc
 	* CursorToJSON
 	function CursorToJSON as memo
-		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean, tlParseUTF8 as Boolean
+		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean, tlParseUTF8 as Boolean, tlTrimChars as Boolean
 		local lcJsonXML as memo, loParser, lcCursor
 		lcJsonXML = ''
 		lcCursor  = SYS(2015)
@@ -265,6 +265,9 @@ define class JSONClass as session
 			&& IRODG 07/10/2023 Inicio
 			loParser.ParseUTF8 = tlParseUTF8
 			&& IRODG 07/10/2023 Fin
+			&& IRODG 27/10/2023 Inicio
+			loParser.TrimChars = tlTrimChars
+			&& IRODG 27/10/2023 Fin
 			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
 			this.ShowExceptionError(loEx)
