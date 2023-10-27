@@ -70,6 +70,9 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * ![](docs/prop.gif) **tcCursor:** the name of your cursor.
 * ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
 * ![](docs/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
+* ![](docs/prop.gif) **tbJustArray:** if is set to .T. then you get just an array with the data, otherwise you'll get an object containing both the cursor name and the array data.
+* ![](docs/prop.gif) **tbParseUTF8:** if is set to .T. then all special characters will be encoded. Eg: 'é' => '\u00e9'
+* ![](docs/prop.gif) **tbTrimChars:** if is set to .T. then all right blank spaces will be trimed.
 
 <hr>
 
