@@ -205,6 +205,7 @@ define class jsonutils as custom
 			tcString = StrTran(tcString,'©','\u00a9')
 			tcString = StrTran(tcString,'®','\u00ae')
 			tcString = StrTran(tcString,'ç','\u00e7')
+			tcString = StrTran(tcString,'º','\u00ba')
 		endif
 
 		return '"' +tcString + '"'
