@@ -66,7 +66,7 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ?_Screen.Json.CursorStructure('cGames')
 ```
 ## Full Documentation
-* ![](docs/meth.gif) **_Screen.Json.CursorToJSON(tcCursor As String *[, tbCurrentRow As Boolean [, tnDataSession As Integer]]*)**
+* ![](docs/meth.gif) **_Screen.Json.CursorToJSON(tcCursor As String *[, tbCurrentRow, tnDataSession, tbJustArray, tbParseUTF8, tbTrimChars]*)**
 * ![](docs/prop.gif) **tcCursor:** the name of your cursor.
 * ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
 * ![](docs/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
