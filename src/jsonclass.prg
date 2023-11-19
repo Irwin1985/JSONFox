@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.22"
+	version 		= "9.23"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -86,7 +86,7 @@ define class JSONClass as session
 
 	* Stringify
 	function Stringify as memo
-		lparameters tvNewVal as Variant, tcFlags as string, tlParseUtf8
+		lparameters tvNewVal as Variant, tcFlags as string, tlParseUtf8 as Boolean, tlTrimChars as Boolean
 		this.ResetError()
 		local llParseUtf8, lcTypeFlag, loJSONStr as memo
 		lcTypeFlag = type('tcFlags')
@@ -110,7 +110,7 @@ define class JSONClass as session
 			local lexer, parser
 			lexer = createobject("Tokenizer", tvNewVal)
 			parser = createobject("JSONStringify", lexer)
-			loJSONStr = parser.Stringify(llParseUtf8)
+			loJSONStr = parser.Stringify(llParseUtf8, tlTrimChars)
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
@@ -174,10 +174,10 @@ define class JSONClass as session
 	&& Function Encode
 	&& <<Deprecated>> please use Stringify function instead.
 	&& ======================================================================== &&
-	function Encode(toObj as object, tcFlags as string) as memo
+	function Encode(toObj as object, tcFlags as string, tlUtf8 as Boolean, tlTrimChars as Boolean) as memo
 		local loEncode
 		loEncode = createobject("ObjectToJson")
-		return loEncode.Encode(@toObj, tcFlags)
+		return loEncode.Encode(@toObj, tcFlags, tlUtf8, tlTrimChars)
 	endfunc
 	&& ======================================================================== &&
 	&& Function decode
