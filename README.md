@@ -2,8 +2,10 @@
 
 **JSONFox** is a free **JSON / XML** ***parser*** for Visual FoxPro 9.0
 
-Si te gusta mi trabajo puedes apoyarme con un donativo:   
-[![DONATE!](http://www.pngall.com/wp-content/uploads/2016/05/PayPal-Donate-Button-PNG-File-180x100.png)](https://www.paypal.com/donate/?hosted_button_id=LXQYXFP77AD2G) 
+Formas de apoyar:
+1. Donativo en Paypal [![DONATE!](http://www.pngall.com/wp-content/uploads/2016/05/PayPal-Donate-Button-PNG-File-180x100.png)](https://www.paypal.com/donate/?hosted_button_id=LXQYXFP77AD2G)
+2. Patrocinio en [Patreon](www.patreon.com/IrwinRodriguez)
+3. Seguir este proyecto (es gratis) [Stargazer](https://github.com/Irwin1985/JSONFox/stargazers)
 
     Gracias por tu apoyo!
 
