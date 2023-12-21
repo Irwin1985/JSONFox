@@ -8,6 +8,7 @@ Set Procedure To "src\Parser" 			Additive
 Set Procedure To "src\JSONUtils" 		Additive
 Set Procedure To "src\ArrayToCursor" 	Additive
 Set Procedure To "src\CursorToArray" 	Additive
+Set Procedure To "src\CursorToJsonObject" Additive
 Set Procedure To "src\JSONStringify" 	Additive
 Set Procedure To "src\ObjectToJSON" 	Additive
 Set Procedure To "src\JSONToRTF" 		Additive

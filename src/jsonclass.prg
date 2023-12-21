@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.23"
+	version 		= "9.24"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -278,7 +278,66 @@ define class JSONClass as session
 		endtry
 		lcOutput = iif(tlJustArray, lcJsonXML, '{"' + lower(alltrim(tcCursor)) + '":' + lcJsonXML + '}')
 		return lcOutput
-	endfunc
+	EndFunc
+
+	* CursorToJSONObject
+	function CursorToJSONObject(tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer) as object
+		local loParser, lcCursor, lnRecno, loResult as Variant
+		lcCursor = SYS(2015)
+		try
+			this.ResetError()
+			tcCursor = evl(tcCursor, alias())
+			tnDataSession = evl(tnDataSession, set("Datasession"))
+			set datasession to tnDataSession
+			if tbCurrentRow
+				lnRecno = recno(tcCursor)
+				select * from (tcCursor) where recno() = lnRecno into cursor (lcCursor)
+			else
+				select * from (tcCursor) into cursor (lcCursor)
+			endif
+			loParser = createobject("CursorToJsonObject")
+			loParser.CurName 	 = lcCursor
+			loParser.nSessionID  = tnDataSession			
+			loResult = loParser.CursorToJsonObject()
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			loParser = .null.
+			release loParser
+			use in (select(lcCursor))
+		endtry		
+		If Type('loResult', 1) == 'A'
+			Local i
+			For i = 1 to Alen(loResult, 1)
+				Dimension this.aCustomArray[i]
+				this.aCustomArray[i] = loResult[i]
+			endfor
+			return @this.aCustomArray
+		Else
+			return loResult
+		EndIf
+	EndFunc
+	
+	Function MasterDetailToJSON(tcMaster as String, tcDetail as String, tcExpr as String, tcDetailAttribute as String, tnSessionID as Integer)
+		local loClass, loResult, lcResult
+		try
+			this.ResetError()
+			tnSessionID = evl(tnSessionID, set("Datasession"))
+			set datasession to tnSessionID
+			loClass  = createobject("CursorToJsonObject")
+			loResult = loClass.MasterDetailToJSON(tcMaster, tcDetail, tcExpr, tcDetailAttribute, tnSessionID)
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			loClass = .null.
+			release loClass
+		EndTry
+
+		*lcResult = this.stringify(@loResult)
+		lcResult = this.Encode(@loResult, "", .t.)
+		Return lcResult
+	EndFunc
+	
 	* JSONToCursor
 	function jsonToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
 		try
