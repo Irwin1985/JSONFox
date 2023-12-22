@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.24"
+	version 		= "9.25"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -320,7 +320,7 @@ define class JSONClass as session
 	
 	Function MasterDetailToJSON(tcMaster as String, tcDetail as String, tcExpr as String, tcDetailAttribute as String, tnSessionID as Integer)
 		local loClass, loResult, lcResult
-		try
+		Try
 			this.ResetError()
 			tnSessionID = evl(tnSessionID, set("Datasession"))
 			set datasession to tnSessionID

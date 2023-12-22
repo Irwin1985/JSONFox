@@ -43,5 +43,3 @@ If Type("_Screen.Toml") != "U"
 	=Removeproperty(_Screen, 'Toml')
 Endif
 =AddProperty(_Screen, "Toml", Createobject("TomlClass"))
-
-Return

@@ -41,6 +41,7 @@ define class CursorToJsonObject as session
 		lnRecno = Recno()
 		Scan
 			Scatter memo name loRow
+			laDetail = .null.
 			* Filter detail
 			lcCursor = Sys(2015)
 			try
