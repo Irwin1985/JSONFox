@@ -31,15 +31,18 @@ define class CursorToJsonObject as session
 	Function MasterDetailToJSON(tcMaster as String, tcDetail as String, tcExpr as String, tcDetailAttribute as String, tnSessionID as Integer) as Object		
 		if !empty(tnSessionID)
 			set datasession to tnSessionID
-		EndIf
-		Local laArray, loRow, lnRecno, lbContinue, laDetail, lcMacro, lcCursor
+		ENDIF
+
+		Local laArray, loRow, lnRecno, lbContinue, laDetail, lcMacro, lcCursor,i
 		laArray = createobject("TParserInternalArray")
 		** Set Detail cursor		
 		this.nSessionID = tnSessionID
 		
 		select (tcMaster)
 		lnRecno = Recno()
-		Scan
+		i = 0
+		scan
+			i = i + 1
 			Scatter memo name loRow
 			laDetail = .null.
 			* Filter detail
@@ -77,7 +80,10 @@ define class CursorToJsonObject as session
 			Go lnRecno in (tcMaster)
 		Catch
 		EndTry
-		
-		return @laArray.getArray()
+		IF i>0
+			return @laArray.getArray()
+		ELSE
+			RETURN .null.
+		ENDIF
 	EndFunc
 enddefine
