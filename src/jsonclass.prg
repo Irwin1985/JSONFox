@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.27"
+	version 		= "10.1"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -12,6 +12,10 @@ define class JSONClass as session
 	* Set this property to .T. if you want the lexer uses JSONFoxHelper.dll
 	NETScanner = .f.
 	&& <<<<<<< IRODG 07/01/21
+	
+	&& >>>>>>> IRODG 02/27/24
+	JScriptScanner = .f.
+	&& <<<<<<< IRODG 02/27/24
 
 	*Function Init
 	function init
@@ -32,11 +36,14 @@ define class JSONClass as session
 		try
 			this.ResetError()
 			local lexer, parser
-			if this.NETScanner
+			do case
+			case this.NETScanner
 				lexer = createobject("NetScanner", tcJsonStr)
-			else
+			else this.JScriptScanner
+				lexer = createobject("JScriptScanner", tcJsonStr)
+			otherwise
 				lexer = createobject("Tokenizer", tcJsonStr)
-			endif
+			endcase
 			parser = createobject("Parser", lexer)
 			loJSONObj = parser.Parse()
 			
@@ -64,11 +71,14 @@ define class JSONClass as session
 		try
 			this.ResetError()
 			local lexer
-			if this.NETScanner
+			do case
+			case this.NETScanner
 				lexer = createobject("NetScanner", tcJsonStr)
-			else
+			case this.JScriptScanner
+				lexer = createobject("JScriptScanner", tcJsonStr)
+			otherwise
 				lexer = createobject("Tokenizer", tcJsonStr)
-			endif
+			endcase
 			Local laTokens
 			laTokens = lexer.scanTokens()
 			IF FILE(tcOutput)
