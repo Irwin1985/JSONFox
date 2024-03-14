@@ -6,6 +6,8 @@ define class ObjectToJSON as session
 	cDateAct = ''
 	nOrden   = 0
 	cFlags 	 = ''
+	parseUTF8 = .f.
+	TrimChars = .f.
 	* Function Init
 	function init
 		this.lCentury = set("Century") == "OFF"
@@ -15,7 +17,7 @@ define class ObjectToJSON as session
 		mvcount = 60000
 	endfunc
 	* Encode
-	function Encode(toRefObj, tcFlags)
+	function Encode(toRefObj, tcFlags, tlParseUTF8, tlTrimChars)
 		lPassByRef = .t.
 		try
 			external array toRefObj
@@ -23,6 +25,8 @@ define class ObjectToJSON as session
 			lPassByRef = .f.
 		endtry
 		this.cFlags = evl(tcFlags, ALL_MEMBERS)
+		this.parseUTF8 = tlParseUTF8
+		this.TrimChars = tlTrimChars
 		if lPassByRef
 			return this.AnyToJson(@toRefObj)
 		else
@@ -124,7 +128,7 @@ define class ObjectToJSON as session
 			lcJSONStr = lcJSONStr + '}'
 			return lcJSONStr
 		otherwise
-			return _screen.JSONUtils.GetValue(tValue, vartype(tValue))
+			return _screen.JSONUtils.GetValue(tValue, vartype(tValue), this.parseUTF8, this.TrimChars)
 		endcase
 	endfunc
 	* Destroy

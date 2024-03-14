@@ -10,6 +10,7 @@
 define class JSONStringify as custom
 
 	ParseUtf8 = .f.
+	TrimChars = .f.
 
 	Dimension tokens[1]
 	Hidden current
@@ -25,8 +26,10 @@ define class JSONStringify as custom
 	
 	* Stringify
 	function Stringify as memo
-		lparameters tlParseUtf8
+		lparameters tlParseUtf8, tlTrimChars
 		this.ParseUtf8 = tlParseUtf8
+		this.TrimChars = tlTrimChars
+
 		return this.value(0)
 	endfunc
 	&& ======================================================================== &&
@@ -62,8 +65,9 @@ define class JSONStringify as custom
 		lparameters tnSpaceIdent as integer
 		local lcProp as string
 		this.consume(T_STRING, "Expect right key element")
-		lcProp = this.previous.value
-		this.consume(T_COLON, "Expect ':' after key element.")
+*!*			lcProp = this.previous.value
+		lcProp = _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
+		this.consume(T_COLON, "Expect ':' after key element.")		
 		return '"' + lcProp + '": ' + this.value(tnSpaceIdent)
 	endfunc
 	&& ======================================================================== &&
@@ -73,7 +77,8 @@ define class JSONStringify as custom
 	hidden function value(tnSpaceBlock)
 		do case
 		case this.match(T_STRING)
-			return _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
+*!*				return _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
+			return _screen.JSONUtils.GetString(Iif(this.TrimChars, Alltrim(this.previous.value), this.previous.value), this.ParseUtf8)			
 
 		case this.match(T_NUMBER)
 			return this.previous.value

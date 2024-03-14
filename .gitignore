@@ -4,6 +4,7 @@ src/jsonstringify.ERR
 *.zip
 *.PJT
 *.pjx
+scanner.js
 src/arraytocursor.BAK
 JSONFoxHelper/obj/x86/Release/JSONFoxHelper.pdb
 JSONFoxHelper/obj/x86/Release/JSONFoxHelper.dll

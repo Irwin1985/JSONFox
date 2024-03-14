@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "9.16"
+	version 		= "10.1"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -12,6 +12,10 @@ define class JSONClass as session
 	* Set this property to .T. if you want the lexer uses JSONFoxHelper.dll
 	NETScanner = .f.
 	&& <<<<<<< IRODG 07/01/21
+	
+	&& >>>>>>> IRODG 02/27/24
+	JScriptScanner = .f.
+	&& <<<<<<< IRODG 02/27/24
 
 	*Function Init
 	function init
@@ -32,11 +36,14 @@ define class JSONClass as session
 		try
 			this.ResetError()
 			local lexer, parser
-			if this.NETScanner
+			do case
+			case this.NETScanner
 				lexer = createobject("NetScanner", tcJsonStr)
-			else
+			else this.JScriptScanner
+				lexer = createobject("JScriptScanner", tcJsonStr)
+			otherwise
 				lexer = createobject("Tokenizer", tcJsonStr)
-			endif
+			endcase
 			parser = createobject("Parser", lexer)
 			loJSONObj = parser.Parse()
 			
@@ -64,11 +71,14 @@ define class JSONClass as session
 		try
 			this.ResetError()
 			local lexer
-			if this.NETScanner
+			do case
+			case this.NETScanner
 				lexer = createobject("NetScanner", tcJsonStr)
-			else
+			case this.JScriptScanner
+				lexer = createobject("JScriptScanner", tcJsonStr)
+			otherwise
 				lexer = createobject("Tokenizer", tcJsonStr)
-			endif
+			endcase
 			Local laTokens
 			laTokens = lexer.scanTokens()
 			IF FILE(tcOutput)
@@ -86,7 +96,7 @@ define class JSONClass as session
 
 	* Stringify
 	function Stringify as memo
-		lparameters tvNewVal as Variant, tcFlags as string, tlParseUtf8
+		lparameters tvNewVal as Variant, tcFlags as string, tlParseUtf8 as Boolean, tlTrimChars as Boolean
 		this.ResetError()
 		local llParseUtf8, lcTypeFlag, loJSONStr as memo
 		lcTypeFlag = type('tcFlags')
@@ -110,7 +120,7 @@ define class JSONClass as session
 			local lexer, parser
 			lexer = createobject("Tokenizer", tvNewVal)
 			parser = createobject("JSONStringify", lexer)
-			loJSONStr = parser.Stringify(llParseUtf8)
+			loJSONStr = parser.Stringify(llParseUtf8, tlTrimChars)
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
@@ -174,10 +184,10 @@ define class JSONClass as session
 	&& Function Encode
 	&& <<Deprecated>> please use Stringify function instead.
 	&& ======================================================================== &&
-	function Encode(toObj as object, tcFlags as string) as memo
+	function Encode(toObj as object, tcFlags as string, tlUtf8 as Boolean, tlTrimChars as Boolean) as memo
 		local loEncode
 		loEncode = createobject("ObjectToJson")
-		return loEncode.Encode(@toObj, tcFlags)
+		return loEncode.Encode(@toObj, tcFlags, tlUtf8, tlTrimChars)
 	endfunc
 	&& ======================================================================== &&
 	&& Function decode
@@ -244,7 +254,7 @@ define class JSONClass as session
 	endfunc
 	* CursorToJSON
 	function CursorToJSON as memo
-		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean
+		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean, tlParseUTF8 as Boolean, tlTrimChars as Boolean
 		local lcJsonXML as memo, loParser, lcCursor
 		lcJsonXML = ''
 		lcCursor  = SYS(2015)
@@ -262,6 +272,12 @@ define class JSONClass as session
 			loParser = createobject("CursorToArray")
 			loParser.CurName 	 = lcCursor
 			loParser.nSessionID  = tnDataSession
+			&& IRODG 07/10/2023 Inicio
+			loParser.ParseUTF8 = tlParseUTF8
+			&& IRODG 07/10/2023 Fin
+			&& IRODG 27/10/2023 Inicio
+			loParser.TrimChars = tlTrimChars
+			&& IRODG 27/10/2023 Fin
 			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
 			this.ShowExceptionError(loEx)
@@ -272,7 +288,66 @@ define class JSONClass as session
 		endtry
 		lcOutput = iif(tlJustArray, lcJsonXML, '{"' + lower(alltrim(tcCursor)) + '":' + lcJsonXML + '}')
 		return lcOutput
-	endfunc
+	EndFunc
+
+	* CursorToJSONObject
+	function CursorToJSONObject(tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer) as object
+		local loParser, lcCursor, lnRecno, loResult as Variant
+		lcCursor = SYS(2015)
+		try
+			this.ResetError()
+			tcCursor = evl(tcCursor, alias())
+			tnDataSession = evl(tnDataSession, set("Datasession"))
+			set datasession to tnDataSession
+			if tbCurrentRow
+				lnRecno = recno(tcCursor)
+				select * from (tcCursor) where recno() = lnRecno into cursor (lcCursor)
+			else
+				select * from (tcCursor) into cursor (lcCursor)
+			endif
+			loParser = createobject("CursorToJsonObject")
+			loParser.CurName 	 = lcCursor
+			loParser.nSessionID  = tnDataSession			
+			loResult = loParser.CursorToJsonObject()
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			loParser = .null.
+			release loParser
+			use in (select(lcCursor))
+		endtry		
+		If Type('loResult', 1) == 'A'
+			Local i
+			For i = 1 to Alen(loResult, 1)
+				Dimension this.aCustomArray[i]
+				this.aCustomArray[i] = loResult[i]
+			endfor
+			return @this.aCustomArray
+		Else
+			return loResult
+		EndIf
+	EndFunc
+	
+	Function MasterDetailToJSON(tcMaster as String, tcDetail as String, tcExpr as String, tcDetailAttribute as String, tnSessionID as Integer)
+		local loClass, loResult, lcResult
+		Try
+			this.ResetError()
+			tnSessionID = evl(tnSessionID, set("Datasession"))
+			set datasession to tnSessionID
+			loClass  = createobject("CursorToJsonObject")
+			loResult = loClass.MasterDetailToJSON(tcMaster, tcDetail, tcExpr, tcDetailAttribute, tnSessionID)
+		catch to loEx
+			this.ShowExceptionError(loEx)
+		finally
+			loClass = .null.
+			release loClass
+		EndTry
+
+		*lcResult = this.stringify(@loResult)
+		lcResult = this.Encode(@loResult, "", .t.)
+		Return lcResult
+	EndFunc
+	
 	* JSONToCursor
 	function jsonToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
 		try

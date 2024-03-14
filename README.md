@@ -2,8 +2,10 @@
 
 **JSONFox** is a free **JSON / XML** ***parser*** for Visual FoxPro 9.0
 
-Si te gusta mi trabajo puedes apoyarme con un donativo:   
-[![DONATE!](http://www.pngall.com/wp-content/uploads/2016/05/PayPal-Donate-Button-PNG-File-180x100.png)](https://www.paypal.com/donate/?hosted_button_id=LXQYXFP77AD2G) 
+Formas de apoyar:
+1. Donativo en Paypal [![DONATE!](http://www.pngall.com/wp-content/uploads/2016/05/PayPal-Donate-Button-PNG-File-180x100.png)](https://www.paypal.com/donate/?hosted_button_id=LXQYXFP77AD2G)
+2. Patrocinio en [Patreon](www.patreon.com/IrwinRodriguez)
+3. Seguir este proyecto (es gratis) [Stargazer](https://github.com/Irwin1985/JSONFox/stargazers)
 
     Gracias por tu apoyo!
 
@@ -66,10 +68,13 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 ?_Screen.Json.CursorStructure('cGames')
 ```
 ## Full Documentation
-* ![](docs/meth.gif) **_Screen.Json.CursorToJSON(tcCursor As String *[, tbCurrentRow As Boolean [, tnDataSession As Integer]]*)**
+* ![](docs/meth.gif) **_Screen.Json.CursorToJSON(tcCursor As String *[, tbCurrentRow, tnDataSession, tbJustArray, tbParseUTF8, tbTrimChars]*)**
 * ![](docs/prop.gif) **tcCursor:** the name of your cursor.
 * ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
 * ![](docs/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
+* ![](docs/prop.gif) **tbJustArray:** if is set to .T. then you get just an array with the data, otherwise you'll get an object containing both the cursor name and the array data.
+* ![](docs/prop.gif) **tbParseUTF8:** if is set to .T. then all special characters will be encoded. Eg: 'é' => '\u00e9'
+* ![](docs/prop.gif) **tbTrimChars:** if is set to .T. then all right blank spaces will be trimed.
 
 <hr>
 
@@ -205,3 +210,7 @@ _Screen.Json.JSONViewer(lcStr)
 ```
 ![](docs/sample1.png)
 ![](docs/sample2.png)
+
+**SIN GARANTÍA**
+
+EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITADO A LAS GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN. EN NINGÚN CASO LOS AUTORES O TITULARES DE DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGÚN RECLAMO, DAÑO U OTRA RESPONSABILIDAD, YA SEA EN UNA ACCIÓN CONTRACTUAL, AGRAVIO O DE OTRA MANERA, QUE SURJA DE, FUERA DE O EN RELACIÓN CON EL SOFTWARE O EL USO U OTRAS NEGOCIOS EN EL SOFTWARE.

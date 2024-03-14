@@ -51,8 +51,8 @@ define class jsonutils as custom
 	&& ======================================================================== &&
 	&& Function GetValue
 	&& ======================================================================== &&
-	function getvalue as string
-		lparameters tcvalue as string, tctype as character
+	function getValue as string
+		lparameters tcvalue as string, tctype as character, tlParseUTF8 as Boolean, tlTrimChars as Boolean
 		do case
 		case tctype $ "CDTBGMQVWX"
 			do case
@@ -63,7 +63,8 @@ define class jsonutils as custom
 			Case tctype == 'X'
 				tcvalue = "null"
 			Otherwise
-				tcvalue = this.getstring(tcvalue)
+*!*					tcvalue = this.getstring(tcvalue)
+				tcValue = this.getString(Iif(tlTrimChars, Alltrim(tcValue), tcValue), tlParseUTF8)
 			endcase
 			&& IRODG 08/08/2023 Inicio
 			*tcvalue = alltrim(tcValue)
@@ -169,6 +170,10 @@ define class jsonutils as custom
 		tcString = strtran(tcString, chr(9),  '\t' )
 		tcString = strtran(tcString, chr(10), '\n' )
 		tcString = strtran(tcString, chr(13), '\r' )
+		
+		If Left(tcString, 1) == '"' and Right(tcString,1) == '"'
+			tcString = Substr(tcString, 2, Len(tcString)-2)
+		EndIf
 		tcString = strtran(tcString, '"', '\"' )
 
 		if tlParseUtf8
@@ -205,8 +210,9 @@ define class jsonutils as custom
 			tcString = StrTran(tcString,'©','\u00a9')
 			tcString = StrTran(tcString,'®','\u00ae')
 			tcString = StrTran(tcString,'ç','\u00e7')
-		endif
-
+			tcString = StrTran(tcString,'º','\u00ba')
+		EndIf
+		
 		return '"' +tcString + '"'
 	endfunc
 	&& ======================================================================== &&
