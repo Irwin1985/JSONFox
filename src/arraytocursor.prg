@@ -114,7 +114,7 @@ Define Class ArrayToCursor As Session
 	&& ======================================================================== &&
 	Hidden Function kvp
 		With this
-			Local lcProp, lxValue, lcType, lnFieldLength, lcFieldName, loPair
+			Local lcProp, lxValue, lcType, lnFieldLength, lcFieldName, lnDecimals, loPair
 
 			.consume(T_STRING, "Expect right key element")
 			lcProp = .previous.value
@@ -125,9 +125,16 @@ Define Class ArrayToCursor As Session
 			lxValue = .Value()
 			lcType  = Vartype(lxValue)
 			lnFieldLength = 0
+			lnDecimals = 0
 			Do Case
 			Case lcType == 'N'
-				lcType = Iif(Occurs('.', Transform(lxValue)) > 0, 'N', 'I')
+				lcType = Iif(Occurs('.', Transform(lxValue)) > 0 or lxValue > INTEGER_MAX_CAPACITY, 'N', 'I')
+				&& >>>>>>> IRODG 03/17/24
+				If lcType == 'N'
+					lnFieldLength = Len(Transform(lxValue))
+					lnDecimals = len(GetWordNum(Transform(lxValue),2,'.'))
+				EndIf
+				&& <<<<<<< IRODG 03/17/24
 			Case lcType == 'C'
 				If Len(lxValue) > STRING_MAX_SIZE
 					lcType = 'M'
@@ -140,7 +147,7 @@ Define Class ArrayToCursor As Session
 				Endif
 			Endcase
 			lcFieldName = Lower(_Screen.JSONUtils.CheckProp(lcProp))
-			.CheckStructure(lcFieldName, lcType, lnFieldLength)
+			.CheckStructure(lcFieldName, lcType, lnFieldLength, lnDecimals)
 
 			* Set Key-Value pair object
 			loPair = CreateObject("Empty")
@@ -218,8 +225,8 @@ Define Class ArrayToCursor As Session
 					loPair.FieldType = 'L'
 				Case loPair.FieldType == 'C'
 					lcFlags = '(' + Alltrim(Str(loPair.FieldLength)) + ')'
-				Case loPair.FieldType == 'N'
-					lcFlags = "(18,5)" && Integer part 18 and Decimal part 5
+				Case loPair.FieldType == 'N'					
+					lcFlags = "("+Alltrim(Str(loPair.FieldLength))+","+Alltrim(Str(loPair.FieldDecimals))+")" && Integer part 18 and Decimal part 5
 				EndCase
 				cQuery = cQuery + loPair.FieldType + lcFlags + " NULL"			
 			EndFor
@@ -235,9 +242,9 @@ Define Class ArrayToCursor As Session
 	* CheckStructure
 	* Adds or Updates an entry key in the oTableStruct dictionary
 	* ============================================================= *
-	Function CheckStructure(tcFieldName, tcType, tnLength)
+	Function CheckStructure(tcFieldName, tcType, tnLength, tnDecimals)
 		With this
-			Local nFieldIdx, loPair
+			Local nFieldIdx, loPair, lbUpdate
 			nFieldIdx = .oTableStruct.GetKey(tcFieldName)
 			If nFieldIdx > 0
 				loPair = .oTableStruct.Item(nFieldIdx)
@@ -256,13 +263,41 @@ Define Class ArrayToCursor As Session
 						* Remove the key and registry a new one
 						.oTableStruct.Remove(nFieldIdx)
 						.oTableStruct.Add(loPair, tcFieldName)
-					Endif
+					EndIf
+				&& >>>>>>> IRODG 03/17/24
+				case loPair.fieldType == 'N' && Check integer and decimal part length (always saves the longest)
+					If tnLength > loPair.fieldLength
+						loPair.fieldLength = tnLength
+						lbUpdate = .T.
+					EndIf
+					If tnDecimals > loPair.fieldDecimals
+						loPair.fieldDecimals = tnDecimals
+						lbUpdate = .T.
+					EndIf
+					If lbUpdate
+						* Remove the key and registry a new one
+						.oTableStruct.Remove(nFieldIdx)
+						.oTableStruct.Add(loPair, tcFieldName)
+					EndIf
+				Case loPair.fieldType == 'I' and tcType == 'N' && Check string length (always saves the longest)
+					loPair.fieldType = tcType
+					If tnLength > loPair.fieldLength
+						loPair.fieldLength = tnLength
+					EndIf
+					If tnDecimals > loPair.fieldDecimals
+						loPair.fieldDecimals = tnDecimals
+					EndIf
+					* Remove the key and registry a new one
+					.oTableStruct.Remove(nFieldIdx)
+					.oTableStruct.Add(loPair, tcFieldName)
+				&& <<<<<<< IRODG 03/17/24
 				EndCase
 			Else
 				* Insert new field.
 				loPair = CreateObject('Empty')
 				AddProperty(loPair, 'fieldType', tcType)
 				AddProperty(loPair, 'fieldLength', tnLength)
+				AddProperty(loPair, 'fieldDecimals', tnDecimals)
 				.oTableStruct.Add(loPair, tcFieldName)
 			EndIf
 		EndWith
