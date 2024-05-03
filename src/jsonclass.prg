@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "10.2"
+	version 		= "10.3"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -39,7 +39,8 @@ define class JSONClass as session
 			do case
 			case this.NETScanner
 				lexer = createobject("NetScanner", tcJsonStr)
-			else this.JScriptScanner
+		*	else this.JScriptScanner
+			case this.JScriptScanner && (DCA) - 03/05/2024 - Se estaba usando un else en lugar de un case
 				lexer = createobject("JScriptScanner", tcJsonStr)
 			otherwise
 				lexer = createobject("Tokenizer", tcJsonStr)
