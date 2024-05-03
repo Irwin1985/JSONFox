@@ -24,3 +24,4 @@
 #Define LF	Chr(10)
 #Define CRLF	CR + LF
 #Define T_TAB	Chr(9)
+#Define INTEGER_MAX_CAPACITY	2147483647

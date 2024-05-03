@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "10.1"
+	version 		= "10.2"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -350,7 +350,7 @@ define class JSONClass as session
 	
 	* JSONToCursor
 	function jsonToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
-		try
+		Try
 			local lexer, parser
 			this.ResetError()
 			if !empty(tcCursor)
