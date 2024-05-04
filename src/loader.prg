@@ -4,6 +4,7 @@
 Set Procedure To "src\JSONClass" 		Additive
 Set Procedure To "src\Tokenizer" 		Additive
 Set Procedure To "src\NetScanner" 		Additive
+Set Procedure To "src\jscriptscanner"	Additive 
 Set Procedure To "src\Parser" 			Additive
 Set Procedure To "src\JSONUtils" 		Additive
 Set Procedure To "src\ArrayToCursor" 	Additive
