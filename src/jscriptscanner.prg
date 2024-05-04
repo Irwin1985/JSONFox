@@ -78,8 +78,10 @@ define class JScriptScanner as custom
 			*this.oScript.AddCode(strconv(filetostr('F:\Desarrollo\GitHub\JSONFox\scanner.js'),11))
 			local lcScript
 			lcScript = this.loadScript()
-			_cliptext = lcScript
-			messagebox(lcScript)
+		
+		*	_cliptext = lcScript
+		*	messagebox(lcScript)
+		
 			this.oScript.AddCode(lcScript)
 			this.oScript.AddObject("oScanner", this)
 			this.oScript.Run("ScanTokens", this.source)			
