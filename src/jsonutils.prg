@@ -170,8 +170,7 @@ define class jsonutils as custom
 		tcString = strtran(tcString, chr(9),  '\t' )
 		tcString = strtran(tcString, chr(10), '\n' )
 		tcString = strtran(tcString, chr(13), '\r' )
-		
-		If Left(tcString, 1) == '"' and Right(tcString,1) == '"'
+		If Left(Alltrim(tcString), 1) == '"' and Right(Alltrim(tcString),1) == '"'
 			tcString = Substr(tcString, 2, Len(tcString)-2)
 		EndIf
 		tcString = strtran(tcString, '"', '\"' )
@@ -212,8 +211,10 @@ define class jsonutils as custom
 			tcString = StrTran(tcString,'ç','\u00e7')
 			tcString = StrTran(tcString,'º','\u00ba')
 		EndIf
-		
-		return '"' +tcString + '"'
+		If Left(Alltrim(tcString), 1) != '"' and Right(Alltrim(tcString),1) != '"'
+			return '"'+tcString+'"'
+		EndIf
+		Return tcString
 	endfunc
 	&& ======================================================================== &&
 	&& Function CheckProp

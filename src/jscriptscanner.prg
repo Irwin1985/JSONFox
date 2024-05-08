@@ -38,7 +38,6 @@ define class JScriptScanner as custom
 	endfunc
 	
 	procedure increaseNewLine
-		set step on
 		this.line = this.line + 1
 	endproc
 		

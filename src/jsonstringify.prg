@@ -68,7 +68,8 @@ define class JSONStringify as custom
 *!*			lcProp = this.previous.value
 		lcProp = _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
 		this.consume(T_COLON, "Expect ':' after key element.")		
-		return '"' + lcProp + '": ' + this.value(tnSpaceIdent)
+		*return '"' + lcProp + '": ' + this.value(tnSpaceIdent)
+		return lcProp + ': ' + this.value(tnSpaceIdent)
 	endfunc
 	&& ======================================================================== &&
 	&& Function Value

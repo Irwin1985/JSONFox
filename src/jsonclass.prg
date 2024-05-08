@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "10.2"
+	version 		= "10.3"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -115,7 +115,6 @@ define class JSONClass as session
 				release objToJson
 			endtry
 		endif
-
 		try
 			local lexer, parser
 			lexer = createobject("Tokenizer", tvNewVal)
