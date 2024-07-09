@@ -39,7 +39,7 @@ define class JSONClass as session
 			do case
 			case this.NETScanner
 				lexer = createobject("NetScanner", tcJsonStr)
-			else this.JScriptScanner
+			case this.JScriptScanner
 				lexer = createobject("JScriptScanner", tcJsonStr)
 			otherwise
 				lexer = createobject("Tokenizer", tcJsonStr)
