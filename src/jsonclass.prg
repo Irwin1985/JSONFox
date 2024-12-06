@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "10.3"
+	version 		= "10.4"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -238,9 +238,11 @@ define class JSONClass as session
 		try
 			this.ResetError()
 			=xmltocursor(tcXML, 'qXML')
-			loParser = createobject("CursorToArray")
-			loParser.CurName 	 = "qXML"
+			loParser = createobject("CursorToArray")			
+			loParser.CurName 	= "qXML"
 			loParser.nSessionID = set("Datasession")
+			loParser.ParseUTF8  = .T.
+			loParser.TrimChars  = .T.
 			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
 			this.ShowExceptionError(loEx)
