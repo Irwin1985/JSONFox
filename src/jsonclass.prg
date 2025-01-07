@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "10.4"
+	version 		= "10.5"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -345,7 +345,7 @@ define class JSONClass as session
 		EndTry
 
 		*lcResult = this.stringify(@loResult)
-		lcResult = this.Encode(@loResult, "", .t.)
+		lcResult = this.Encode(@loResult, "", .T., .T.)
 		Return lcResult
 	EndFunc
 	

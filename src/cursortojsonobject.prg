@@ -32,11 +32,16 @@ define class CursorToJsonObject as session
 		if !empty(tnSessionID)
 			set datasession to tnSessionID
 		ENDIF
-
-		Local laArray, loRow, lnRecno, lbContinue, laDetail, lcMacro, lcCursor,i
+				
+		Local laArray, loRow, lnRecno, lbContinue, laDetail, lcMacro, lcCursor,i, lcDetailFields, lcMacro
 		laArray = createobject("TParserInternalArray")
 		** Set Detail cursor		
 		this.nSessionID = tnSessionID
+		lcDetailFields = "*"
+		If At("<", tcDetail) > 0
+			lcDetailFields = Alltrim(strextract(tcDetail,"<",">"))
+			tcDetail = Alltrim(GetWordNum(tcDetail,1,"<"))			
+		EndIf
 		
 		select (tcMaster)
 		lnRecno = Recno()
@@ -48,7 +53,8 @@ define class CursorToJsonObject as session
 			* Filter detail
 			lcCursor = Sys(2015)
 			try
-				Select * from (tcDetail) where &tcExpr into cursor (lcCursor)
+				lcMacro = "Select " + lcDetailFields + " from " + tcDetail + " where " + tcExpr + " into cursor " + lcCursor
+				&lcMacro
 				lbContinue = Used(lcCursor)
 			Catch
 				lbContinue = .f.
