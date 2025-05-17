@@ -189,18 +189,56 @@ define class Tokenizer as custom
 	endfunc
 
 
-	Procedure escapeCharacters(tcLexeme)
-		* Convert all escape sequences
-		tcLexeme = Strtran(tcLexeme, '\\', '\')
-		tcLexeme = Strtran(tcLexeme, '\/', '/')
-		tcLexeme = Strtran(tcLexeme, '\n', Chr(10))
-		tcLexeme = Strtran(tcLexeme, '\r', Chr(13))
-		tcLexeme = Strtran(tcLexeme, '\t', Chr(9))
-		tcLexeme = Strtran(tcLexeme, '\"', '"')
-		tcLexeme = Strtran(tcLexeme, "\'", "'")
-	EndProc
+*!*		Procedure escapeCharacters(tcLexeme)
+*!*			* Convert all escape sequences
+*!*			tcLexeme = Strtran(tcLexeme, '\\', '\')
+*!*			tcLexeme = Strtran(tcLexeme, '\/', '/')
+*!*			tcLexeme = Strtran(tcLexeme, '\n', Chr(10))
+*!*			tcLexeme = Strtran(tcLexeme, '\r', Chr(13))
+*!*			tcLexeme = Strtran(tcLexeme, '\t', Chr(9))
+*!*			tcLexeme = Strtran(tcLexeme, '\"', '"')
+*!*			tcLexeme = Strtran(tcLexeme, "\'", "'")
+*!*		EndProc
+
+	procedure escapeCharacters(tcLexeme)
+		local lcResult, i, lcChar, lcNextChar
+		lcResult = ""
+		i = 1
 		
-	procedure checkUnicodeFormat(tcLexeme)		
+		do while i <= len(tcLexeme)
+			lcChar = substr(tcLexeme, i, 1)
+			if lcChar == "\" and i < len(tcLexeme)
+				lcNextChar = substr(tcLexeme, i + 1, 1)
+				do case
+				case lcNextChar == "\"
+					lcResult = lcResult + "\"
+				case lcNextChar == "/"
+					lcResult = lcResult + "/"
+				case lcNextChar == "n"
+					lcResult = lcResult + chr(10)
+				case lcNextChar == "r"
+					lcResult = lcResult + chr(13)
+				case lcNextChar == "t"
+					lcResult = lcResult + chr(9)
+				case lcNextChar == '"'
+					lcResult = lcResult + '"'					
+				case lcNextChar == "'"
+					lcResult = lcResult + "'"
+				otherwise
+					* Si no es una secuencia de escape conocida, mantener ambos caracteres
+					lcResult = lcResult + "\" + lcNextChar					
+				endcase
+				i = i + 2 && Avanzar 2 caracteres
+			else
+				lcResult = lcResult + lcChar
+				i = i + 1 && avanzar un carácter
+			endif
+		enddo
+		
+		tcLexeme = lcResult
+	endproc
+		
+	procedure checkUnicodeFormat(tcLexeme)
 		* Look for unicode format
 		** This conversion is better (in performance) than Regular Expressions.
 		&& IRODG 09/10/2023 Inicio

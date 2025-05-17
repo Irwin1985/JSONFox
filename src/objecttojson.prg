@@ -33,6 +33,11 @@ define class ObjectToJSON as session
 			return this.AnyToJson(toRefObj)
 		endif
 	endfunc
+	
+	function EncodeFromSchema(toRefObj, tcSchema, tlParseUTF8, tlTrimChars)
+		
+	endfunc
+	
 	* AnyToJson
 	function AnyToJson as memo
 		lparameters tValue as Variant
