@@ -8,6 +8,7 @@ define class ObjectToJSON as session
 	cFlags 	 = ''
 	parseUTF8 = .f.
 	TrimChars = .f.
+	
 	* Function Init
 	function init
 		this.lCentury = set("Century") == "OFF"
@@ -16,6 +17,7 @@ define class ObjectToJSON as session
 		set date ansi
 		mvcount = 60000
 	endfunc
+	
 	* Encode
 	function Encode(toRefObj, tcFlags, tlParseUTF8, tlTrimChars)
 		lPassByRef = .t.
@@ -46,7 +48,6 @@ define class ObjectToJSON as session
 		catch
 		endtry
 		do case
-		*case type("Alen(tValue, 1)") = "N"
 		case type("tValue", 1) = 'A'
 			local k, j, lcArray
 			if alen(tValue, 2) == 0
@@ -56,9 +57,8 @@ define class ObjectToJSON as session
 					lcArray = lcArray + iif(len(lcArray) > 1, ',', '')
 					try
 						local array laLista[1]
-						*local array aLista(alen(tValue[k]))
 						=acopy(tValue[k], laLista)
-						lcArray = lcArray + this.AnyToJson(@aLista)
+						lcArray = lcArray + this.AnyToJson(@laLista)
 					catch
 						lcArray = lcArray + this.AnyToJson(tValue[k])
 					endtry
@@ -79,7 +79,7 @@ define class ObjectToJSON as session
 						try
 							local array laLista[1]
 							=acopy(tValue[k, j], laLista)
-							lcArray = lcArray + this.AnyToJson(@aLista)
+							lcArray = lcArray + this.AnyToJson(@laLista)
 						catch
 							lcArray = lcArray + this.AnyToJson(tValue[k, j])
 						endtry
@@ -92,26 +92,63 @@ define class ObjectToJSON as session
 			return lcArray
 
 		case vartype(tValue) = 'O'
-			local j, lcJSONStr, lnTot, i
+			local j, lcJSONStr, lnTot, i, lcProp, lcOriginalName
 			local array gaMembers(1)
 
 			lcJSONStr = '{'
 			lnTot = amembers(gaMembers, tValue, 0, this.cFlags)
+			
+			local array laPropsToProcess[1]
+			local lnPropCount, lnIdx
+			lnPropCount = 0
+			
+			* primer paso: identificar y clasificar las propiedades
 			for j=1 to lnTot
 				lcProp = lower(alltrim(gaMembers[j]))
-				lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcProp + '":'
-				try
-					*local array aCopia(alen(tValue. &gaMembers[j]))
-					local array laLista[1]
-					=acopy(tValue. &gaMembers[j], laLista)
-					lcJSONStr = lcJSONStr + this.AnyToJson(@laLista)
-				catch
-					try
-						lcJSONStr = lcJSONStr + this.AnyToJson(tValue. &gaMembers[j])
-					catch
-						lcJSONStr = lcJSONStr + "{}"
-					endtry
-				endtry
+				* Ignoramos propiedades especiales de array
+				if left(lower(lcProp), 14) == "_specialarray_"
+					loop
+				endif
+
+				lnPropCount = lnPropCount + 1
+				dimension laPropsToProcess[lnPropCount,2]
+				laPropsToProcess[lnPropCount, 1] = lcProp
+				if right(lcProp, 6) == "_array" and type("tValue._specialArray_" + lcProp) == "C"					
+					laPropsToProcess[lnPropCount, 2] = "special_array"
+				else					
+					laPropsToProcess[lnPropCount, 2] = "normal"					
+				endif
+			next
+			
+			* segundo paso: procesar las propiedades filtradas
+			for lnIdx=1 to lnPropCount
+				lcProp = laPropsToProcess[lnIdx, 1]								
+				
+				if laPropsToProcess[lnIdx, 2] == "special_array"
+					lcOriginalName = evaluate("tValue._specialArray_" + lcProp)
+					lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcOriginalName + '":'
+	                try
+	                    local array laLista[1]
+	                    =acopy(tValue. &lcProp, laLista)
+	                    lcJSONStr = lcJSONStr + this.AnyToJson(@laLista)
+	                catch
+	                    lcJSONStr = lcJSONStr + "[]"
+	                endtry
+				else
+	                * Es una propiedad normal
+	                lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcProp + '":'
+	                try
+	                    local array laLista[1]
+	                    =acopy(tValue. &lcProp, laLista)
+	                    lcJSONStr = lcJSONStr + this.AnyToJson(@laLista)
+	                catch
+	                    try
+	                        lcJSONStr = lcJSONStr + this.AnyToJson(tValue. &lcProp)
+	                    catch
+	                        lcJSONStr = lcJSONStr + "{}"
+	                    endtry
+	                endtry
+				endif				
 			endfor
 
 			*//> Collection based class object support

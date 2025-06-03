@@ -12,12 +12,17 @@ define class Parser as custom
 	Hidden current
 	Hidden previous
 	Hidden peek
+	hidden problematicFields
 	
 	function init(toScanner)
 		Local laTokens
 		laTokens = toScanner.scanTokens()
 		=Acopy(laTokens, this.tokens)
 		this.current = 1
+		
+		this.problematicFields = createobject("Collection")
+		this.problematicFields.Add("messages", "messages")
+		this.problematicFields.Add("update", "update")
 	endfunc
 
 	function Parse	
@@ -69,12 +74,25 @@ define class Parser as custom
 	Hidden function addKeyValuePair(toObject, toPair)
 		If Type('toPair.value', 1) != 'A'
 			=AddProperty(toObject, toPair.key, toPair.value)
-		Else
-			Local lcMacro
-			lcMacro = "AddProperty(toObject, '" + toPair.key + "[1]', .Null.)"
-			&lcMacro
-			lcMacro = "Acopy(toPair.value, toObject." + toPair.key + ")"
-			&lcMacro
+		else
+			local lcMacro
+			if this.problematicFields.GetKey(toPair.key) > 0
+				local lcArrayName		
+				lcArrayName = toPair.key + "_array"				
+				lcMacro = "AddProperty(toObject, '" + lcArrayName + "[1]', .null.)"
+				&lcMacro
+				
+				lcMacro = "Acopy(toPair.value, toObject." + lcArrayName + ")"
+				&lcMacro
+				
+				=addproperty(toObject, "_specialArray_" + lcArrayName, toPair.key)
+			else
+				Local lcMacro
+				lcMacro = "AddProperty(toObject, '" + toPair.key + "[1]', .Null.)"
+				&lcMacro
+				lcMacro = "Acopy(toPair.value, toObject." + toPair.key + ")"
+				&lcMacro
+			endif
 		EndIf
 	EndFunc
 		
