@@ -70,7 +70,7 @@ define class jsonutils as custom
 			*tcvalue = alltrim(tcValue)
 			&& IRODG 08/08/2023 Fin
 		case tctype $ "YFIN"
-			tcvalue = strtran(transform(tcvalue), ',', '.')
+			tcvalue = strtran(alltrim(transform(tcvalue,"@T")), ',', '.')
 		case tctype == 'L'
 			tcvalue = iif(tcvalue, "true", "false")
 		endcase

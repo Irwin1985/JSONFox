@@ -90,7 +90,7 @@ define class CursorToArray as session
 							&& IRODG 27/10/2023 Fin
 							&& IRODG 08/08/2023 Fin
 						case aColumns[i, 2] $ "YFIN"
-							lcOutput = lcOutput + transform(lcValue)
+							lcOutput = lcOutput + alltrim(transform(lcValue,"@T"))
 						case aColumns[i, 2] = "L"
 							lcOutput = lcOutput + iif(lcValue, "true", "false")
 						endcase

@@ -128,11 +128,11 @@ Define Class ArrayToCursor As Session
 			lnDecimals = 0
 			Do Case
 			Case lcType == 'N'
-				lcType = Iif(Occurs('.', Transform(lxValue)) > 0 or lxValue > INTEGER_MAX_CAPACITY, 'N', 'I')
+				lcType = Iif(Occurs('.', alltrim(Transform(lxValue,"@T"))) > 0 or lxValue > INTEGER_MAX_CAPACITY, 'N', 'I')
 				&& >>>>>>> IRODG 03/17/24
 				If lcType == 'N'
-					lnFieldLength = Len(Transform(lxValue))
-					lnDecimals = len(GetWordNum(Transform(lxValue),2,'.'))
+					lnFieldLength = Len(alltrim(Transform(lxValue,"@T")))
+					lnDecimals = len(GetWordNum(alltrim(Transform(lxValue,"@T")),2,'.'))
 				EndIf
 				&& <<<<<<< IRODG 03/17/24
 			Case lcType == 'C'
