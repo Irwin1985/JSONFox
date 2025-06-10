@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "11.1"
+	version 		= "12.0"
 	hidden lInternal
 	hidden lTablePrompt
 	Dimension aCustomArray[1]
@@ -45,9 +45,15 @@ define class JSONClass as session
 				lexer = createobject("Tokenizer", tcJsonStr)
 			endcase
 			parser = createobject("Parser", lexer)
-			loJSONObj = parser.Parse()
-			
+			loJSONObj = parser.Parse()			
 		catch to loEx
+			if type('lexer') == 'O'
+				lexer.CleanUp()
+			endif
+			
+			if type('parser') == 'O'
+				parser.CleanUp()
+			endif
 			this.ShowExceptionError(loEx)
 		finally
 			store .null. to lexer, parser
@@ -70,27 +76,31 @@ define class JSONClass as session
 		lparameters tcJsonStr as memo, tcOutput as string
 		try
 			this.ResetError()
-			local lexer
+			local lexer, nativeScanner
 			do case
 			case this.NETScanner
 				lexer = createobject("NetScanner", tcJsonStr)
 			case this.JScriptScanner
 				lexer = createobject("JScriptScanner", tcJsonStr)
 			otherwise
+				nativeScanner = .t.
 				lexer = createobject("Tokenizer", tcJsonStr)
 			endcase
-			Local laTokens
-			laTokens = lexer.scanTokens()
+			Local laTokenCollection
+			laTokenCollection = lexer.scanTokens()
 			IF FILE(tcOutput)
 				DELETE FILE (tcOutput)
 			ENDIF
-			FOR EACH loToken IN laTokens
+			FOR EACH loToken IN laTokenCollection.Tokens
 				STRTOFILE(tokenStr(loToken), tcOutput, 1)
 			ENDFOR
 		catch to loEx
+			if type('lexer') == 'O' and nativeScanner
+				lexer.CleanUp()
+			endif			
 			this.ShowExceptionError(loEx)
 		finally
-			release lexer, laTokens
+			release lexer, laTokenCollection
 		ENDTRY
 	ENDFUNC
 
@@ -121,6 +131,13 @@ define class JSONClass as session
 			parser = createobject("JSONStringify", lexer)
 			loJSONStr = parser.Stringify(llParseUtf8, tlTrimChars)
 		catch to loEx
+			if type('lexer') == 'O'
+				lexer.CleanUp()
+			endif
+			
+			if type('parser') == 'O'
+				parser.CleanUp()
+			endif
 			this.ShowExceptionError(loEx)
 		finally
 			store .null. to lexer, parser
@@ -158,6 +175,13 @@ define class JSONClass as session
 			this.lError = parser.lError
 			this.LastErrorText = parser.cErrorMsg
 		catch to loEx
+			if type('lexer') == 'O'
+				lexer.CleanUp()
+			endif
+			
+			if type('parser') == 'O'
+				parser.CleanUp()
+			endif
 			this.ShowExceptionError(loEx)
 			this.lError = .t.
 			this.LastErrorText = loEx.message
@@ -367,6 +391,13 @@ define class JSONClass as session
 				endif
 			endif
 		catch to loEx
+			if type('lexer') == 'O'
+				lexer.CleanUp()
+			endif
+			
+			if type('parser') == 'O'
+				parser.CleanUp()
+			endif
 			this.ShowExceptionError(loEx)
 		finally
 			store .null. to lexer, parser
@@ -398,14 +429,17 @@ define class JSONClass as session
 		lparameters tcJsonStr as memo
 		try
 			this.ResetError()
-			local loLexer, laTokens, lcTokens as memo, i
+			local loLexer, laTokenCollection, lcTokens as memo, i
 			loLexer = createobject("Tokenizer", tcJsonStr)
-			laTokens = loLexer.scanTokens()
+			laTokenCollection = loLexer.scanTokens()
 			lcTokens = ''
-			For i = 1 to Alen(laTokens)
-				lcTokens = lcTokens + loLexer.tokenStr(laTokens[i]) + CHR(13) + CHR(10)
+			For i = 1 to Alen(laTokenCollection.Tokens)
+				lcTokens = lcTokens + loLexer.tokenStr(laTokenCollection.Tokens[i]) + CHR(13) + CHR(10)
 			endfor
 		catch to loEx
+			if type('lexer') == 'O'
+				lexer.CleanUp()
+			endif			
 			this.ShowExceptionError(loEx)
 		finally
 			store .null. to lexer, parser

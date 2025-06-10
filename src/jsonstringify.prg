@@ -12,25 +12,27 @@ define class JSONStringify as custom
 	ParseUtf8 = .f.
 	TrimChars = .f.
 
-	Dimension tokens[1]
 	Hidden current
 	Hidden previous
 	Hidden peek
+	hidden tokenCollection
 	
 	function init(toScanner)
-		Local laTokens
-		laTokens = toScanner.scanTokens()
-		=Acopy(laTokens, this.tokens)		
+		this.tokenCollection = toScanner.scanTokens()
 		this.current = 1
 	endfunc
 	
 	* Stringify
 	function Stringify as memo
 		lparameters tlParseUtf8, tlTrimChars
+		local lcFormatedJson
 		this.ParseUtf8 = tlParseUtf8
 		this.TrimChars = tlTrimChars
-
-		return this.value(0)
+		
+		lcFormatedJson = this.value(0)
+		this.CleanUp()
+		
+		return lcFormatedJson
 	endfunc
 	&& ======================================================================== &&
 	&& Function Object
@@ -65,7 +67,6 @@ define class JSONStringify as custom
 		lparameters tnSpaceIdent as integer
 		local lcProp as string
 		this.consume(T_STRING, "Expect right key element")
-*!*			lcProp = this.previous.value
 		lcProp = _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
 		this.consume(T_COLON, "Expect ':' after key element.")		
 		*return '"' + lcProp + '": ' + this.value(tnSpaceIdent)
@@ -78,7 +79,6 @@ define class JSONStringify as custom
 	hidden function value(tnSpaceBlock)
 		do case
 		case this.match(T_STRING)
-*!*				return _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
 			return _screen.JSONUtils.GetString(Iif(this.TrimChars, Alltrim(this.previous.value), this.previous.value), this.ParseUtf8)			
 
 		case this.match(T_NUMBER)
@@ -162,7 +162,7 @@ define class JSONStringify as custom
 		If !this.isAtEnd()
 			this.current = this.current + 1
 		EndIf
-		Return this.tokens[this.current-1]
+		Return this.tokenCollection.tokens[this.current-1]
 	endfunc
 
 	Hidden Function isAtEnd
@@ -170,11 +170,20 @@ define class JSONStringify as custom
 	endfunc
 
 	Hidden Function peek_access
-		Return this.tokens[this.current]
+		Return this.tokenCollection.tokens[this.current]
 	endfunc
 
 	Hidden Function previous_access
-		Return this.tokens[this.current-1]
+		Return this.tokenCollection.tokens[this.current-1]
 	EndFunc
 	
+	function CleanUp
+		with this
+			.TokenCollection = .null.
+			
+			.current = 0
+			.previous = .null.
+			.peek = 0
+		endwith
+	endfunc
 enddefine

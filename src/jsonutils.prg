@@ -63,12 +63,8 @@ define class jsonutils as custom
 			Case tctype == 'X'
 				tcvalue = "null"
 			Otherwise
-*!*					tcvalue = this.getstring(tcvalue)
 				tcValue = this.getString(Iif(tlTrimChars, Alltrim(tcValue), tcValue), tlParseUTF8)
 			endcase
-			&& IRODG 08/08/2023 Inicio
-			*tcvalue = alltrim(tcValue)
-			&& IRODG 08/08/2023 Fin
 		case tctype $ "YFIN"
 			tcvalue = strtran(alltrim(transform(tcvalue,"@T")), ',', '.')
 		case tctype == 'L'
@@ -76,6 +72,7 @@ define class jsonutils as custom
 		endcase
 		return tcvalue
 	endfunc
+	
 	&& ======================================================================== &&
 	&& Function CheckString
 	&& Check the string content in case it is a date or datetime.

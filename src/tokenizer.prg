@@ -1,98 +1,93 @@
 #include "JSONFox.h"
 * Tokenizer
 define class Tokenizer as custom
-	Hidden source	
-	Hidden start
-	Hidden current
-	Hidden letters
-	Hidden hexLetters
+	hidden source
+	hidden start
+	hidden current
+	hidden letters
+	hidden hexLetters
 	hidden line
-	
-	Hidden capacity
-	Hidden length
-	
-	Dimension tokens[1]
+
+	hidden capacity
+	hidden length
+
+	dimension tokens[1]
 	sourceLen = 0
-	
+
 	function init(tcSource)
-		With this
+		with this
 			.length = 1
 			.capacity = 0
-			&& IRODG 11/08/2023 Inicio
-			* We remove possible invalid characters from the input source.
-			tcSource = STRTRAN(tcSource, CHR(0))
-			tcSource = STRTRAN(tcSource, CHR(10))
-			tcSource = STRTRAN(tcSource, CHR(13))
-			&& IRODG 11/08/2023 Fin
+&& IRODG 11/08/2023 Inicio
+* We remove possible invalid characters from the input source.
+			tcSource = strtran(tcSource, chr(0))
+			tcSource = strtran(tcSource, chr(10))
+			tcSource = strtran(tcSource, chr(13))
+&& IRODG 11/08/2023 Fin
 			.source = tcSource
 			.start = 0
 			.current = 1
 			.letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
-			.hexLetters = 'abcdefABCDEF'	
+			.hexLetters = 'abcdefABCDEF'
 			.line = 1
-			.sourceLen = Len(tcSource)
+			.sourceLen = len(tcSource)
 		endwith
 	endfunc
 
-	Hidden function advance
-		With this
+	hidden function advance
+		with this
 			.current = .current + 1
-			Return substr(.source, .current-1, 1)
+			return substr(.source, .current-1, 1)
 		endwith
 	endfunc
 
-	Hidden function peek
-		With this
-			If .isAtEnd()
-				Return 'ÿ'
-			EndIf
+	hidden function peek
+		with this
+			if .isAtEnd()
+				return 'ÿ'
+			endif
 			return substr(.source, .current, 1)
 		endwith
-	EndFunc
-	
-	Hidden function peekNext
-		With this
-			If (.current + 1) > .sourceLen
-				Return 'ÿ'
-			EndIf
+	endfunc
+
+	hidden function peekNext
+		with this
+			if (.current + 1) > .sourceLen
+				return 'ÿ'
+			endif
 			return substr(.source, .current+1, 1)
-		endwith
-	endfunc	
-	
-	Hidden Function skipWhitespace
-		With this
-			LOCAL ch
-			Do while InList(.peek(), Chr(9), Chr(10), Chr(13), Chr(32))
-				ch = .advance()
-				If ch == Chr(10)
-					.line = .line + 1
-				endif
-			EndDo
 		endwith
 	endfunc
 
-	Hidden function identifier
-		With this
-			Local lexeme
-			do while At(.peek(), .letters) > 0
+	hidden function skipWhitespace
+		with this
+			local ch
+			do while inlist(.peek(), chr(9), chr(10), chr(13), chr(32))
+				ch = .advance()
+				if ch == chr(10)
+					.line = .line + 1
+				endif
+			enddo
+		endwith
+	endfunc
+
+	hidden function identifier
+		with this
+			local lexeme
+			do while at(.peek(), .letters) > 0
 				.advance()
-			EndDo
-			lexeme = Substr(.source, .start, .current-.start)
-*!*				If .current == Len(.source)
-*!*					lexeme = Substr(.source, .start, (.current+1)-.start)
-*!*				Else
-*!*					lexeme = Substr(.source, .start, .current-.start)
-*!*				endif
+			enddo
+			lexeme = substr(.source, .start, .current-.start)
 			if inlist(lexeme, "true", "false", "null")
 				return .addToken(iif(lexeme == 'null', T_NULL, T_BOOLEAN), lexeme)
 			else
 				.showError(.line, "Lexer Error: Unexpected identifier '" + lexeme + "'")
-			EndIf
-		EndWith
+			endif
+		endwith
 	endfunc
 
-	Hidden function number
-		With this
+	hidden function number
+		with this
 			local lexeme, isNegative
 			lexeme = ''
 			isNegative = (.peek() == '-')
@@ -111,48 +106,48 @@ define class Tokenizer as custom
 				enddo
 			endif
 
-			&& Check if number is a Scientific Notation in Tokenizer.Number()
-			IF Lower(.peek() + .peekNext()) == "e+" 
-			  .advance()
-			  .advance()
-			  do while isdigit(.peek())
-				  .advance()
-			  enddo	
+&& Check if number is a Scientific Notation in Tokenizer.Number()
+			if lower(.peek() + .peekNext()) == "e+"
+				.advance()
+				.advance()
+				do while isdigit(.peek())
+					.advance()
+				enddo
 			endif
-			*****************************************************************			
-			
-			lexeme = Substr(.source, .start, .current-.start)
+*****************************************************************
+
+			lexeme = substr(.source, .start, .current-.start)
 			return .addToken(T_NUMBER, lexeme)
 		endwith
 	endfunc
 
-	Hidden function string
-		With this
-			Local lexeme, ch
-			do while !.isAtEnd()			
+	hidden function string
+		with this
+			local lexeme, ch
+			do while !.isAtEnd()
 				ch = .peek()
-				Do case
-				case ch == '\' and InList(.peekNext(), '\', '/', 'n', 'r', 't', '"', "'")
+				do case
+				case ch == '\' and inlist(.peekNext(), '\', '/', 'n', 'r', 't', '"', "'")
 					.advance()
-				Case ch = '"'
+				case ch = '"'
 					.advance()
-					Exit
-				Case ch == ',' and InList(.peekNext(), '"', "'") and Type('This._anyType_') == 'C' and Alltrim(this._anyType_) == 'anyType'
+					exit
+				case ch == ',' and inlist(.peekNext(), '"', "'") and type('This._anyType_') == 'C' and alltrim(this._anyType_) == 'anyType'
 					.advance()
-					Exit
+					exit
 				endcase
 				.advance()
-			EndDo
-			
-			lexeme = Substr(.source, .start+1, .current-.start-2)
+			enddo
+
+			lexeme = substr(.source, .start+1, .current-.start-2)
 			.escapeCharacters(@lexeme)
-			.checkUnicodeFormat(@lexeme)			
+			.checkUnicodeFormat(@lexeme)
 			return .addToken(T_STRING, lexeme)
 		endwith
-	EndFunc
+	endfunc
 
-	Hidden function currency
-		With this
+	hidden function currency
+		with this
 			local lexeme, isNegative
 			lexeme = ''
 			isNegative = (.peek() == '-')
@@ -162,97 +157,94 @@ define class Tokenizer as custom
 
 			do while isdigit(.peek())
 				.advance()
-			EndDo
+			enddo
 
-			* Loop while there is a comma ','
-			Do while .t.				
-				If .peek() == ',' and IsDigit(.peekNext())
+* Loop while there is a comma ','
+			do while .t.
+				if .peek() == ',' and isdigit(.peekNext())
 					.advance() && eat the comma ','
 					do while isdigit(.peek())
 						.advance()
-					EndDo
-				Else
+					enddo
+				else
 					exit
-				EndIf
-			enddo		
+				endif
+			enddo
 
-			* Check for decimal part
+* Check for decimal part
 			if .peek() == '.' and isdigit(.peekNext())
 				.advance() && eat the dot '.'
 				do while isdigit(.peek())
 					.advance()
 				enddo
-			EndIf
-			lexeme = Substr(.source, .start+1, .current-.start)
-			return .addToken(T_NUMBER, Strtran(lexeme, ','))
+			endif
+			lexeme = substr(.source, .start+1, .current-.start)
+			return .addToken(T_NUMBER, strtran(lexeme, ','))
 		endwith
 	endfunc
 
-
-*!*		Procedure escapeCharacters(tcLexeme)
-*!*			* Convert all escape sequences
-*!*			tcLexeme = Strtran(tcLexeme, '\\', '\')
-*!*			tcLexeme = Strtran(tcLexeme, '\/', '/')
-*!*			tcLexeme = Strtran(tcLexeme, '\n', Chr(10))
-*!*			tcLexeme = Strtran(tcLexeme, '\r', Chr(13))
-*!*			tcLexeme = Strtran(tcLexeme, '\t', Chr(9))
-*!*			tcLexeme = Strtran(tcLexeme, '\"', '"')
-*!*			tcLexeme = Strtran(tcLexeme, "\'", "'")
-*!*		EndProc
-
 	procedure escapeCharacters(tcLexeme)
-		local lcResult, i, lcChar, lcNextChar
-		lcResult = ""
-		i = 1
-		
-		do while i <= len(tcLexeme)
-			lcChar = substr(tcLexeme, i, 1)
-			if lcChar == "\" and i < len(tcLexeme)
-				lcNextChar = substr(tcLexeme, i + 1, 1)
-				do case
-				case lcNextChar == "\"
-					lcResult = lcResult + "\"
-				case lcNextChar == "/"
-					lcResult = lcResult + "/"
-				case lcNextChar == "n"
-					lcResult = lcResult + chr(10)
-				case lcNextChar == "r"
-					lcResult = lcResult + chr(13)
-				case lcNextChar == "t"
-					lcResult = lcResult + chr(9)
-				case lcNextChar == '"'
-					lcResult = lcResult + '"'					
-				case lcNextChar == "'"
-					lcResult = lcResult + "'"
-				otherwise
-					* Si no es una secuencia de escape conocida, mantener ambos caracteres
-					lcResult = lcResult + "\" + lcNextChar					
-				endcase
-				i = i + 2 && Avanzar 2 caracteres
-			else
-				lcResult = lcResult + lcChar
-				i = i + 1 && avanzar un carácter
-			endif
-		enddo
-		
-		tcLexeme = lcResult
+		if len(tcLexeme) < 100
+			local lcResult, i, lcChar, lcNextChar
+			lcResult = ""
+			i = 1
+
+			do while i <= len(tcLexeme)
+				lcChar = substr(tcLexeme, i, 1)
+				if lcChar == "\" and i < len(tcLexeme)
+					lcNextChar = substr(tcLexeme, i + 1, 1)
+					do case
+					case lcNextChar == "\"
+						lcResult = lcResult + "\"
+					case lcNextChar == "/"
+						lcResult = lcResult + "/"
+					case lcNextChar == "n"
+						lcResult = lcResult + chr(10)
+					case lcNextChar == "r"
+						lcResult = lcResult + chr(13)
+					case lcNextChar == "t"
+						lcResult = lcResult + chr(9)
+					case lcNextChar == '"'
+						lcResult = lcResult + '"'
+					case lcNextChar == "'"
+						lcResult = lcResult + "'"
+					otherwise
+* Si no es una secuencia de escape conocida, mantener ambos caracteres
+						lcResult = lcResult + "\" + lcNextChar
+					endcase
+					i = i + 2 && Avanzar 2 caracteres
+				else
+					lcResult = lcResult + lcChar
+					i = i + 1 && avanzar un carácter
+				endif
+			enddo
+			tcLexeme = lcResult
+		else
+			tcLexeme = strtran(tcLexeme, '\\', '\')
+			tcLexeme = strtran(tcLexeme, '\/', '/')
+			tcLexeme = strtran(tcLexeme, '\n', chr(10))
+			tcLexeme = strtran(tcLexeme, '\r', chr(13))
+			tcLexeme = strtran(tcLexeme, '\t', chr(9))
+			tcLexeme = strtran(tcLexeme, '\"', '"')
+			tcLexeme = strtran(tcLexeme, "\'", "'")
+		endif
 	endproc
-		
+
 	procedure checkUnicodeFormat(tcLexeme)
-		* Look for unicode format
-		** This conversion is better (in performance) than Regular Expressions.
-		&& IRODG 09/10/2023 Inicio
+* Look for unicode format
+** This conversion is better (in performance) than Regular Expressions.
+&& IRODG 09/10/2023 Inicio
 		local lcUnicode, lcConversion, lbReplace, lnPos
 		lnPos = 1
-		do while .T.
-			lbReplace = .F.
+		do while .t.
+			lbReplace = .f.
 			lcUnicode = substr(tcLexeme, at('\u', tcLexeme, lnPos), 6)
 			if len(lcUnicode) == 6
-				lbReplace = .T.
+				lbReplace = .t.
 			else
 				lcUnicode = substr(tcLexeme, at('\U', tcLexeme, lnPos), 6)
 				if len(lcUnicode) == 6
-					lbReplace = .T.
+					lbReplace = .t.
 				endif
 			endif
 			if lbReplace
@@ -261,126 +253,155 @@ define class Tokenizer as custom
 				exit
 			endif
 		enddo
-		&& IRODG 09/10/2023 Fin
-*!*			_Screen.oRegEx.Pattern = "\\u([a-fA-F0-9]{4})"
-*!*			Local loResult, lcValue, i
-*!*			_Screen.oRegEx.IgnoreCase = .t.
-*!*			_Screen.oRegEx.global = .t.
-*!*			loResult = _Screen.oRegEx.Execute(tcLexeme)
-*!*			If Type('loResult') == 'O'
-*!*				For i = 0 to loResult.Count-1
-*!*					lcValue = loResult.Item[i].Value
-*!*					try
-*!*						&& IRODG 09/10/2023 Inicio
-*!*						** Replace null character (chr(0)) from conversion result (strconv(lcValue, 16))
-*!*	*!*						tcLexeme = Strtran(tcLexeme, lcValue, (strconv(lcValue, 16)))
-*!*						tcLexeme = Strtran(tcLexeme, lcValue, strtran((strconv(lcValue, 16)), chr(0)))
-*!*						&& IRODG 09/10/2023 Fin
-*!*					Catch
-*!*					EndTry
-*!*				EndFor
-*!*			EndIf
-	EndProc
+&& IRODG 09/10/2023 Fin
+	endproc
 
-	Function scanTokens
-		With this
-			Dimension .tokens[1]	
-			Do while !.isAtEnd()
+	function scanTokens
+		with this
+			dimension .tokens[1]
+			do while !.isAtEnd()
 				.skipWhitespace()
 				.start = .current
 				.scanToken()
-			EndDo
+			enddo
 			.addToken(T_EOF, "")
 			.capacity = .length-1
-			
-			* Shrink array
-			Dimension .tokens[.capacity]
-			
-			Return @.tokens
-		EndWith
+
+* Shrink array
+			dimension .tokens[.capacity]
+
+			local loTokens
+			loTokens = createobject("Empty")
+			addproperty(loTokens, "tokens["+alltrim(str(.capacity))+"]", null)
+
+* Crear una copia de los tokens
+			local i
+			for i = 1 to .capacity
+* Si los tokens son objetos, crear copias profundas
+				if type('.tokens[i]') = 'O'
+					loTokens.tokens[i] = createobject("Empty")
+					=addproperty(loTokens.tokens[i], "type", .tokens[i].type)
+					=addproperty(loTokens.tokens[i], "value", .tokens[i].value)
+					=addproperty(loTokens.tokens[i], "line", .tokens[i].line)
+				else
+					loTokens.tokens[i] = .tokens[i]
+				endif
+			next
+
+			.CleanUp()
+
+			return loTokens
+		endwith
 	endfunc
 
-	Hidden function scanToken
-		With this
-			Local ch
-			ch = .advance()			
-			Do case		
+	hidden function scanToken
+		with this
+			local ch
+			ch = .advance()
+			do case
 			case ch == '{'
-				Return .addToken(T_LBRACE, ch)
+				return .addToken(T_LBRACE, ch)
 
 			case ch == '}'
-				Return .addToken(T_RBRACE, ch)
-			
+				return .addToken(T_RBRACE, ch)
+
 			case ch == '['
-				Return .addToken(T_LBRACKET, ch)		
+				return .addToken(T_LBRACKET, ch)
 
 			case ch == ']'
-				Return .addToken(T_RBRACKET, ch)
+				return .addToken(T_RBRACKET, ch)
 
 			case ch == ':'
-				Return .addToken(T_COLON, ch)
+				return .addToken(T_COLON, ch)
 
 			case ch == ','
-				Return .addToken(T_COMMA, ch)
+				return .addToken(T_COMMA, ch)
 
-			Case ch == '"'
-				Return .string()
-			Case ch == '$'
-				Return .Currency()
-			Otherwise
+			case ch == '"'
+				return .string()
+			case ch == '$'
+				return .currency()
+			otherwise
 				if isdigit(ch) or (ch == '-' and isdigit(.peek()))
-					Return .number()
+					return .number()
 				endif
 
-				if At(ch, .letters) > 0
-					Return .identifier()
+				if at(ch, .letters) > 0
+					return .identifier()
 				endif
-				.showError(.line, "Unknown character ['" + transform(ch) + "'], ascii: [" + TRANSFORM(ASC(ch)) + "]")
-			EndCase
-		EndWith
-	EndFunc
+				.showError(.line, "Unknown character ['" + transform(ch) + "'], ascii: [" + transform(asc(ch)) + "]")
+			endcase
+		endwith
+	endfunc
 
 	hidden function addToken(tnTokenType, tcTokenValue)
-		With this
+		with this
 			.checkCapacity()
+
 			local loToken
 			loToken = createobject("Empty")
 			=addproperty(loToken, "type", tnTokenType)
 			=addproperty(loToken, "value", tcTokenValue)
-			=AddProperty(loToken, "line", .line)
-			
+			=addproperty(loToken, "line", .line)
+
 			.tokens[.length] = loToken
 			.length = .length + 1
-		EndWith
-	EndFunc
-	
-	Hidden function checkCapacity
-		With this
-			If .capacity < .length + 1
-				If Empty(.capacity)
+		endwith
+	endfunc
+
+	hidden function checkCapacity
+		with this
+			if .capacity < .length + 1
+				if empty(.capacity)
 					.capacity = 8
-				Else
+				else
 					.capacity = .capacity * 2
-				EndIf			
-				Dimension .tokens[.capacity]
-			EndIf
+				endif
+				dimension .tokens[.capacity]
+			endif
 		endwith
 	endfunc
 
 	function showError(tnLine, tcMessage)
-		error "SYNTAX ERROR: (" + TRANSFORM(tnLine) + ":" + TRANSFORM(this.current) + ")" + tcMessage
+		error "SYNTAX ERROR: (" + transform(tnLine) + ":" + transform(this.current) + ")" + tcMessage
 	endfunc
 
 	function isAtEnd
-		With this
-		return .current > .sourceLen
-		EndWith
+		with this
+			return .current > .sourceLen
+		endwith
 	endfunc
 
 	function tokenStr(toToken)
 		local lcType, lcValue
 		lcType = _screen.jsonUtils.tokenTypeToStr(toToken.type)
-		lcValue = alltrim(transform(toToken.value))		
-		return "Token(" + lcType + ", '" + lcValue + "') at Line(" + Alltrim(Str(toToken.Line)) + ")"
-	EndFunc
+		lcValue = alltrim(transform(toToken.value))
+		return "Token(" + lcType + ", '" + lcValue + "') at Line(" + alltrim(str(toToken.line)) + ")"
+	endfunc
+
+	function CleanUp
+		with this
+* Liberar el array de tokens
+			if type('this.tokens', 1) == 'A' and alen(this.tokens) > 1
+				local i
+				for i = 1 to alen(this.tokens)
+					if type('this.tokens[i]') = 'O'
+* Liberar propiedades del objeto token
+						this.tokens[i] = .null.
+					endif
+				next
+* Redimensionar el array a tamaño mínimo
+				dimension this.tokens[1]
+				this.tokens[1] = .null.
+			endif
+
+* Liberar otras variables que puedan ocupar mucha memoria
+			this.source = ""
+			this.sourceLen = 0
+			this.capacity = 0
+			this.length = 1
+		endwith
+		return .t.
+	endfunc
+
 enddefine

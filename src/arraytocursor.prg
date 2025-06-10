@@ -10,10 +10,10 @@ Define Class ArrayToCursor As Session
 	Dimension aRows(1)
 	nRowCount = 0
 
-	Dimension tokens[1]
 	Hidden current
 	Hidden previous
 	Hidden peek
+	hidden tokenCollection
 	
 	Hidden capacity
 	Hidden length
@@ -22,8 +22,8 @@ Define Class ArrayToCursor As Session
 	function init(toScanner)
 		With this
 			Local laTokens
-			laTokens = toScanner.scanTokens()
-			=Acopy(laTokens, .tokens)		
+			.tokenCollection = toScanner.scanTokens()
+			
 			.current = 1
 			.oTableStruct = Createobject('Collection')
 
@@ -59,6 +59,7 @@ Define Class ArrayToCursor As Session
 			Dimension .aRows[.capacity]
 			
 			.InsertData()
+			.CleanUp()
 		endwith
 	EndFunc
 	
@@ -118,32 +119,33 @@ Define Class ArrayToCursor As Session
 
 			.consume(T_STRING, "Expect right key element")
 			lcProp = .previous.value
-			
 			.consume(T_COLON, "Expect ':' after key element.")
 			
 			lcFieldName = Space(1)		
 			lxValue = .Value()
-			lcType  = Vartype(lxValue)
+			lcType  = lxValue.Type
 			lnFieldLength = 0
 			lnDecimals = 0
 			Do Case
 			Case lcType == 'N'
-				lcType = Iif(Occurs('.', alltrim(Transform(lxValue,"@T"))) > 0 or lxValue > INTEGER_MAX_CAPACITY, 'N', 'I')
+				local lcNumStr
+				lcNumStr = lxValue.Literal
+				lcType = Iif(Occurs('.', lcNumStr) > 0 or lxValue.Value > INTEGER_MAX_CAPACITY, 'N', 'I')
 				&& >>>>>>> IRODG 03/17/24
 				If lcType == 'N'
-					lnFieldLength = Len(alltrim(Transform(lxValue,"@T")))
-					lnDecimals = len(GetWordNum(alltrim(Transform(lxValue,"@T")),2,'.'))
+					lnFieldLength = Len(lcNumStr)
+					lnDecimals = len(GetWordNum(lcNumStr,2,'.'))
 				EndIf
 				&& <<<<<<< IRODG 03/17/24
 			Case lcType == 'C'
-				If Len(lxValue) > STRING_MAX_SIZE
+				If Len(lxValue.Value) > STRING_MAX_SIZE
 					lcType = 'M'
 				Else
-					lxValue = _Screen.JSONUtils.CheckString(lxValue)
-					lcType  = Vartype(lxValue)
+					lxValue.Value = _Screen.JSONUtils.CheckString(lxValue.Value)
+					lcType  = Vartype(lxValue.Value)
 				Endif
 				If lcType == 'C'
-					lnFieldLength = Iif(Empty(Len(lxValue)), 1, Len(lxValue))
+					lnFieldLength = Iif(Empty(Len(lxValue.Value)), 1, Len(lxValue.Value))
 				Endif
 			Endcase
 			lcFieldName = Lower(_Screen.JSONUtils.CheckProp(lcProp))
@@ -152,7 +154,9 @@ Define Class ArrayToCursor As Session
 			* Set Key-Value pair object
 			loPair = CreateObject("Empty")
 			=AddProperty(loPair, "field", lcFieldName)
-			=AddProperty(loPair, "value", lxValue)
+			=AddProperty(loPair, "value", lxValue.Value)
+			
+			release lxValue
 			
 			Return loPair
 		EndWith
@@ -163,25 +167,37 @@ Define Class ArrayToCursor As Session
 	&& ======================================================================== &&
 	Hidden Function Value As Variant
 		With this
+			local loToken
+			loToken = createobject("Empty")
+			addproperty(loToken, "type", "")
+			addproperty(loToken, "literal", "")
+			addproperty(loToken, "value", .null.)
+			
 			Do Case
 			Case .match(T_STRING)
-				Return .previous.value
-				
+				loToken.type = 'C'
+				loToken.literal = .previous.value
+				loToken.value = .previous.value
 			case .match(T_NUMBER)
 				Local lcValue
 				lcValue = .previous.value
-				return iif(at('.', lcValue) > 0, Val(lcValue), int(Val(lcValue)))
+				loToken.type = 'N'
+				loToken.literal = .previous.value
+				loToken.value = iif(at('.', lcValue) > 0, Val(lcValue), int(Val(lcValue)))
 
 			case .match(T_BOOLEAN)
-				return (.previous.value == 'true')
-
+				loToken.type = 'L'
+				loToken.literal = .previous.value
+				loToken.value = (.previous.value == 'true')
 			case .match(T_NULL)
-				return .null.
-
+				loToken.type = 'X'
+				loToken.literal = 'null'
+				loToken.value = .null.
 			Otherwise
 				Error "Parser Error: This token is invalid in for cursor conversion: '" + _screen.jsonUtils.tokenTypeToStr(.peek.type) + "'"
-			EndCase
-		EndWith
+			endcase
+		endwith
+		return loToken
 	Endfunc
 	* InsertData
 	Hidden Function InsertData
@@ -339,7 +355,7 @@ Define Class ArrayToCursor As Session
 			If !.isAtEnd()
 				.current = .current + 1
 			EndIf
-			Return .tokens[.current-1]
+			Return .TokenCollection.tokens[.current-1]
 		EndWith
 	endfunc
 
@@ -351,14 +367,28 @@ Define Class ArrayToCursor As Session
 
 	Hidden Function peek_access
 		With this
-			Return .tokens[.current]
+			Return .TokenCollection.tokens[.current]
 		endwith
 	endfunc
 
 	Hidden Function previous_access
 		With this
-			Return .tokens[.current-1]
+			Return .TokenCollection.tokens[.current-1]
 		EndWith
 	EndFunc
+
+	function CleanUp
+		if type('this.aRows',1) == 'A' and alen(this.aRows) > 0
+			local i
+			for i=1 to alen(this.aRows)
+				this.aRows[i] = .null.
+			next
+			dimension this.aRows[1]
+			this.aRows[1] = .null.
+		endif
+		this.oTableStruct = .null.
+		this.length = 1
+		this.capacity = 0		
+	endfunc
 
 Enddefine

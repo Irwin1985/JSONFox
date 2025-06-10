@@ -8,16 +8,14 @@
 && array  = '[' value | { ',' value }  ']'
 && ======================================================================== &&
 define class Parser as custom
-	Dimension tokens[1]
 	Hidden current
 	Hidden previous
 	Hidden peek
 	hidden problematicFields
+	hidden tokenCollection
 	
 	function init(toScanner)
-		Local laTokens
-		laTokens = toScanner.scanTokens()
-		=Acopy(laTokens, this.tokens)
+		this.tokenCollection = toScanner.scanTokens()
 		this.current = 1
 		
 		this.problematicFields = createobject("Collection")
@@ -25,8 +23,12 @@ define class Parser as custom
 		this.problematicFields.Add("update", "update")
 	endfunc
 
-	function Parse	
-		Return this.value()
+	function Parse
+		local loParsedObject
+		loParsedObject = this.value()
+		this.CleanUp()
+
+		return loParsedObject
 	endfunc
 	&& ======================================================================== &&
 	&& Function Object
@@ -176,7 +178,7 @@ define class Parser as custom
 		If !this.isAtEnd()
 			this.current = this.current + 1
 		EndIf
-		Return this.tokens[this.current-1]
+		Return this.tokenCollection.tokens[this.current-1]
 	endfunc
 
 	Hidden Function isAtEnd
@@ -184,12 +186,21 @@ define class Parser as custom
 	endfunc
 
 	Hidden Function peek_access
-		Return this.tokens[this.current]
+		Return this.tokenCollection.tokens[this.current]
 	endfunc
 
 	Hidden Function previous_access
-		Return this.tokens[this.current-1]
-	EndFunc
+		Return this.tokenCollection.tokens[this.current-1]
+	endfunc
+	
+	function CleanUp
+		with this
+			.TokenCollection = .null.
+			.current = 0
+			.previous = .null.
+			.peek = .null.
+		endwith
+	endfunc
 	
 EndDefine
 

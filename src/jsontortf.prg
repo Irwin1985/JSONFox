@@ -13,20 +13,17 @@ define class JSONToRTF as custom
 	lError 		= .f.
 	cErrorMsg 	= ""
 
-
-	Dimension tokens[1]
 	Hidden current
 	Hidden previous
 	Hidden peek
+	hidden tokenCollection
 
 	&& ======================================================================== &&
 	&& Function Init
 	&& ======================================================================== &&	
 	function init(toScanner)
 		this.lError = .f.
-		Local laTokens
-		laTokens = toScanner.scanTokens()
-		=Acopy(laTokens, this.tokens)		
+		this.tokenCollection = toScanner.scanTokens()
 		this.current = 1
 	endfunc
 
@@ -176,7 +173,7 @@ define class JSONToRTF as custom
 		If !this.isAtEnd()
 			this.current = this.current + 1
 		EndIf
-		Return this.tokens[this.current-1]
+		Return this.tokenCollection.tokens[this.current-1]
 	endfunc
 
 	Hidden Function isAtEnd
@@ -184,10 +181,20 @@ define class JSONToRTF as custom
 	endfunc
 
 	Hidden Function peek_access
-		Return this.tokens[this.current]
+		Return this.tokenCollection.tokens[this.current]
 	endfunc
 
 	Hidden Function previous_access
-		Return this.tokens[this.current-1]
+		Return this.tokenCollection.tokens[this.current-1]
 	EndFunc
+
+	function CleanUp
+		with this
+			.TokenCollection = .null.
+			
+			.current = 0
+			.previous = .null.
+			.peek = 0
+		endwith
+	endfunc
 enddefine
