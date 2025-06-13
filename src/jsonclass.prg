@@ -4,20 +4,20 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "12.0"
+	version 		= "12.1"
 	hidden lInternal
 	hidden lTablePrompt
-	Dimension aCustomArray[1]
-	&& >>>>>>> IRODG 07/01/21
-	* Set this property to .T. if you want the lexer uses JSONFoxHelper.dll
+	dimension aCustomArray[1]
+&& >>>>>>> IRODG 07/01/21
+* Set this property to .T. if you want the lexer uses JSONFoxHelper.dll
 	NETScanner = .f.
-	&& <<<<<<< IRODG 07/01/21
-	
-	&& >>>>>>> IRODG 02/27/24
-	JScriptScanner = .f.
-	&& <<<<<<< IRODG 02/27/24
+&& <<<<<<< IRODG 07/01/21
 
-	*Function Init
+&& >>>>>>> IRODG 02/27/24
+	JScriptScanner = .f.
+&& <<<<<<< IRODG 02/27/24
+
+*Function Init
 	function init
 		with this
 			.ResetError()
@@ -26,14 +26,15 @@ define class JSONClass as session
 		endwith
 	endfunc
 
-	* Parse the string text as JSON
+* Parse the string text as JSON
 	function Parse as memo
 		lparameters tcJsonStr as memo
-		local loJSONObj
+		local loJSONObj, loEnv
 		loJSONObj = .null.
-		Dimension this.aCustomArray[1]
-		this.aCustomArray[1] = .Null.
+		dimension this.aCustomArray[1]
+		this.aCustomArray[1] = .null.
 		try
+			loEnv = this.saveEnvironment()
 			this.ResetError()
 			local lexer, parser
 			do case
@@ -45,36 +46,39 @@ define class JSONClass as session
 				lexer = createobject("Tokenizer", tcJsonStr)
 			endcase
 			parser = createobject("Parser", lexer)
-			loJSONObj = parser.Parse()			
+			loJSONObj = parser.Parse()
 		catch to loEx
 			if type('lexer') == 'O'
 				lexer.CleanUp()
 			endif
-			
+
 			if type('parser') == 'O'
 				parser.CleanUp()
 			endif
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			store .null. to lexer, parser
 			release lexer, parser
-		ENDTRY
-		If Type('loJSONObj', 1) == 'A'
-			Local i
-			For i = 1 to Alen(loJSONObj, 1)
-				Dimension this.aCustomArray[i]
+		endtry
+		if type('loJSONObj', 1) == 'A'
+			local i
+			for i = 1 to alen(loJSONObj, 1)
+				dimension this.aCustomArray[i]
 				this.aCustomArray[i] = loJSONObj[i]
 			endfor
 			return @this.aCustomArray
-		Else
+		else
 			return loJSONObj
-		EndIf		
-	ENDFUNC
-	
-	* tokenize
-	FUNCTION dumpTokens
+		endif
+	endfunc
+
+* tokenize
+	function dumpTokens
 		lparameters tcJsonStr as memo, tcOutput as string
+		local loEnv
 		try
+			loEnv = this.saveEnvironment()
 			this.ResetError()
 			local lexer, nativeScanner
 			do case
@@ -86,46 +90,49 @@ define class JSONClass as session
 				nativeScanner = .t.
 				lexer = createobject("Tokenizer", tcJsonStr)
 			endcase
-			Local laTokenCollection
+			local laTokenCollection
 			laTokenCollection = lexer.scanTokens()
-			IF FILE(tcOutput)
-				DELETE FILE (tcOutput)
-			ENDIF
-			FOR EACH loToken IN laTokenCollection.Tokens
-				STRTOFILE(tokenStr(loToken), tcOutput, 1)
-			ENDFOR
+			if file(tcOutput)
+				delete file (tcOutput)
+			endif
+			for each loToken in laTokenCollection.Tokens
+				strtofile(tokenStr(loToken), tcOutput, 1)
+			endfor
 		catch to loEx
 			if type('lexer') == 'O' and nativeScanner
 				lexer.CleanUp()
-			endif			
+			endif
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			release lexer, laTokenCollection
-		ENDTRY
-	ENDFUNC
+		endtry
+	endfunc
 
-	* Stringify
+* Stringify
 	function Stringify as memo
 		lparameters tvNewVal as Variant, tcFlags as string, tlParseUtf8 as Boolean, tlTrimChars as Boolean
 		this.ResetError()
-		local llParseUtf8, lcTypeFlag, loJSONStr as memo
+		local llParseUtf8, lcTypeFlag, loJSONStr as memo, loEnv
 		lcTypeFlag = type('tcFlags')
 		llParseUtf8 = iif(lcTypeFlag = 'L', tcFlags, tlParseUtf8)
 		loJSONStr = ""
-
 		if vartype(tvNewVal) = "O"
 			try
+				loEnv = this.saveEnvironment()
 				local objToJson
 				objToJson = createobject("ObjectToJson")
 				tvNewVal = objToJson.Encode(@tvNewVal, iif(lcTypeFlag != 'C', .f., tcFlags))
 			catch to loEx
 				this.ShowExceptionError(loEx)
 			finally
+				this.restoreEnvironment(loEnv)
 				objToJson = .null.
 				release objToJson
 			endtry
 		endif
 		try
+			loEnv = this.saveEnvironment()
 			local lexer, parser
 			lexer = createobject("Tokenizer", tvNewVal)
 			parser = createobject("JSONStringify", lexer)
@@ -134,30 +141,35 @@ define class JSONClass as session
 			if type('lexer') == 'O'
 				lexer.CleanUp()
 			endif
-			
+
 			if type('parser') == 'O'
 				parser.CleanUp()
 			endif
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			store .null. to lexer, parser
 			release lexer, parser
 		endtry
 		return loJSONStr
 	endfunc
 
-	* JSONToRTF
+* JSONToRTF
 	function JSONToRTF as memo
 		lparameters tvNewVal as Variant, tnIndent as Boolean
+		local loEnv
+
 		this.ResetError()
 		if vartype(tvNewVal) = 'O'
 			try
+				loEnv = this.saveEnvironment()
 				local objToJson
 				objToJson = createobject("ObjectToJson")
 				tvNewVal = objToJson.Encode(@tvNewVal)
 			catch to loEx
 				this.ShowExceptionError(loEx)
 			finally
+				this.restoreEnvironment(loEnv)
 				objToJson = .null.
 				release objToJson
 			endtry
@@ -165,6 +177,7 @@ define class JSONClass as session
 		local loJSONStr as memo
 		loJSONStr = ''
 		try
+			loEnv = this.saveEnvironment()
 			this.lError = .f.
 			this.LastErrorText = ''
 			local lexer, parser
@@ -178,7 +191,7 @@ define class JSONClass as session
 			if type('lexer') == 'O'
 				lexer.CleanUp()
 			endif
-			
+
 			if type('parser') == 'O'
 				parser.CleanUp()
 			endif
@@ -186,13 +199,14 @@ define class JSONClass as session
 			this.lError = .t.
 			this.LastErrorText = loEx.message
 		finally
+			this.restoreEnvironment(loEnv)
 			store .null. to lexer, parser
 			release lexer, parser
 		endtry
 		return loJSONStr
 	endfunc
 
-	* JSONViewer
+* JSONViewer
 	function JSONViewer as Void
 		lparameters tcJsonStr as memo, tlStopExecution as Boolean
 		do form frmJSONViewer with tcJsonStr, tlStopExecution
@@ -200,50 +214,93 @@ define class JSONClass as session
 			read events
 		endif
 	endfunc
-	*  ====================== Old JSONFox Functions =========================== *
-	*  . . . . . . . . . . For backward compatibility . . . . . . . . . . . .
-	*  ======================================================================== *
-	&& ======================================================================== &&
-	&& Function Encode
-	&& <<Deprecated>> please use Stringify function instead.
-	&& ======================================================================== &&
+*  ====================== Old JSONFox Functions =========================== *
+*  . . . . . . . . . . For backward compatibility . . . . . . . . . . . .
+*  ======================================================================== *
+&& ======================================================================== &&
+&& Function Encode
+&& <<Deprecated>> please use Stringify function instead.
+&& ======================================================================== &&
 	function Encode(toObj as object, tcFlags as string, tlUtf8 as Boolean, tlTrimChars as Boolean) as memo
-		local loEncode
-		loEncode = createobject("ObjectToJson")
-		return loEncode.Encode(@toObj, tcFlags, tlUtf8, tlTrimChars)
+		try
+			local loEnv
+			loEnv = this.saveEnvironment()
+
+			this.ResetError()
+
+			local loEncode, loResult
+			loEncode = createobject("ObjectToJson")
+			loResult = loEncode.Encode(@toObj, tcFlags, tlUtf8, tlTrimChars)
+		catch to loEx
+			this.ShowExceptionError(loEx)
+			this.lError = .t.
+			this.LastErrorText = loEx.message
+		finally
+			this.restoreEnvironment(loEnv)
+			loEncode = null
+			release loEncode
+		endtry
+		return loResult
 	endfunc
-	&& ======================================================================== &&
-	&& Function decode
-	&& <<Deprecated>> please use Parse function instead.
-	&& ======================================================================== &&
+&& ======================================================================== &&
+&& Function decode
+&& <<Deprecated>> please use Parse function instead.
+&& ======================================================================== &&
 	function Decode(tcJsonStr as memo) as object
-		return this.Parse(tcJsonStr)
+		try
+			local loEnv, loResult
+			loEnv = this.saveEnvironment()
+			this.ResetError()
+			loResult = this.Parse(tcJsonStr)
+		catch to loEx
+			this.ShowExceptionError(loEx)
+			this.lError = .t.
+			this.LastErrorText = loEx.message
+		finally
+			this.restoreEnvironment(loEnv)
+		endtry
+		return loResult
 	endfunc
-	&& ======================================================================== &&
-	&& Function LoadFile
-	&& <<Deprecated>> please use Parse function instead.
-	&& ======================================================================== &&
+&& ======================================================================== &&
+&& Function LoadFile
+&& <<Deprecated>> please use Parse function instead.
+&& ======================================================================== &&
 	function LoadFile(tcJsonFile as string) as object
-		return this.Decode(filetostr(tcJsonFile))
+		try
+			local loEnv, loResult
+			loEnv = this.saveEnvironment()
+			this.ResetError()
+			loResult = this.Decode(filetostr(tcJsonFile))
+		catch to loEx
+			this.ShowExceptionError(loEx)
+			this.lError = .t.
+			this.LastErrorText = loEx.message
+		finally
+			this.restoreEnvironment(loEnv)
+		endtry
+		return loResult
 	endfunc
-	* ArrayToXML
+* ArrayToXML
 	function ArrayToXML(tcArray as memo) as string
-		local lcOut as string, lcCursor
+		local lcOut as string, lcCursor, loEnv
 		lcOut = ''
-		lcCursor = SYS(2015)
+		lcCursor = sys(2015)
 		if vartype(tcArray) = 'O'
 			try
+				loEnv = this.saveEnvironment()
 				local objToJson
 				objToJson = createobject("ObjectToJson")
 				tcArray = objToJson.Encode(@tcArray)
 			catch to loEx
 				this.ShowExceptionError(loEx)
 			finally
+				this.restoreEnvironment(loEnv)
 				objToJson = .null.
 				release objToJson
 			endtry
 		endif
 		try
+			loEnv = this.saveEnvironment()
 			this.jsonToCursor(tcArray, lcCursor, set("Datasession"))
 			if used(lcCursor)
 				=cursortoxml(lcCursor, 'lcOut', 1, 0, 0, '1')
@@ -251,39 +308,43 @@ define class JSONClass as session
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			use in (select(lcCursor))
 		endtry
 		return lcOut
 	endfunc
-	* XMLToJson
+* XMLToJson
 	function XMLToJson(tcXML as memo) as memo
-		local lcJsonXML as memo, loParser
+		local lcJsonXML as memo, loParser, loEnv
 		lcJsonXML = ''
 		try
+			loEnv = this.saveEnvironment()
 			this.ResetError()
 			=xmltocursor(tcXML, 'qXML')
-			loParser = createobject("CursorToArray")			
+			loParser = createobject("CursorToArray")
 			loParser.CurName 	= "qXML"
 			loParser.nSessionID = set("Datasession")
-			loParser.ParseUTF8  = .T.
-			loParser.TrimChars  = .T.
+			loParser.ParseUTF8  = .t.
+			loParser.TrimChars  = .t.
 			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			loParser = .null.
 			release loParser
 			use in (select("qXML"))
 		endtry
 		return lcJsonXML
 	endfunc
-	* CursorToJSON
+* CursorToJSON
 	function CursorToJSON as memo
-		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean, tlParseUTF8 as Boolean, tlTrimChars as Boolean
-		local lcJsonXML as memo, loParser, lcCursor
+		lparameters tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer, tlJustArray as Boolean, tlParseUtf8 as Boolean, tlTrimChars as Boolean
+		local lcJsonXML as memo, loParser, lcCursor, loEnv
 		lcJsonXML = ''
-		lcCursor  = SYS(2015)
+		lcCursor  = sys(2015)
 		try
+			loEnv = this.saveEnvironment()
 			this.ResetError()
 			tcCursor = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
@@ -297,29 +358,31 @@ define class JSONClass as session
 			loParser = createobject("CursorToArray")
 			loParser.CurName 	 = lcCursor
 			loParser.nSessionID  = tnDataSession
-			&& IRODG 07/10/2023 Inicio
-			loParser.ParseUTF8 = tlParseUTF8
-			&& IRODG 07/10/2023 Fin
-			&& IRODG 27/10/2023 Inicio
+&& IRODG 07/10/2023 Inicio
+			loParser.ParseUTF8 = tlParseUtf8
+&& IRODG 07/10/2023 Fin
+&& IRODG 27/10/2023 Inicio
 			loParser.TrimChars = tlTrimChars
-			&& IRODG 27/10/2023 Fin
+&& IRODG 27/10/2023 Fin
 			lcJsonXML = loParser.CursorToArray()
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			loParser = .null.
 			release loParser
 			use in (select(lcCursor))
 		endtry
 		lcOutput = iif(tlJustArray, lcJsonXML, '{"' + lower(alltrim(tcCursor)) + '":' + lcJsonXML + '}')
 		return lcOutput
-	EndFunc
+	endfunc
 
-	* CursorToJSONObject
+* CursorToJSONObject
 	function CursorToJSONObject(tcCursor as string, tbCurrentRow as Boolean, tnDataSession as integer) as object
-		local loParser, lcCursor, lnRecno, loResult as Variant
-		lcCursor = SYS(2015)
+		local loParser, lcCursor, lnRecno, loResult as Variant, loEnv
+		lcCursor = sys(2015)
 		try
+			loEnv = this.saveEnvironment()
 			this.ResetError()
 			tcCursor = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
@@ -332,30 +395,33 @@ define class JSONClass as session
 			endif
 			loParser = createobject("CursorToJsonObject")
 			loParser.CurName 	 = lcCursor
-			loParser.nSessionID  = tnDataSession			
-			loResult = loParser.CursorToJsonObject()
+			loParser.nSessionID  = tnDataSession
+			loResult = loParser.CursorToJSONObject()
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			loParser = .null.
 			release loParser
 			use in (select(lcCursor))
-		endtry		
-		If Type('loResult', 1) == 'A'
-			Local i
-			For i = 1 to Alen(loResult, 1)
-				Dimension this.aCustomArray[i]
+		endtry
+
+		if type('loResult', 1) == 'A'
+			local i
+			for i = 1 to alen(loResult, 1)
+				dimension this.aCustomArray[i]
 				this.aCustomArray[i] = loResult[i]
 			endfor
 			return @this.aCustomArray
-		Else
+		else
 			return loResult
-		EndIf
-	EndFunc
-	
-	Function MasterDetailToJSON(tcMaster as String, tcDetail as String, tcExpr as String, tcDetailAttribute as String, tnSessionID as Integer)
-		local loClass, loResult, lcResult
-		Try
+		endif
+	endfunc
+
+	function MasterDetailToJSON(tcMaster as string, tcDetail as string, tcExpr as string, tcDetailAttribute as string, tnSessionID as integer)
+		local loClass, loResult, lcResult, loEnv
+		try
+			loEnv = this.saveEnvironment()
 			this.ResetError()
 			tnSessionID = evl(tnSessionID, set("Datasession"))
 			set datasession to tnSessionID
@@ -364,20 +430,21 @@ define class JSONClass as session
 		catch to loEx
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			loClass = .null.
 			release loClass
-		EndTry
+		endtry
+*lcResult = this.stringify(@loResult)
+		lcResult = this.Encode(@loResult, "", .t., .t.)
+		return lcResult
+	endfunc
 
-		*lcResult = this.stringify(@loResult)
-		lcResult = this.Encode(@loResult, "", .T., .T.)
-		Return lcResult
-	EndFunc
-	
-	* JSONToCursor
+* JSONToCursor
 	function jsonToCursor(tcJsonStr as memo, tcCursor as string, tnDataSession as integer) as Void
-		Try
-			local lexer, parser
+		try
+			local lexer, parser, loEnv
 			this.ResetError()
+			loEnv = this.saveEnvironment()
 			if !empty(tcCursor)
 				tnDataSession = evl(tnDataSession, set("Datasession"))
 				lexer = createobject("Tokenizer", tcJsonStr)
@@ -394,22 +461,24 @@ define class JSONClass as session
 			if type('lexer') == 'O'
 				lexer.CleanUp()
 			endif
-			
+
 			if type('parser') == 'O'
 				parser.CleanUp()
 			endif
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			store .null. to lexer, parser
 			release lexer, parser
 		endtry
 	endfunc
-	* CursorStructure
+* CursorStructure
 	function CursorStructure
-		lparameters tcCursor as string, tnDataSession as integer, tlCopyExtended as Boolean, tlJustArray As Boolean
-		local lcOutput as memo
+		lparameters tcCursor as string, tnDataSession as integer, tlCopyExtended as Boolean, tlJustArray as Boolean
+		local lcOutput as memo, loEnv
 		lcOutput = ''
 		try
+			loEnv = this.saveEnvironment()
 			this.ResetError()
 			loStructureToJSON = createobject("StructureToJSON")
 			tcCursor = evl(tcCursor, alias())
@@ -421,34 +490,39 @@ define class JSONClass as session
 			lcOutput = loStructureToJSON.StructureToJSON()
 		catch to loEx
 			this.ShowExceptionError(loEx)
+		finally
+			this.restoreEnvironment(loEnv)
 		endtry
 		return lcOutput
 	endfunc
-	* tokenize
-	function dumpTokens2	
+* tokenize
+	function dumpTokens2
 		lparameters tcJsonStr as memo
+		local loEnv
 		try
 			this.ResetError()
+			loEnv = this.saveEnvironment()
 			local loLexer, laTokenCollection, lcTokens as memo, i
 			loLexer = createobject("Tokenizer", tcJsonStr)
 			laTokenCollection = loLexer.scanTokens()
 			lcTokens = ''
-			For i = 1 to Alen(laTokenCollection.Tokens)
-				lcTokens = lcTokens + loLexer.tokenStr(laTokenCollection.Tokens[i]) + CHR(13) + CHR(10)
+			for i = 1 to alen(laTokenCollection.Tokens)
+				lcTokens = lcTokens + loLexer.tokenStr(laTokenCollection.Tokens[i]) + chr(13) + chr(10)
 			endfor
 		catch to loEx
 			if type('lexer') == 'O'
 				lexer.CleanUp()
-			endif			
+			endif
 			this.ShowExceptionError(loEx)
 		finally
+			this.restoreEnvironment(loEnv)
 			store .null. to lexer, parser
 			release lexer, parser
 		endtry
 		_cliptext = lcTokens
 		return lcTokens
 	endfunc
-	* LastErrorText_Assign
+* LastErrorText_Assign
 	function LastErrorText_Assign
 		lparameters vNewVal
 		with this
@@ -458,7 +532,7 @@ define class JSONClass as session
 			endif
 		endwith
 	endfunc
-	* ShowExceptionError
+* ShowExceptionError
 	function ShowExceptionError(toEx as exception) as Void
 		with this
 			.lError = .t.
@@ -472,11 +546,11 @@ define class JSONClass as session
 			.LastErrorText = toEx.message
 		endwith
 	endfunc
-	* ResetError
+* ResetError
 	hidden function ResetError as Void
 		this.lError = .f.
 	endfunc
-	* Destroy
+* Destroy
 	function destroy
 		try
 			if this.lTablePrompt
@@ -485,7 +559,7 @@ define class JSONClass as session
 			endif
 		catch
 		endtry
-		&& >>>>>>> IRODG 12/28/21
+&& >>>>>>> IRODG 12/28/21
 		try
 			removeproperty(_screen, 'json')
 		catch
@@ -502,6 +576,30 @@ define class JSONClass as session
 			removeproperty(_screen, 'toml')
 		catch
 		endtry
-		&& <<<<<<< IRODG 12/28/21
+&& <<<<<<< IRODG 12/28/21
 	endfunc
+
+	protected function saveEnvironment
+		try
+			local loEnv
+			loEnv = createobject("Collection")
+
+			loEnv.add(set("POINT"), "point")
+			loEnv.add(set("SEPARATOR"), "separator")
+
+			set point to '.'
+			set separator to ','
+		catch
+		endtry
+		
+		return loEnv
+	endproc
+
+	protected procedure restoreEnvironment(toEnv as collection)
+		try
+			set point to toEnv("point")
+			set separator to toEnv("separator")
+		catch
+		endtry
+	endproc
 enddefine
