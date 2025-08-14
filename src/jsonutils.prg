@@ -4,6 +4,7 @@
 && JSON Utilities
 && ======================================================================== &&
 define class jsonutils as custom
+	EscapeOptionalChars = .t.  && Por defecto, no escapar caracteres opcionales
 
 	dimension aPattern[8, 2]
 
@@ -169,59 +170,72 @@ define class jsonutils as custom
 && ======================================================================== &&
 && Function GetString
 && ======================================================================== &&
+&& ======================================================================== &&
+&& Function GetString
+&& ======================================================================== &&
 	function getString as string
 		lparameters tcString as string, tlParseUTF8 as Boolean
-&& IRODG 08/08/2023 Inicio
-*tcString = Alltrim(tcString)
-&& IRODG 08/08/2023 Fin
-		tcString = strtran(tcString, '\', '\\' )
-		tcString = strtran(tcString, chr(9),  '\t' )
-		tcString = strtran(tcString, chr(10), '\n' )
-		tcString = strtran(tcString, chr(13), '\r' )
+		local llEscapeOptionalChars
+
+* Obtener la configuración de escape opcional desde la clase
+		llEscapeOptionalChars = this.EscapeOptionalChars
+
+* Validar parámetro de entrada
+		tcString = iif(vartype(tcString) != "C", "", tcString)
+
+* ESCAPES OBLIGATORIOS según el estándar RFC 8259
+		tcString = strtran(tcString, '\', '\\' )  && Barra invertida
+		tcString = strtran(tcString, chr(8),  '\b' )   && Backspace		
+		tcString = strtran(tcString, chr(9),  '\t' )  && Tabulación
+		tcString = strtran(tcString, chr(10), '\n' )  && Nueva línea
+		tcString = strtran(tcString, chr(12), '\f' )   && Form feed
+		tcString = strtran(tcString, chr(13), '\r' )  && Retorno de carro		
+
+* Manejo de comillas
 		if left(alltrim(tcString), 1) == '"' and right(alltrim(tcString),1) == '"'
 			tcString = substr(tcString, 2, len(tcString)-2)
 		endif
-		tcString = strtran(tcString, '"', '\"' )
+		tcString = strtran(tcString, '"', '\"' )  && Comillas dobles (obligatorio)
 
+* Escapar TODOS los caracteres > 127 automáticamente
+		local i, nChar, lcChar, lcResult
+		lcResult = ""
+		for i=1 to len(tcString)
+			lcChar = substr(tcString,i,1)
+			nChar = asc(lcChar)
+			
+			if nChar > 127
+				* convertir a escape Unicode \uXXXX
+				lcResult = lcResult + '\u' + right('0000' + transform(nChar, '@0'), 4)				
+			else
+				lcResult = lcResult + lcChar
+			endif
+		next
+		
+		tcString = lcResult
+
+		* ESCAPES OPCIONALES
 		if tlParseUTF8
+			* Caracteres especiales
 			tcString = strtran(tcString,"&","\u0026")
 			tcString = strtran(tcString,"+","\u002b")
 			tcString = strtran(tcString,"-","\u002d")
 			tcString = strtran(tcString,"#","\u0023")
 			tcString = strtran(tcString,"%","\u0025")
-			tcString = strtran(tcString,"²","\u00b2")
-			tcString = strtran(tcString,'à','\u00e0')
-			tcString = strtran(tcString,'á','\u00e1')
-			tcString = strtran(tcString,'è','\u00e8')
-			tcString = strtran(tcString,'é','\u00e9')
-			tcString = strtran(tcString,'ì','\u00ec')
-			tcString = strtran(tcString,'í','\u00ed')
-			tcString = strtran(tcString,'ò','\u00f2')
-			tcString = strtran(tcString,'ó','\u00f3')
-			tcString = strtran(tcString,'ù','\u00f9')
-			tcString = strtran(tcString,'ú','\u00fa')
-			tcString = strtran(tcString,'ü','\u00fc')
-			tcString = strtran(tcString,'À','\u00c0')
-			tcString = strtran(tcString,'Á','\u00c1')
-			tcString = strtran(tcString,'È','\u00c8')
-			tcString = strtran(tcString,'É','\u00c9')
-			tcString = strtran(tcString,'Ì','\u00cc')
-			tcString = strtran(tcString,'Í','\u00cd')
-			tcString = strtran(tcString,'Ò','\u00d2')
-			tcString = strtran(tcString,'Ó','\u00d3')
-			tcString = strtran(tcString,'Ù','\u00d9')
-			tcString = strtran(tcString,'Ú','\u00da')
-			tcString = strtran(tcString,'Ü','\u00dc')
-			tcString = strtran(tcString,'ñ','\u00f1')
-			tcString = strtran(tcString,'Ñ','\u00d1')
-			tcString = strtran(tcString,'©','\u00a9')
-			tcString = strtran(tcString,'®','\u00ae')
-			tcString = strtran(tcString,'ç','\u00e7')
-			tcString = strtran(tcString,'º','\u00ba')
 		endif
-		if left(alltrim(tcString), 1) != '"' and right(alltrim(tcString),1) != '"'
-			return '"'+tcString+'"'
-		endif
+
+		* Añadir comillas si no las tiene
+		LOCAL lnLen, lcLastChar, lcPrevChar
+
+		lnLen = LEN(tcString)
+		lcLastChar = RIGHT(tcString, 1)
+		lcPrevChar = IIF(lnLen > 1, SUBSTR(tcString, lnLen-1, 1), "")
+
+		* Verificar si inicia con comilla y termina con comilla NO escapada
+		IF LEFT(tcString, 1) != '"' OR lcLastChar != '"' OR lcPrevChar = "\"
+		    RETURN '"' + tcString + '"'
+		ENDIF
+
 		return tcString
 	endfunc
 && ======================================================================== &&

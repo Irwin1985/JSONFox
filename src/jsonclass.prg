@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "12.2"
+	version 		= "12.7"
 	hidden lInternal
 	hidden lTablePrompt
 	dimension aCustomArray[1]
@@ -48,13 +48,6 @@ define class JSONClass as session
 			parser = createobject("Parser", lexer)
 			loJSONObj = parser.Parse()
 		catch to loEx
-			if type('lexer') == 'O'
-				lexer.CleanUp()
-			endif
-
-			if type('parser') == 'O'
-				parser.CleanUp()
-			endif
 			this.ShowExceptionError(loEx)
 		finally
 			&&this.restoreEnvironment(loEnv)
@@ -99,9 +92,6 @@ define class JSONClass as session
 				strtofile(tokenStr(loToken), tcOutput, 1)
 			endfor
 		catch to loEx
-			if type('lexer') == 'O' and nativeScanner
-				lexer.CleanUp()
-			endif
 			this.ShowExceptionError(loEx)
 		finally
 			&&this.restoreEnvironment(loEnv)
@@ -138,13 +128,6 @@ define class JSONClass as session
 			parser = createobject("JSONStringify", lexer)
 			loJSONStr = parser.Stringify(llParseUtf8, tlTrimChars)
 		catch to loEx
-			if type('lexer') == 'O'
-				lexer.CleanUp()
-			endif
-
-			if type('parser') == 'O'
-				parser.CleanUp()
-			endif
 			this.ShowExceptionError(loEx)
 		finally
 			&&this.restoreEnvironment(loEnv)
@@ -188,13 +171,6 @@ define class JSONClass as session
 			this.lError = parser.lError
 			this.LastErrorText = parser.cErrorMsg
 		catch to loEx
-			if type('lexer') == 'O'
-				lexer.CleanUp()
-			endif
-
-			if type('parser') == 'O'
-				parser.CleanUp()
-			endif
 			this.ShowExceptionError(loEx)
 			this.lError = .t.
 			this.LastErrorText = loEx.message
@@ -225,12 +201,14 @@ define class JSONClass as session
 		try
 			&&local loEnv
 			&&loEnv = this.saveEnvironment()
-
 			this.ResetError()
 
 			local loEncode, loResult
 			loEncode = createobject("ObjectToJson")
 			loResult = loEncode.Encode(@toObj, tcFlags, tlUtf8, tlTrimChars)
+			if type('loResult') == 'C' and !empty(loResult)
+				loResult = strconv(loResult, 9)
+			endif
 		catch to loEx
 			this.ShowExceptionError(loEx)
 			this.lError = .t.
@@ -458,13 +436,6 @@ define class JSONClass as session
 				endif
 			endif
 		catch to loEx
-			if type('lexer') == 'O'
-				lexer.CleanUp()
-			endif
-
-			if type('parser') == 'O'
-				parser.CleanUp()
-			endif
 			this.ShowExceptionError(loEx)
 		finally
 			this.restoreEnvironment(loEnv)
@@ -510,9 +481,6 @@ define class JSONClass as session
 				lcTokens = lcTokens + loLexer.tokenStr(laTokenCollection.Tokens[i]) + chr(13) + chr(10)
 			endfor
 		catch to loEx
-			if type('lexer') == 'O'
-				lexer.CleanUp()
-			endif
 			this.ShowExceptionError(loEx)
 		finally
 			&&this.restoreEnvironment(loEnv)

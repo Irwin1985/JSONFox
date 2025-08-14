@@ -31,7 +31,9 @@ define class JSONStringify as custom
 		
 		lcFormatedJson = this.value(0)
 		this.CleanUp()
-		
+		if !empty(lcFormatedJson)
+			lcFormatedJson = strconv(lcFormatedJson,9)
+		endif
 		return lcFormatedJson
 	endfunc
 	&& ======================================================================== &&
