@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "12.7"
+	version 		= "13.0"
 	hidden lInternal
 	hidden lTablePrompt
 	dimension aCustomArray[1]
@@ -15,6 +15,7 @@ define class JSONClass as session
 
 && >>>>>>> IRODG 02/27/24
 	JScriptScanner = .f.
+	UseArrayObjects = .t.
 && <<<<<<< IRODG 02/27/24
 
 *Function Init
@@ -45,7 +46,7 @@ define class JSONClass as session
 			otherwise
 				lexer = createobject("Tokenizer", tcJsonStr)
 			endcase
-			parser = createobject("Parser", lexer)
+			parser = createobject("Parser", lexer, this.UseArrayObjects)
 			loJSONObj = parser.Parse()
 		catch to loEx
 			this.ShowExceptionError(loEx)

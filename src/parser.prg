@@ -13,11 +13,12 @@ define class Parser as custom
 	Hidden peek
 	hidden problematicFields
 	hidden tokenCollection
+	hidden lUseArrayObjects
 	
-	function init(toScanner)
+	function init(toScanner, tlUseArrayObjects)
 		this.tokenCollection = toScanner.scanTokens()
 		this.current = 1
-		
+		this.lUseArrayObjects = IIF(PCOUNT() > 1, tlUseArrayObjects, .F.)		
 		this.problematicFields = createobject("Collection")
 		this.problematicFields.Add("messages", "messages")
 		this.problematicFields.Add("update", "update")
@@ -64,19 +65,35 @@ define class Parser as custom
 		loPair.key = _screen.jsonUtils.CheckProp(this.previous.value)
 		this.consume(T_COLON, "Expect ':' after key element.")
 		lvValue = this.value()
-		If Type('lvValue', 1) != 'A'
+
+		if this.lUseArrayObjects
 			=AddProperty(loPair, 'value', lvValue)
-		Else
-			=AddProperty(loPair, 'value[1]', .Null.)
-			Acopy(lvValue, loPair.value)
+		else
+			If Type('lvValue', 1) != 'A'
+				=AddProperty(loPair, 'value', lvValue)
+			Else
+				=AddProperty(loPair, 'value[1]', .Null.)
+				Acopy(lvValue, loPair.value)
+			endif
 		endif
+
 		Return loPair
 	EndFunc
 
 	Hidden function addKeyValuePair(toObject, toPair)
-		If Type('toPair.value', 1) != 'A'
-			=AddProperty(toObject, toPair.key, toPair.value)
+		local lAddObject
+		lAddObject = .f.
+		if this.lUseArrayObjects
+			=AddProperty(toObject, toPair.key, toPair.value)			
 		else
+			If Type('toPair.value', 1) != 'A'
+				=AddProperty(toObject, toPair.key, toPair.value)
+			else
+				lAddObject = .t.
+			endif
+		endif
+
+		if lAddObject
 			local lcMacro
 			if this.problematicFields.GetKey(toPair.key) > 0
 				local lcArrayName		
@@ -95,7 +112,7 @@ define class Parser as custom
 				lcMacro = "Acopy(toPair.value, toObject." + toPair.key + ")"
 				&lcMacro
 			endif
-		EndIf
+		endif
 	EndFunc
 		
 	&& ======================================================================== &&
@@ -124,6 +141,9 @@ define class Parser as custom
 			return this.object()
 
 		case this.match(T_LBRACKET)
+			if this.lUseArrayObjects
+				return this.array()
+			endif
 			return @this.array()
 			
 		case this.match(T_NULL)
@@ -138,7 +158,12 @@ define class Parser as custom
 	&& ======================================================================== &&
 	hidden function array
 		local laArray
-		laArray = createobject("TParserInternalArray")
+		if this.lUseArrayObjects
+			laArray = createobject("TParserInternalArrayCollectionBased")
+		else
+			laArray = createobject("TParserInternalArray")
+		endif
+		
 		If !this.check(T_RBRACKET)
 			laArray.Push(this.value())
 			do while this.match(T_COMMA)
@@ -146,6 +171,10 @@ define class Parser as custom
 			enddo
 		endif
 		this.consume(T_RBRACKET, "Expect ']' after array elements.")
+
+		if this.lUseArrayObjects
+			return laArray
+		endif
 		return @laArray.getArray()
 	endfunc
 	
@@ -220,4 +249,21 @@ Define Class TParserInternalArray As Custom
 	Function GetArray
 		Return @this.aCustomArray
 	EndFunc
+enddefine
+
+* ============================================================ *
+* TParserInternalArrayCollectionBased
+* ============================================================ *
+Define Class TParserInternalArrayCollectionBased As Collection	
+	Function Push(tvItem)
+		this.Add(tvItem)
+	Endfunc	
+	
+	function Get(tnIndex)
+		if between(tnIndex, 1, this.Count)
+			return this.Item(tnIndex)
+		endif
+		
+		return .null.
+	endfunc
 Enddefine
