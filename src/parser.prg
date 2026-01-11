@@ -132,7 +132,7 @@ define class Parser as custom
 			If lcPoint != '.'
 				lcValue = Strtran(lcValue, '.', lcPoint)
 			EndIf
-			return iif(at(lcPoint, lcValue) > 0, Val(lcValue), int(Val(lcValue)))
+			return iif(at(lcPoint, lcValue) > 0, evaluate(lcValue), int(Val(lcValue)))
 			
 		case this.match(T_BOOLEAN)
 			return (this.previous.value == 'true')

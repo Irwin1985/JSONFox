@@ -86,14 +86,12 @@ define class Tokenizer as custom
 		endwith
 	endfunc
 
-	hidden function number
+	hidden function number(tChar as Character)
 		with this
 			local lexeme, isNegative
-			lexeme = ''
-			isNegative = (.peek() == '-')
-			if isNegative
-				.advance()
-			endif
+			lexeme = ''			
+			
+			isNegative = tChar == '-'
 
 			do while isdigit(.peek())
 				.advance()
@@ -106,15 +104,26 @@ define class Tokenizer as custom
 				enddo
 			endif
 
-&& Check if number is a Scientific Notation in Tokenizer.Number()
-			if lower(.peek() + .peekNext()) == "e+"
-				.advance()
-				.advance()
+&& Check if number is a Scientific Notation
+			if lower(.peek()) == "e"			
+				.advance() && eat 'e' or 'E'
+				
+				&& Optional sign
+				if .peek() == '+' or .peek() == '-'
+					.advance()
+				endif
+				
+				&& Must have at least one digit
+				if !isdigit(.peek())
+					&& Error: malformed scientific notation
+					.showError(.line, "Invalid scientific notation")
+					return 
+				endif
+				
 				do while isdigit(.peek())
 					.advance()
 				enddo
 			endif
-*****************************************************************
 
 			lexeme = substr(.source, .start, .current-.start)
 			return .addToken(T_NUMBER, lexeme)
@@ -294,8 +303,8 @@ define class Tokenizer as custom
 		endwith
 	endfunc
 
-	hidden function scanToken
-		with this
+	hidden function scanToken		 
+		with this		
 			local ch
 			ch = .advance()
 			do case
@@ -323,7 +332,7 @@ define class Tokenizer as custom
 				return .currency()
 			otherwise
 				if isdigit(ch) or (ch == '-' and isdigit(.peek()))
-					return .number()
+					return .number(ch)
 				endif
 
 				if at(ch, .letters) > 0

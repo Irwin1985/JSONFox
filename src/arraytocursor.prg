@@ -183,7 +183,7 @@ Define Class ArrayToCursor As Session
 				lcValue = .previous.value
 				loToken.type = 'N'
 				loToken.literal = .previous.value
-				loToken.value = iif(at('.', lcValue) > 0, Val(lcValue), int(Val(lcValue)))
+				loToken.value = iif(at('.', lcValue) > 0, evaluate(lcValue), int(Val(lcValue)))
 
 			case .match(T_BOOLEAN)
 				loToken.type = 'L'

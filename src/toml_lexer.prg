@@ -111,7 +111,7 @@ define class TomlLexer as custom
 		if at('-', result) > 0
 			return this.new_token(T_DATE, result)
 		else			
-			return this.new_token(T_NUMBER, val(result))
+			return this.new_token(T_NUMBER, evaluate(result))
 		endif
 	endfunc
 	function identifier
