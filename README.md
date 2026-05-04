@@ -67,6 +67,63 @@ Insert into cGames Values('The Legend of Zelda', 1986)
 * Convert any cursor structure into JSON
 ?_Screen.Json.CursorStructure('cGames')
 ```
+## Self-contained PRG/FXP ![](docs/prg.gif)
+
+If you prefer a lightweight, silent solution, use **JsonFox.fxp**. A single compiled file containing the entire JSON pipeline — no external dependencies, no `_Screen` pollution, no DLL registration needed.
+
+**Why it exists:** perfect for API integrations where you need to parse/stringify JSON in the background — inside a stored procedure, a VFP service, or any context where loading a full APP is overkill.
+
+```xbase
+* Instantiate — one file, nothing else
+oJson = NEWOBJECT("JSONFox", "JsonFox.fxp")
+
+* ── Same API as the APP version ──
+
+* Parse
+loObj   = oJson.Parse('{"name":"JSONFox","version":13}')
+?loObj.name        && JSONFox
+?loObj.version     && 13
+
+* Root values
+?oJson.Parse('true')     && .T.
+?oJson.Parse('null')     && .NULL.
+?oJson.Parse('"Hello"')  && Hello
+?oJson.Parse('2025')     && 2025
+
+* Stringify (pretty-print)
+?oJson.Stringify('{"compact":true,"items":[1,2,3]}')
+
+* Serialize a VFP object to JSON
+loVfp = CREATEOBJECT("Empty")
+ADDPROPERTY(loVfp, "lang", "VFP")
+ADDPROPERTY(loVfp, "year", 1992)
+?oJson.Stringify(@loVfp)
+
+* Cursor → JSON
+CREATE CURSOR qProds (id I, name C(20))
+INSERT INTO qProds VALUES (1, "Widget")
+INSERT INTO qProds VALUES (2, "Gadget")
+?oJson.CursorToJSON("qProds")
+
+* JSON array → Cursor
+oJson.JSONToCursor('[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}]', "qUsers")
+
+* Error handling (silent, no UI prompts)
+IF oJson.lError
+    ?oJson.cLastError
+ENDIF
+
+* Multiple independent instances (each with its own datasession)
+oApi1 = NEWOBJECT("JSONFox", "JsonFox.fxp")
+oApi2 = NEWOBJECT("JSONFox", "JsonFox.fxp")
+```
+
+**Full API:** `Parse`, `Stringify`, `CursorToJSON`, `JSONToCursor`, `CursorToJSONObject`, `CursorStructure`, `MasterDetailToJSON`, `ArrayToXML`, `XMLToJson`.
+
+**Properties:** `lError`, `cLastError`, `UseArrayObjects` (`.T.` by default), `version`.
+
+---
+
 ## Full Documentation
 * ![](docs/meth.gif) **_Screen.Json.CursorToJSON(tcCursor As String *[, tbCurrentRow, tnDataSession, tbJustArray, tbParseUTF8, tbTrimChars]*)**
 * ![](docs/prop.gif) **tcCursor:** the name of your cursor.
