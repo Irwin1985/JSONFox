@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "13.1"
+	version 		= "13.2"
 	hidden lInternal
 	hidden lTablePrompt
 	dimension aCustomArray[1]
@@ -227,6 +227,7 @@ define class JSONClass as session
 && <<Deprecated>> please use Parse function instead.
 && ======================================================================== &&
 	function Decode(tcJsonStr as memo) as object
+		local loResult
 		try
 			&&local loEnv, loResult
 			&&loEnv = this.saveEnvironment()
@@ -246,6 +247,7 @@ define class JSONClass as session
 && <<Deprecated>> please use Parse function instead.
 && ======================================================================== &&
 	function LoadFile(tcJsonFile as string) as object
+		local loResult
 		try
 			&&local loEnv, loResult
 			&&loEnv = this.saveEnvironment()

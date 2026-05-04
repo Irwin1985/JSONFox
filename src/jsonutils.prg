@@ -4,11 +4,14 @@
 && JSON Utilities
 && ======================================================================== &&
 define class jsonutils as custom
-	EscapeOptionalChars = .t.  && Por defecto, no escapar caracteres opcionales
+	EscapeOptionalChars = .t.
+	oRegEx = .null.
 
 	dimension aPattern[8, 2]
 
 	function init
+		this.oRegEx = createobject("VBScript.RegExp")
+		this.oRegEx.global = .t.
 && Match a date format in the following pattern
 && "YYYY-MM-DD"
 		this.aPattern[1,1] = "^\d\d\d\d-(0?[1-9]|1[0-2])-(0?[1-9]|[12][0-9]|3[01])$"
@@ -44,8 +47,6 @@ define class jsonutils as custom
 && "DD/MM/YY HH:MM:SS" or "DD-MM-YY HH:MM:SS"
 		this.aPattern[08,1] =  "^([0-2][0-9]|(3)[0-1])[\/-](((0)[0-9])|((1)[0-2]))[\/-]\d{2} (00|0?[0-9]|1[0-9]|2[0-3]):([0-9]|[0-5][0-9]):([0-9]|[0-5][0-9])$"
 		this.aPattern[08,2] = .t.
-
-		_screen.oRegEx.global = .t.
 
 	endfunc
 
@@ -97,8 +98,8 @@ define class jsonutils as custom
 * We try to identify a date format
 		local i
 		for i = 1 to alen(this.aPattern, 1)
-			_screen.oRegEx.pattern = this.aPattern[i, 1]
-			if _screen.oRegEx.Test(tcString)
+			this.oRegEx.pattern = this.aPattern[i, 1]
+			if this.oRegEx.Test(tcString)
 				return evl(this.formatDate(tcString, this.aPattern[i, 2]), tcString)
 			endif
 		endfor
@@ -177,17 +178,17 @@ define class jsonutils as custom
 		lparameters tcString as string, tlParseUTF8 as Boolean
 		local llEscapeOptionalChars
 
-* Obtener la configuración de escape opcional desde la clase
+* Obtener la configuraciï¿½n de escape opcional desde la clase
 		llEscapeOptionalChars = this.EscapeOptionalChars
 
-* Validar parámetro de entrada
+* Validar parï¿½metro de entrada
 		tcString = iif(vartype(tcString) != "C", "", tcString)
 
-* ESCAPES OBLIGATORIOS según el estándar RFC 8259
+* ESCAPES OBLIGATORIOS segï¿½n el estï¿½ndar RFC 8259
 		tcString = strtran(tcString, '\', '\\' )  && Barra invertida
 		tcString = strtran(tcString, chr(8),  '\b' )   && Backspace		
-		tcString = strtran(tcString, chr(9),  '\t' )  && Tabulación
-		tcString = strtran(tcString, chr(10), '\n' )  && Nueva línea
+		tcString = strtran(tcString, chr(9),  '\t' )  && Tabulaciï¿½n
+		tcString = strtran(tcString, chr(10), '\n' )  && Nueva lï¿½nea
 		tcString = strtran(tcString, chr(12), '\f' )   && Form feed
 		tcString = strtran(tcString, chr(13), '\r' )  && Retorno de carro		
 
@@ -197,7 +198,7 @@ define class jsonutils as custom
 		endif
 		tcString = strtran(tcString, '"', '\"' )  && Comillas dobles (obligatorio)
 
-* Escapar TODOS los caracteres > 127 automáticamente
+* Escapar TODOS los caracteres > 127 automï¿½ticamente
 		local i, nChar, lcChar, lcResult
 		lcResult = ""
 		for i=1 to len(tcString)
@@ -224,7 +225,7 @@ define class jsonutils as custom
 			tcString = strtran(tcString,"%","\u0025")
 		endif
 
-		* Añadir comillas si no las tiene
+		* Aï¿½adir comillas si no las tiene
 		LOCAL lnLen, lcLastChar, lcPrevChar
 
 		lnLen = LEN(tcString)

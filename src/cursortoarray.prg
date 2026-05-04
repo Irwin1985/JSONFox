@@ -4,6 +4,7 @@ define class CursorToArray as session
 	CurName    = ""
 	ParseUTF8 = .f.
 	TrimChars = .F.
+	oUtils    = .null.
 	
 	* Function CursorToArray
 	function CursorToArray as memo
@@ -11,7 +12,7 @@ define class CursorToArray as session
 			set datasession to this.nSessionID
 		endif
 		private JSONUtils
-		JSONUtils = _screen.JSONUtils
+		JSONUtils = iif(vartype(this.oUtils) == 'O', this.oUtils, _screen.JSONUtils)
 		local lcOutput as memo, ;
 			i as Integer, ;
 			lcValue as Variant, ;

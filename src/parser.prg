@@ -14,7 +14,8 @@ define class Parser as custom
 	hidden problematicFields
 	hidden tokenCollection
 	hidden lUseArrayObjects
-	
+	oUtils = .null.
+
 	function init(toScanner, tlUseArrayObjects)
 		this.tokenCollection = toScanner.scanTokens()
 		this.current = 1
@@ -25,6 +26,8 @@ define class Parser as custom
 	endfunc
 
 	function Parse
+		private JSONUtils
+		JSONUtils = iif(vartype(this.oUtils) == 'O', this.oUtils, _screen.jsonUtils)
 		local loParsedObject
 		loParsedObject = this.value()
 		this.CleanUp()
@@ -62,7 +65,7 @@ define class Parser as custom
 		=AddProperty(loPair, 'key', '')
 	
 		this.consume(T_STRING, "Expect key name")
-		loPair.key = _screen.jsonUtils.CheckProp(this.previous.value)
+		loPair.key = JSONUtils.CheckProp(this.previous.value)
 		this.consume(T_COLON, "Expect ':' after key element.")
 		lvValue = this.value()
 
@@ -122,7 +125,7 @@ define class Parser as custom
 	hidden function value
 		do case
 		case this.match(T_STRING)
-			return _screen.jsonUtils.CheckString(this.previous.value)
+			return JSONUtils.CheckString(this.previous.value)
 			
 		case this.match(T_NUMBER)
 			Local lcValue, lcPoint
@@ -149,7 +152,7 @@ define class Parser as custom
 		case this.match(T_NULL)
 			return .null.
 		otherwise
-			error "Parser Error: Unknown token value: '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
+			error "Parser Error: Unknown token value: '" + JSONUtils.tokenTypeToStr(this.peek.type) + "'"
 		EndCase
 	endfunc
 	&& ======================================================================== &&
@@ -191,7 +194,7 @@ define class Parser as custom
 			Return this.advance()
 		EndIf
 		if empty(tcMessage)
-			tcMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
+			tcMessage = "Parser Error: expected token '" + JSONUtils.tokenTypeToStr(tnTokenType) + "' got = '" + JSONUtils.tokenTypeToStr(this.peek.type) + "'"
 		endif
 		error tcMessage
 	endfunc

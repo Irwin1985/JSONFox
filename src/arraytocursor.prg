@@ -6,7 +6,8 @@ Define Class ArrayToCursor As Session
 	curname 	 = ""
 	nSessionID 	 = 0
 	oTableStruct = .Null.
-	
+	oUtils       = .null.
+
 	Dimension aRows(1)
 	nRowCount = 0
 
@@ -37,6 +38,8 @@ Define Class ArrayToCursor As Session
 	&& EBNF -> 	array  	= '[' object | { ',' object }  ']'
 	&& ======================================================================== &&
 	Function Array As Void
+		private JSONUtils
+		JSONUtils = iif(vartype(this.oUtils) == 'O', this.oUtils, _screen.jsonUtils)
 		With this
 			If Empty(.nSessionID)
 				.nSessionID = Set("Datasession")
@@ -141,14 +144,14 @@ Define Class ArrayToCursor As Session
 				If Len(lxValue.Value) > STRING_MAX_SIZE
 					lcType = 'M'
 				Else
-					lxValue.Value = _Screen.JSONUtils.CheckString(lxValue.Value)
+					lxValue.Value = JSONUtils.CheckString(lxValue.Value)
 					lcType  = Vartype(lxValue.Value)
 				Endif
 				If lcType == 'C'
 					lnFieldLength = Iif(Empty(Len(lxValue.Value)), 1, Len(lxValue.Value))
 				Endif
 			Endcase
-			lcFieldName = Lower(_Screen.JSONUtils.CheckProp(lcProp))
+			lcFieldName = Lower(JSONUtils.CheckProp(lcProp))
 			.CheckStructure(lcFieldName, lcType, lnFieldLength, lnDecimals)
 
 			* Set Key-Value pair object
@@ -194,7 +197,7 @@ Define Class ArrayToCursor As Session
 				loToken.literal = 'null'
 				loToken.value = .null.
 			Otherwise
-				Error "Parser Error: This token is invalid in for cursor conversion: '" + _screen.jsonUtils.tokenTypeToStr(.peek.type) + "'"
+				Error "Parser Error: This token is invalid in for cursor conversion: '" + JSONUtils.tokenTypeToStr(.peek.type) + "'"
 			endcase
 		endwith
 		return loToken
@@ -335,7 +338,7 @@ Define Class ArrayToCursor As Session
 				Return .advance()
 			EndIf
 			if empty(tcMessage)
-				tcMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(.peek.type) + "'"
+				tcMessage = "Parser Error: expected token '" + JSONUtils.tokenTypeToStr(tnTokenType) + "' got = '" + JSONUtils.tokenTypeToStr(.peek.type) + "'"
 			endif
 			error tcMessage
 		endwith

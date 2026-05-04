@@ -11,12 +11,13 @@ define class JSONStringify as custom
 
 	ParseUtf8 = .f.
 	TrimChars = .f.
+	oUtils = .null.
 
 	Hidden current
 	Hidden previous
 	Hidden peek
 	hidden tokenCollection
-	
+
 	function init(toScanner)
 		this.tokenCollection = toScanner.scanTokens()
 		this.current = 1
@@ -25,6 +26,8 @@ define class JSONStringify as custom
 	* Stringify
 	function Stringify as memo
 		lparameters tlParseUtf8, tlTrimChars
+		private JSONUtils
+		JSONUtils = iif(vartype(this.oUtils) == 'O', this.oUtils, _screen.jsonUtils)
 		local lcFormatedJson
 		this.ParseUtf8 = tlParseUtf8
 		this.TrimChars = tlTrimChars
@@ -69,7 +72,7 @@ define class JSONStringify as custom
 		lparameters tnSpaceIdent as integer
 		local lcProp as string
 		this.consume(T_STRING, "Expect right key element")
-		lcProp = _screen.JSONUtils.GetString(this.previous.value, this.ParseUtf8)
+		lcProp = JSONUtils.GetString(this.previous.value, this.ParseUtf8)
 		this.consume(T_COLON, "Expect ':' after key element.")		
 		*return '"' + lcProp + '": ' + this.value(tnSpaceIdent)
 		return lcProp + ': ' + this.value(tnSpaceIdent)
@@ -81,7 +84,7 @@ define class JSONStringify as custom
 	hidden function value(tnSpaceBlock)
 		do case
 		case this.match(T_STRING)
-			return _screen.JSONUtils.GetString(Iif(this.TrimChars, Alltrim(this.previous.value), this.previous.value), this.ParseUtf8)			
+			return JSONUtils.GetString(Iif(this.TrimChars, Alltrim(this.previous.value), this.previous.value), this.ParseUtf8)			
 
 		case this.match(T_NUMBER)
 			return this.previous.value
@@ -148,7 +151,7 @@ define class JSONStringify as custom
 			Return this.advance()
 		EndIf
 		if empty(tcErrorMessage)
-			tcErrorMessage = "Parser Error: expected token '" + _screen.jsonUtils.tokenTypeToStr(tnTokenType) + "' got = '" + _screen.jsonUtils.tokenTypeToStr(this.peek.type) + "'"
+			tcErrorMessage = "Parser Error: expected token '" + JSONUtils.tokenTypeToStr(tnTokenType) + "' got = '" + JSONUtils.tokenTypeToStr(this.peek.type) + "'"
 		endif
 		error tcErrorMessage
 	endfunc

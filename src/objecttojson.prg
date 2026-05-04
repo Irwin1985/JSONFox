@@ -8,7 +8,8 @@ define class ObjectToJSON as session
 	cFlags 	 = ''
 	parseUTF8 = .f.
 	TrimChars = .f.
-	
+	oUtils = .null.
+
 	* Function Init
 	function init
 		this.lCentury = set("Century") == "OFF"
@@ -20,6 +21,8 @@ define class ObjectToJSON as session
 	
 	* Encode
 	function Encode(toRefObj, tcFlags, tlParseUTF8, tlTrimChars)
+		private JSONUtils
+		JSONUtils = iif(vartype(this.oUtils) == 'O', this.oUtils, _screen.jsonUtils)
 		lPassByRef = .t.
 		try
 			external array toRefObj
@@ -92,7 +95,7 @@ define class ObjectToJSON as session
 			return lcArray
 
 		case vartype(tValue) = 'O'
-			* Primero verificamos si es una colección para procesarla de manera especial
+			* Primero verificamos si es una colecciï¿½n para procesarla de manera especial
 			llIsCollection = .f.
 			try				
 				llIsCollection = (tValue.BaseClass == "Collection" and tValue.Class == "Collection" and tValue.Name == "Collection")
@@ -100,7 +103,7 @@ define class ObjectToJSON as session
 			endtry
 			
 			if llIsCollection
-				* Verificamos si la colección tiene claves (key-value) o solo valores
+				* Verificamos si la colecciï¿½n tiene claves (key-value) o solo valores
 				local lnCount, i, lcResult, llHasKeys, lcKey
 				lnCount = tValue.Count
 				llHasKeys = .f.
@@ -117,7 +120,7 @@ define class ObjectToJSON as session
 				endif
 				
 				if llHasKeys
-					* Es una colección con pares clave-valor, la tratamos como objeto
+					* Es una colecciï¿½n con pares clave-valor, la tratamos como objeto
 					lcResult = '{'
 					for i = 1 to lnCount
 						lcKey = tValue.GetKey(i)
@@ -125,7 +128,7 @@ define class ObjectToJSON as session
 					endfor
 					lcResult = lcResult + '}'
 				else
-					* Es una colección solo con valores, la tratamos como array
+					* Es una colecciï¿½n solo con valores, la tratamos como array
 					lcResult = '['
 					for i = 1 to lnCount
 						lcResult = lcResult + iif(i > 1, ',', '') + this.AnyToJson(tValue.Item(i))
@@ -135,7 +138,7 @@ define class ObjectToJSON as session
 				
 				return lcResult
 			else
-				* No es una colección, procesamos como un objeto normal
+				* No es una colecciï¿½n, procesamos como un objeto normal
 				local j, lcJSONStr, lnTot, i, lcProp, lcOriginalName
 				local array gaMembers(1)
 
@@ -199,7 +202,7 @@ define class ObjectToJSON as session
 				return lcJSONStr
 			endif
 		otherwise
-			return _screen.JSONUtils.GetValue(tValue, vartype(tValue), this.parseUTF8, this.TrimChars)
+			return JSONUtils.GetValue(tValue, vartype(tValue), this.parseUTF8, this.TrimChars)
 		endcase
 	endfunc
 	

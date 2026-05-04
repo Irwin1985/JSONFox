@@ -13,6 +13,7 @@ define class Tokenizer as custom
 
 	dimension tokens[1]
 	sourceLen = 0
+	oUtils = .null.
 
 	function init(tcSource)
 		with this
@@ -44,7 +45,7 @@ define class Tokenizer as custom
 	hidden function peek
 		with this
 			if .isAtEnd()
-				return 'ÿ'
+				return 'ï¿½'
 			endif
 			return substr(.source, .current, 1)
 		endwith
@@ -53,7 +54,7 @@ define class Tokenizer as custom
 	hidden function peekNext
 		with this
 			if (.current + 1) > .sourceLen
-				return 'ÿ'
+				return 'ï¿½'
 			endif
 			return substr(.source, .current+1, 1)
 		endwith
@@ -224,7 +225,7 @@ define class Tokenizer as custom
 					i = i + 2 && Avanzar 2 caracteres
 				else
 					lcResult = lcResult + lcChar
-					i = i + 1 && avanzar un carácter
+					i = i + 1 && avanzar un carï¿½cter
 				endif
 			enddo
 			tcLexeme = lcResult
@@ -382,8 +383,9 @@ define class Tokenizer as custom
 	endfunc
 
 	function tokenStr(toToken)
-		local lcType, lcValue
-		lcType = _screen.jsonUtils.tokenTypeToStr(toToken.type)
+		local lcType, lcValue, loUtils
+		loUtils = iif(vartype(this.oUtils) == 'O', this.oUtils, _screen.jsonUtils)
+		lcType = loUtils.tokenTypeToStr(toToken.type)
 		lcValue = alltrim(transform(toToken.value))
 		return "Token(" + lcType + ", '" + lcValue + "') at Line(" + alltrim(str(toToken.line)) + ")"
 	endfunc
@@ -399,7 +401,7 @@ define class Tokenizer as custom
 						this.tokens[i] = .null.
 					endif
 				next
-* Redimensionar el array a tamaño mínimo
+* Redimensionar el array a tamaï¿½o mï¿½nimo
 				dimension this.tokens[1]
 				this.tokens[1] = .null.
 			endif

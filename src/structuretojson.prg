@@ -4,6 +4,7 @@ Define Class StructureToJSON As Session
 	curName = ""
 	lExtended = .F.
 	lJustArray = .F.
+	oUtils = .null.
 * Field constants	
 	#Define FIELD_NAME							1
 	#Define FIELD_TYPE							2
@@ -32,7 +33,7 @@ Define Class StructureToJSON As Session
 			Set DataSession To (This.nSessionID)
 		Endif
 		Private JSONUtils
-		JSONUtils = _Screen.JSONUtils
+		JSONUtils = iif(vartype(this.oUtils) == 'O', this.oUtils, _Screen.JSONUtils)
 		Local lcStructJSON As Memo, lcFieldJSON as memo, lnLength As Integer, i as Integer
 		If !this.lJustArray
 			lcStructJSON = '{"' + Lower(this.curName) + '":['
