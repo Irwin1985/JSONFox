@@ -45,7 +45,7 @@ define class Tokenizer as custom
 	hidden function peek
 		with this
 			if .isAtEnd()
-				return '�'
+				return chr(0)
 			endif
 			return substr(.source, .current, 1)
 		endwith
@@ -54,7 +54,7 @@ define class Tokenizer as custom
 	hidden function peekNext
 		with this
 			if (.current + 1) > .sourceLen
-				return '�'
+				return chr(0)
 			endif
 			return substr(.source, .current+1, 1)
 		endwith
@@ -90,8 +90,8 @@ define class Tokenizer as custom
 	hidden function number(tChar as Character)
 		with this
 			local lexeme, isNegative
-			lexeme = ''			
-			
+			lexeme = ''
+
 			isNegative = tChar == '-'
 
 			do while isdigit(.peek())
@@ -106,21 +106,21 @@ define class Tokenizer as custom
 			endif
 
 && Check if number is a Scientific Notation
-			if lower(.peek()) == "e"			
+			if lower(.peek()) == "e"
 				.advance() && eat 'e' or 'E'
-				
+
 				&& Optional sign
 				if .peek() == '+' or .peek() == '-'
 					.advance()
 				endif
-				
+
 				&& Must have at least one digit
 				if !isdigit(.peek())
 					&& Error: malformed scientific notation
 					.showError(.line, "Invalid scientific notation")
-					return 
+					return
 				endif
-				
+
 				do while isdigit(.peek())
 					.advance()
 				enddo
@@ -219,13 +219,13 @@ define class Tokenizer as custom
 					case lcNextChar == "'"
 						lcResult = lcResult + "'"
 					otherwise
-* Si no es una secuencia de escape conocida, mantener ambos caracteres
+* Unknown escape sequence, keep both characters
 						lcResult = lcResult + "\" + lcNextChar
 					endcase
-					i = i + 2 && Avanzar 2 caracteres
+					i = i + 2 && Advance 2 chars
 				else
 					lcResult = lcResult + lcChar
-					i = i + 1 && avanzar un car�cter
+					i = i + 1 && Advance 1 char
 				endif
 			enddo
 			tcLexeme = lcResult
@@ -284,10 +284,10 @@ define class Tokenizer as custom
 			loTokens = createobject("Empty")
 			addproperty(loTokens, "tokens["+alltrim(str(.capacity))+"]", null)
 
-* Crear una copia de los tokens
+* Create a copy of the tokens
 			local i
 			for i = 1 to .capacity
-* Si los tokens son objetos, crear copias profundas
+* If tokens are objects, create deep copies
 				if type('.tokens[i]') = 'O'
 					loTokens.tokens[i] = createobject("Empty")
 					=addproperty(loTokens.tokens[i], "type", .tokens[i].type)
@@ -304,8 +304,8 @@ define class Tokenizer as custom
 		endwith
 	endfunc
 
-	hidden function scanToken		 
-		with this		
+	hidden function scanToken
+		with this
 			local ch
 			ch = .advance()
 			do case
@@ -392,21 +392,21 @@ define class Tokenizer as custom
 
 	function CleanUp
 		with this
-* Liberar el array de tokens
+* Release token array
 			if type('this.tokens', 1) == 'A' and alen(this.tokens) > 1
 				local i
 				for i = 1 to alen(this.tokens)
 					if type('this.tokens[i]') = 'O'
-* Liberar propiedades del objeto token
+* Release token object properties
 						this.tokens[i] = .null.
 					endif
 				next
-* Redimensionar el array a tama�o m�nimo
+* Resize array to minimum size
 				dimension this.tokens[1]
 				this.tokens[1] = .null.
 			endif
 
-* Liberar otras variables que puedan ocupar mucha memoria
+* Release variables that may hold large amounts of memory
 			this.source = ""
 			this.sourceLen = 0
 			this.capacity = 0

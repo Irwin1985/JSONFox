@@ -208,61 +208,61 @@ define class jsonutils as custom
 		lparameters tcString as string, tlParseUTF8 as Boolean
 		local llEscapeOptionalChars
 
-* Obtener la configuraci�n de escape opcional desde la clase
+* Get optional escape config from the class
 		llEscapeOptionalChars = this.EscapeOptionalChars
 
-* Validar par�metro de entrada
+* Validate input parameter
 		tcString = iif(vartype(tcString) != "C", "", tcString)
 
-* ESCAPES OBLIGATORIOS seg�n el est�ndar RFC 8259
-		tcString = strtran(tcString, '\', '\\' )  && Barra invertida
-		tcString = strtran(tcString, chr(8),  '\b' )   && Backspace		
-		tcString = strtran(tcString, chr(9),  '\t' )  && Tabulaci�n
-		tcString = strtran(tcString, chr(10), '\n' )  && Nueva l�nea
+* MANDATORY ESCAPES per RFC 8259 standard
+		tcString = strtran(tcString, '\', '\\' )  && Backslash
+		tcString = strtran(tcString, chr(8),  '\b' )   && Backspace
+		tcString = strtran(tcString, chr(9),  '\t' )  && Tab
+		tcString = strtran(tcString, chr(10), '\n' )  && Newline
 		tcString = strtran(tcString, chr(12), '\f' )   && Form feed
-		tcString = strtran(tcString, chr(13), '\r' )  && Retorno de carro		
+		tcString = strtran(tcString, chr(13), '\r' )  && Carriage return
 
-* Manejo de comillas
+* Handle quotes
 		if left(alltrim(tcString), 1) == '"' and right(alltrim(tcString),1) == '"'
 			tcString = substr(tcString, 2, len(tcString)-2)
 		endif
-		tcString = strtran(tcString, '"', '\"' )  && Comillas dobles (obligatorio)
+		tcString = strtran(tcString, '"', '\"' )  && Double quotes (mandatory)
 
-* Escapar TODOS los caracteres > 127 autom�ticamente
+* Escape all chars > 127 automatically
 		local i, nChar, lcChar, lcResult
 		lcResult = ""
 		for i=1 to len(tcString)
 			lcChar = substr(tcString,i,1)
 			nChar = asc(lcChar)
-			
+
 			if nChar > 127
-				* convertir a escape Unicode \uXXXX
-				lcResult = lcResult + '\u' + right('0000' + transform(nChar, '@0'), 4)				
+				* Convert to Unicode escape \uXXXX
+				lcResult = lcResult + '\u' + right('0000' + transform(nChar, '@0'), 4)
 			else
 				lcResult = lcResult + lcChar
 			endif
 		next
-		
+
 		tcString = lcResult
 
-		* ESCAPES OPCIONALES
+		* OPTIONAL ESCAPES
 		if tlParseUTF8
-			* Caracteres especiales
-			tcString = strtran(tcString,"&","\u0026")
-			tcString = strtran(tcString,"+","\u002b")
-			tcString = strtran(tcString,"-","\u002d")
-			tcString = strtran(tcString,"#","\u0023")
-			tcString = strtran(tcString,"%","\u0025")
+			* Special characters
+			tcString = strtran(tcString,"&","&")
+			tcString = strtran(tcString,"+","+")
+			tcString = strtran(tcString,"-","-")
+			tcString = strtran(tcString,"#","#")
+			tcString = strtran(tcString,"%","%")
 		endif
 
-		* A�adir comillas si no las tiene
+		* Add quotes if missing
 		LOCAL lnLen, lcLastChar, lcPrevChar
 
 		lnLen = LEN(tcString)
 		lcLastChar = RIGHT(tcString, 1)
 		lcPrevChar = IIF(lnLen > 1, SUBSTR(tcString, lnLen-1, 1), "")
 
-		* Verificar si inicia con comilla y termina con comilla NO escapada
+		* Check if starts and ends with unescaped quote
 		IF LEFT(tcString, 1) != '"' OR lcLastChar != '"' OR lcPrevChar = "\"
 		    RETURN '"' + tcString + '"'
 		ENDIF
@@ -380,7 +380,7 @@ define class Tokenizer as custom
 	hidden function peek
 		with this
 			if .isAtEnd()
-				return '�'
+				return chr(0)
 			endif
 			return substr(.source, .current, 1)
 		endwith
@@ -389,7 +389,7 @@ define class Tokenizer as custom
 	hidden function peekNext
 		with this
 			if (.current + 1) > .sourceLen
-				return '�'
+				return chr(0)
 			endif
 			return substr(.source, .current+1, 1)
 		endwith
@@ -425,8 +425,8 @@ define class Tokenizer as custom
 	hidden function number(tChar as Character)
 		with this
 			local lexeme, isNegative
-			lexeme = ''			
-			
+			lexeme = ''
+
 			isNegative = tChar == '-'
 
 			do while isdigit(.peek())
@@ -441,21 +441,21 @@ define class Tokenizer as custom
 			endif
 
 && Check if number is a Scientific Notation
-			if lower(.peek()) == "e"			
+			if lower(.peek()) == "e"
 				.advance() && eat 'e' or 'E'
-				
+
 				&& Optional sign
 				if .peek() == '+' or .peek() == '-'
 					.advance()
 				endif
-				
+
 				&& Must have at least one digit
 				if !isdigit(.peek())
 					&& Error: malformed scientific notation
 					.showError(.line, "Invalid scientific notation")
-					return 
+					return
 				endif
-				
+
 				do while isdigit(.peek())
 					.advance()
 				enddo
@@ -554,13 +554,13 @@ define class Tokenizer as custom
 					case lcNextChar == "'"
 						lcResult = lcResult + "'"
 					otherwise
-* Si no es una secuencia de escape conocida, mantener ambos caracteres
+* Unknown escape sequence, keep both characters
 						lcResult = lcResult + "\" + lcNextChar
 					endcase
-					i = i + 2 && Avanzar 2 caracteres
+					i = i + 2 && Advance 2 chars
 				else
 					lcResult = lcResult + lcChar
-					i = i + 1 && avanzar un car�cter
+					i = i + 1 && Advance 1 char
 				endif
 			enddo
 			tcLexeme = lcResult
@@ -619,10 +619,10 @@ define class Tokenizer as custom
 			loTokens = createobject("Empty")
 			addproperty(loTokens, "tokens["+alltrim(str(.capacity))+"]", null)
 
-* Crear una copia de los tokens
+* Create a copy of the tokens
 			local i
 			for i = 1 to .capacity
-* Si los tokens son objetos, crear copias profundas
+* If tokens are objects, create deep copies
 				if type('.tokens[i]') = 'O'
 					loTokens.tokens[i] = createobject("Empty")
 					=addproperty(loTokens.tokens[i], "type", .tokens[i].type)
@@ -639,8 +639,8 @@ define class Tokenizer as custom
 		endwith
 	endfunc
 
-	hidden function scanToken		 
-		with this		
+	hidden function scanToken
+		with this
 			local ch
 			ch = .advance()
 			do case
@@ -727,21 +727,21 @@ define class Tokenizer as custom
 
 	function CleanUp
 		with this
-* Liberar el array de tokens
+* Release token array
 			if type('this.tokens', 1) == 'A' and alen(this.tokens) > 1
 				local i
 				for i = 1 to alen(this.tokens)
 					if type('this.tokens[i]') = 'O'
-* Liberar propiedades del objeto token
+* Release token object properties
 						this.tokens[i] = .null.
 					endif
 				next
-* Redimensionar el array a tama�o m�nimo
+* Resize array to minimum size
 				dimension this.tokens[1]
 				this.tokens[1] = .null.
 			endif
 
-* Liberar otras variables que puedan ocupar mucha memoria
+* Release variables that may hold large amounts of memory
 			this.source = ""
 			this.sourceLen = 0
 			this.capacity = 0
@@ -1245,7 +1245,7 @@ define class ObjectToJSON as session
 		set date ansi
 		mvcount = 60000
 	endfunc
-	
+
 	* Encode
 	function Encode(toRefObj, tcFlags, tlParseUTF8, tlTrimChars)
 		private JSONUtils
@@ -1265,11 +1265,11 @@ define class ObjectToJSON as session
 			return this.AnyToJson(toRefObj)
 		endif
 	endfunc
-	
+
 	function EncodeFromSchema(toRefObj, tcSchema, tlParseUTF8, tlTrimChars)
-		
+
 	endfunc
-	
+
 	* AnyToJson
 	function AnyToJson as memo
 		lparameters tValue as Variant
@@ -1322,20 +1322,20 @@ define class ObjectToJSON as session
 			return lcArray
 
 		case vartype(tValue) = 'O'
-			* Primero verificamos si es una colecci�n para procesarla de manera especial
+			* Check if it is a collection first to handle it specially
 			llIsCollection = .f.
-			try				
+			try
 				llIsCollection = (tValue.BaseClass == "Collection" and tValue.Class == "Collection" and tValue.Name == "Collection")
 			catch
 			endtry
-			
+
 			if llIsCollection
-				* Verificamos si la colecci�n tiene claves (key-value) o solo valores
+				* Check if collection has keys (key-value) or only values
 				local lnCount, i, lcResult, llHasKeys, lcKey
 				lnCount = tValue.Count
 				llHasKeys = .f.
-				
-				* Intentamos obtener la clave del primer elemento para determinar si es key-value
+
+				* Try to get the first element key to determine if key-value
 				if lnCount > 0
 					try
 						lcKey = tValue.GetKey(1)
@@ -1345,9 +1345,9 @@ define class ObjectToJSON as session
 					catch
 					endtry
 				endif
-				
+
 				if llHasKeys
-					* Es una colecci�n con pares clave-valor, la tratamos como objeto
+					* Collection with key-value pairs, treat as object
 					lcResult = '{'
 					for i = 1 to lnCount
 						lcKey = tValue.GetKey(i)
@@ -1355,31 +1355,31 @@ define class ObjectToJSON as session
 					endfor
 					lcResult = lcResult + '}'
 				else
-					* Es una colecci�n solo con valores, la tratamos como array
+					* Collection with values only, treat as array
 					lcResult = '['
 					for i = 1 to lnCount
 						lcResult = lcResult + iif(i > 1, ',', '') + this.AnyToJson(tValue.Item(i))
 					endfor
 					lcResult = lcResult + ']'
 				endif
-				
+
 				return lcResult
 			else
-				* No es una colecci�n, procesamos como un objeto normal
+				* Not a collection, process as normal object
 				local j, lcJSONStr, lnTot, i, lcProp, lcOriginalName
 				local array gaMembers(1)
 
 				lcJSONStr = '{'
 				lnTot = amembers(gaMembers, tValue, 0, this.cFlags)
-				
+
 				local array laPropsToProcess[1]
 				local lnPropCount, lnIdx
 				lnPropCount = 0
-				
-				* primer paso: identificar y clasificar las propiedades
+
+				* Step 1: identify and classify properties
 				for j=1 to lnTot
 					lcProp = lower(alltrim(gaMembers[j]))
-					* Ignoramos propiedades especiales de array
+					* Skip special array properties
 					if left(lower(lcProp), 14) == "_specialarray_"
 						loop
 					endif
@@ -1387,17 +1387,17 @@ define class ObjectToJSON as session
 					lnPropCount = lnPropCount + 1
 					dimension laPropsToProcess[lnPropCount,2]
 					laPropsToProcess[lnPropCount, 1] = lcProp
-					if right(lcProp, 6) == "_array" and type("tValue._specialArray_" + lcProp) == "C"					
+					if right(lcProp, 6) == "_array" and type("tValue._specialArray_" + lcProp) == "C"
 						laPropsToProcess[lnPropCount, 2] = "special_array"
-					else					
-						laPropsToProcess[lnPropCount, 2] = "normal"					
+					else
+						laPropsToProcess[lnPropCount, 2] = "normal"
 					endif
 				next
-				
-				* segundo paso: procesar las propiedades filtradas
+
+				* Step 2: process filtered properties
 				for lnIdx=1 to lnPropCount
-					lcProp = laPropsToProcess[lnIdx, 1]								
-					
+					lcProp = laPropsToProcess[lnIdx, 1]
+
 					if laPropsToProcess[lnIdx, 2] == "special_array"
 						lcOriginalName = evaluate("tValue._specialArray_" + lcProp)
 						lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcOriginalName + '":'
@@ -1409,7 +1409,7 @@ define class ObjectToJSON as session
 							lcJSONStr = lcJSONStr + "[]"
 						endtry
 					else
-						* Es una propiedad normal
+						* Normal property
 						lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcProp + '":'
 						try
 							local array laLista[1]
@@ -1422,7 +1422,7 @@ define class ObjectToJSON as session
 								lcJSONStr = lcJSONStr + "{}"
 							endtry
 						endtry
-					endif				
+					endif
 				endfor
 
 				lcJSONStr = lcJSONStr + '}'
@@ -1432,7 +1432,7 @@ define class ObjectToJSON as session
 			return JSONUtils.GetValue(tValue, vartype(tValue), this.parseUTF8, this.TrimChars)
 		endcase
 	endfunc
-	
+
 	* Destroy
 	function destroy
 		if this.lCentury
@@ -1442,6 +1442,7 @@ define class ObjectToJSON as session
 		set date &lcDateAct
 	endfunc
 enddefine
+
 
 * ── src\arraytocursor.prg ── *
 
@@ -2122,7 +2123,7 @@ Define Class StructureToJSON As Session
 Enddefine
 
 * ── src\jsonfox_class.prg ── *
-* JSONFox — Self-contained standalone facade
+* JSONFox - Self-contained standalone facade
 * Usage: jsonFox = NEWOBJECT("JSONFox", "JsonFox.fxp")
 define class JSONFox as session
 	datasession     = 1
@@ -2141,7 +2142,7 @@ define class JSONFox as session
 		set tableprompt off
 	endfunc
 
-	* ── Internal helpers ──────────────────────────────────────────────────── *
+	* -- Internal helpers --
 
 	hidden function CreateLexer(tcSource)
 		local loLexer
@@ -2178,7 +2179,7 @@ define class JSONFox as session
 		endtry
 	endproc
 
-	* ── Public API ───────────────────────────────────────────────────────── *
+	* -- Public API --
 
 	* Parse
 	* Fail-fast: JSON syntax errors propagate as VFP errors so the caller
@@ -2232,7 +2233,7 @@ define class JSONFox as session
 		return lcResult
 	endfunc
 
-	* CursorToJSON — soft errors: invalid/closed cursor sets lError
+	* CursorToJSON - soft errors: invalid/closed cursor sets lError
 	function CursorToJSON(tcCursor, tbCurrentRow, tnDataSession, tlJustArray, tlParseUtf8, tlTrimChars)
 		local lcResult, lcTmp, lnRecno, loParser
 		lcResult = ""

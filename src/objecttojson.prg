@@ -18,7 +18,7 @@ define class ObjectToJSON as session
 		set date ansi
 		mvcount = 60000
 	endfunc
-	
+
 	* Encode
 	function Encode(toRefObj, tcFlags, tlParseUTF8, tlTrimChars)
 		private JSONUtils
@@ -38,11 +38,11 @@ define class ObjectToJSON as session
 			return this.AnyToJson(toRefObj)
 		endif
 	endfunc
-	
+
 	function EncodeFromSchema(toRefObj, tcSchema, tlParseUTF8, tlTrimChars)
-		
+
 	endfunc
-	
+
 	* AnyToJson
 	function AnyToJson as memo
 		lparameters tValue as Variant
@@ -95,20 +95,20 @@ define class ObjectToJSON as session
 			return lcArray
 
 		case vartype(tValue) = 'O'
-			* Primero verificamos si es una colecci�n para procesarla de manera especial
+			* Check if it is a collection first to handle it specially
 			llIsCollection = .f.
-			try				
+			try
 				llIsCollection = (tValue.BaseClass == "Collection" and tValue.Class == "Collection" and tValue.Name == "Collection")
 			catch
 			endtry
-			
+
 			if llIsCollection
-				* Verificamos si la colecci�n tiene claves (key-value) o solo valores
+				* Check if collection has keys (key-value) or only values
 				local lnCount, i, lcResult, llHasKeys, lcKey
 				lnCount = tValue.Count
 				llHasKeys = .f.
-				
-				* Intentamos obtener la clave del primer elemento para determinar si es key-value
+
+				* Try to get the first element key to determine if key-value
 				if lnCount > 0
 					try
 						lcKey = tValue.GetKey(1)
@@ -118,9 +118,9 @@ define class ObjectToJSON as session
 					catch
 					endtry
 				endif
-				
+
 				if llHasKeys
-					* Es una colecci�n con pares clave-valor, la tratamos como objeto
+					* Collection with key-value pairs, treat as object
 					lcResult = '{'
 					for i = 1 to lnCount
 						lcKey = tValue.GetKey(i)
@@ -128,31 +128,31 @@ define class ObjectToJSON as session
 					endfor
 					lcResult = lcResult + '}'
 				else
-					* Es una colecci�n solo con valores, la tratamos como array
+					* Collection with values only, treat as array
 					lcResult = '['
 					for i = 1 to lnCount
 						lcResult = lcResult + iif(i > 1, ',', '') + this.AnyToJson(tValue.Item(i))
 					endfor
 					lcResult = lcResult + ']'
 				endif
-				
+
 				return lcResult
 			else
-				* No es una colecci�n, procesamos como un objeto normal
+				* Not a collection, process as normal object
 				local j, lcJSONStr, lnTot, i, lcProp, lcOriginalName
 				local array gaMembers(1)
 
 				lcJSONStr = '{'
 				lnTot = amembers(gaMembers, tValue, 0, this.cFlags)
-				
+
 				local array laPropsToProcess[1]
 				local lnPropCount, lnIdx
 				lnPropCount = 0
-				
-				* primer paso: identificar y clasificar las propiedades
+
+				* Step 1: identify and classify properties
 				for j=1 to lnTot
 					lcProp = lower(alltrim(gaMembers[j]))
-					* Ignoramos propiedades especiales de array
+					* Skip special array properties
 					if left(lower(lcProp), 14) == "_specialarray_"
 						loop
 					endif
@@ -160,17 +160,17 @@ define class ObjectToJSON as session
 					lnPropCount = lnPropCount + 1
 					dimension laPropsToProcess[lnPropCount,2]
 					laPropsToProcess[lnPropCount, 1] = lcProp
-					if right(lcProp, 6) == "_array" and type("tValue._specialArray_" + lcProp) == "C"					
+					if right(lcProp, 6) == "_array" and type("tValue._specialArray_" + lcProp) == "C"
 						laPropsToProcess[lnPropCount, 2] = "special_array"
-					else					
-						laPropsToProcess[lnPropCount, 2] = "normal"					
+					else
+						laPropsToProcess[lnPropCount, 2] = "normal"
 					endif
 				next
-				
-				* segundo paso: procesar las propiedades filtradas
+
+				* Step 2: process filtered properties
 				for lnIdx=1 to lnPropCount
-					lcProp = laPropsToProcess[lnIdx, 1]								
-					
+					lcProp = laPropsToProcess[lnIdx, 1]
+
 					if laPropsToProcess[lnIdx, 2] == "special_array"
 						lcOriginalName = evaluate("tValue._specialArray_" + lcProp)
 						lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcOriginalName + '":'
@@ -182,7 +182,7 @@ define class ObjectToJSON as session
 							lcJSONStr = lcJSONStr + "[]"
 						endtry
 					else
-						* Es una propiedad normal
+						* Normal property
 						lcJSONStr = lcJSONStr + iif(len(lcJSONStr) > 1, ',', '') + '"' + lcProp + '":'
 						try
 							local array laLista[1]
@@ -195,7 +195,7 @@ define class ObjectToJSON as session
 								lcJSONStr = lcJSONStr + "{}"
 							endtry
 						endtry
-					endif				
+					endif
 				endfor
 
 				lcJSONStr = lcJSONStr + '}'
@@ -205,7 +205,7 @@ define class ObjectToJSON as session
 			return JSONUtils.GetValue(tValue, vartype(tValue), this.parseUTF8, this.TrimChars)
 		endcase
 	endfunc
-	
+
 	* Destroy
 	function destroy
 		if this.lCentury

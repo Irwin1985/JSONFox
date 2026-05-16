@@ -1,4 +1,4 @@
-* JSONFox — Self-contained standalone facade
+* JSONFox - Self-contained standalone facade
 * Usage: jsonFox = NEWOBJECT("JSONFox", "JsonFox.fxp")
 define class JSONFox as session
 	datasession     = 1
@@ -17,7 +17,7 @@ define class JSONFox as session
 		set tableprompt off
 	endfunc
 
-	* ── Internal helpers ──────────────────────────────────────────────────── *
+	* -- Internal helpers --
 
 	hidden function CreateLexer(tcSource)
 		local loLexer
@@ -54,7 +54,7 @@ define class JSONFox as session
 		endtry
 	endproc
 
-	* ── Public API ───────────────────────────────────────────────────────── *
+	* -- Public API --
 
 	* Parse
 	* Fail-fast: JSON syntax errors propagate as VFP errors so the caller
@@ -108,7 +108,7 @@ define class JSONFox as session
 		return lcResult
 	endfunc
 
-	* CursorToJSON — soft errors: invalid/closed cursor sets lError
+	* CursorToJSON - soft errors: invalid/closed cursor sets lError
 	function CursorToJSON(tcCursor, tbCurrentRow, tnDataSession, tlJustArray, tlParseUtf8, tlTrimChars)
 		local lcResult, lcTmp, lnRecno, loParser
 		lcResult = ""
