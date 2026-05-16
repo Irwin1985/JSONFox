@@ -3,8 +3,8 @@
 * Requires: DO build_jsonfox.prg first (or run test_build.prg)
 * Run: foxunit run --prg tests\test_jsonfox_standalone.prg --format console
 
-#define PROJ_ROOT "F:\Desarrollo\GitHub\JSONFox"
-#define FXP_PATH  "F:\Desarrollo\GitHub\JSONFox\JsonFox.fxp"
+#define PROJ_ROOT "C:\Desarrollo\IrwinRodriguez.dev\JSONFox"
+#define FXP_PATH  "C:\Desarrollo\IrwinRodriguez.dev\JSONFox\JsonFox.fxp"
 
 * ============================================================ *
 * TestStandaloneParse

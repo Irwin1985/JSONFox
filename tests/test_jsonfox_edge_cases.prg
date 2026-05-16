@@ -5,8 +5,8 @@
 *          VFP types, CursorToJSONObject, MasterDetail, XML, etc.
 * Run: foxunit run --prg tests\test_jsonfox_edge_cases.prg --format console
 
-#define PROJ_ROOT "F:\Desarrollo\GitHub\JSONFox"
-#define FXP_PATH  "F:\Desarrollo\GitHub\JSONFox\JsonFox.fxp"
+#define PROJ_ROOT "C:\Desarrollo\IrwinRodriguez.dev\JSONFox"
+#define FXP_PATH  "C:\Desarrollo\IrwinRodriguez.dev\JSONFox\JsonFox.fxp"
 
 
 * ============================================================ *

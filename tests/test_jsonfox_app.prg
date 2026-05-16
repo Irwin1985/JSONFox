@@ -2,7 +2,7 @@
 * Test suite for JSONFox APP version (access via _Screen.Json)
 * Run: foxunit run --prg tests\test_jsonfox_app.prg --format console
 
-#define PROJ_ROOT "F:\Desarrollo\GitHub\JSONFox"
+#define PROJ_ROOT "C:\Desarrollo\IrwinRodriguez.dev\JSONFox"
 
 * ============================================================ *
 * TestJSONFoxAppParse
