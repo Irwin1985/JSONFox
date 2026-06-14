@@ -1,5 +1,16 @@
+* ========================================================================
+* JSONFox - Self-contained standalone library
+* Version: 1.1.0
+* Description: Complete JSON parser and serializer for Visual FoxPro
+* Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")
+*
+* Changelog:
+*   1.1.0 (2026-06-14) - Fixed: lTablePrompt macro bug in Destroy,
+*               ISO 8601 dates via TTOC(val,3), LOCAL llIsCollection
+*   1.0.0 (2026-06-14) - Initial self-contained standalone release
+* ========================================================================
 * JSONFox Constants
-*!* #Define T_NONE		'ÿ'
+*!* #Define T_NONE		'ï¿½'
 #Define T_NONE		0
 #Define T_EOT		chr(4)
 #Define T_LBRACE	1
