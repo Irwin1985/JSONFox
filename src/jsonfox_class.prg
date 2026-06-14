@@ -313,8 +313,7 @@ define class JSONFox as session
 	function destroy
 		try
 			if this.lTablePrompt
-				lcTablePrompt = this.lTablePrompt
-				set tableprompt &lcTablePrompt
+				set tableprompt (iif(this.lTablePrompt, 'ON', 'OFF'))
 			endif
 		catch
 		endtry

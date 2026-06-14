@@ -59,9 +59,9 @@ define class jsonutils as custom
 		case tctype $ "CDTBGMQVWX"
 			do case
 			case tctype == 'D'
-				tcvalue = '"' + strtran(dtoc(tcvalue), '.', '-') + '"'
+				tcvalue = '"' + left(ttoc(tcvalue,3),10) + '"'
 			case tctype == 'T'
-				tcvalue = '"' + strtran(ttoc(tcvalue), '.', '-') + '"'
+				tcvalue = '"' + ttoc(tcvalue,3) + '"'
 			case tctype == 'X'
 				tcvalue = "null"
 			otherwise

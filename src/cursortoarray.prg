@@ -58,13 +58,13 @@ define class CursorToArray as session
 							do case
 							case aColumns[i, 2] = 'D'
 								if !empty(lcValue)
-									lcValue = '"' + strtran(dtoc(lcValue), '.', '-') + '"'
+									lcValue = '"' + left(ttoc(lcValue,3),10) + '"'
 								else
 									lcValue = 'null'
 								endif
 							case aColumns[i, 2] = 'T'
 								if !empty(lcValue)
-									lcValue = '"' + strtran(ttoc(lcValue), '.', '-') + '"'
+									lcValue = '"' + ttoc(lcValue,3) + '"'
 								else
 									lcValue = 'null'
 								endif

@@ -96,6 +96,7 @@ define class ObjectToJSON as session
 
 		case vartype(tValue) = 'O'
 			* Check if it is a collection first to handle it specially
+			local llIsCollection
 			llIsCollection = .f.
 			try
 				llIsCollection = (tValue.BaseClass == "Collection" and tValue.Class == "Collection" and tValue.Name == "Collection")

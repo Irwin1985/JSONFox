@@ -89,9 +89,9 @@ define class jsonutils as custom
 		case tctype $ "CDTBGMQVWX"
 			do case
 			case tctype == 'D'
-				tcvalue = '"' + strtran(dtoc(tcvalue), '.', '-') + '"'
+				tcvalue = '"' + left(ttoc(tcvalue,3),10) + '"'
 			case tctype == 'T'
-				tcvalue = '"' + strtran(ttoc(tcvalue), '.', '-') + '"'
+				tcvalue = '"' + ttoc(tcvalue,3) + '"'
 			case tctype == 'X'
 				tcvalue = "null"
 			otherwise
@@ -1323,6 +1323,7 @@ define class ObjectToJSON as session
 
 		case vartype(tValue) = 'O'
 			* Check if it is a collection first to handle it specially
+			local llIsCollection
 			llIsCollection = .f.
 			try
 				llIsCollection = (tValue.BaseClass == "Collection" and tValue.Class == "Collection" and tValue.Name == "Collection")
@@ -1905,13 +1906,13 @@ define class CursorToArray as session
 							do case
 							case aColumns[i, 2] = 'D'
 								if !empty(lcValue)
-									lcValue = '"' + strtran(dtoc(lcValue), '.', '-') + '"'
+									lcValue = '"' + left(ttoc(lcValue,3),10) + '"'
 								else
 									lcValue = 'null'
 								endif
 							case aColumns[i, 2] = 'T'
 								if !empty(lcValue)
-									lcValue = '"' + strtran(ttoc(lcValue), '.', '-') + '"'
+									lcValue = '"' + ttoc(lcValue,3) + '"'
 								else
 									lcValue = 'null'
 								endif
@@ -2438,8 +2439,7 @@ define class JSONFox as session
 	function destroy
 		try
 			if this.lTablePrompt
-				lcTablePrompt = this.lTablePrompt
-				set tableprompt &lcTablePrompt
+				set tableprompt (iif(this.lTablePrompt, 'ON', 'OFF'))
 			endif
 		catch
 		endtry
