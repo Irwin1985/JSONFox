@@ -567,9 +567,12 @@ define class JSONClass as session
 	endproc
 
 	protected procedure restoreEnvironment(toEnv as collection)
+		local lcPoint, lcSeparator
 		try
-			set point to toEnv("point")
-			set separator to toEnv("separator")
+			lcPoint     = toEnv.Item("point")
+			lcSeparator = toEnv.Item("separator")
+			set point to (lcPoint)
+			set separator to (lcSeparator)
 		catch
 		endtry
 	endproc

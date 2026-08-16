@@ -2184,9 +2184,12 @@ define class JSONFox as session
 	endfunc
 
 	hidden procedure restoreEnvironment(toEnv)
+		local lcPoint, lcSeparator
 		try
-			set point to toEnv("point")
-			set separator to toEnv("separator")
+			lcPoint     = toEnv.Item("point")
+			lcSeparator = toEnv.Item("separator")
+			set point to (lcPoint)
+			set separator to (lcSeparator)
 		catch
 		endtry
 	endproc
@@ -2450,7 +2453,7 @@ define class JSONFox as session
 	function destroy
 		try
 			if this.lTablePrompt
-				set tableprompt (iif(this.lTablePrompt, 'ON', 'OFF'))
+				set tableprompt on
 			endif
 		catch
 		endtry
