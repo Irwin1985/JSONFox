@@ -590,26 +590,72 @@ define class Tokenizer as custom
 * Look for unicode format
 ** This conversion is better (in performance) than Regular Expressions.
 && IRODG 09/10/2023 Inicio
-		local lcUnicode, lcConversion, lbReplace, lnPos
+&& --------------------------------------------------------------------
+&& CORREGIDO 2026-08-30: hay que comprobar que sean CUATRO hexadecimales.
+&&
+&& Antes convertía los seis caracteres que siguen a una barra y una u sin
+&& mirar lo que eran, y strconv(...,16) se salta los que no son
+&& hexadecimales y usa los que sí. Con eso, una RUTA de Windows se rompía:
+&&
+&&   C:\Users\rodri\x.dll  ->  C:\rodri\x.dll   (se come "Users" entero)
+&&   C:\Unidad\otra.dll    ->  de "\Unida" saca "da" -> chr(218), la U con tilde
+&&
+&& Pasa porque escapeCharacters ya ha convertido la barra doble en simple
+&& ANTES de llegar aquí, así que lo que se ve es una barra literal, no un
+&& escape. Y pasa también AL SERIALIZAR, porque Stringify vuelve a
+&& tokenizar el JSON que acaba de montar.
+&&
+&& No se veía porque todo el código de la casa vive en C:\Desarrollo\. Un
+&& proyecto creado en el perfil del usuario nacía con el manifiesto partido
+&& y el JSON parecía válido.
+&&
+&& Exigiendo cuatro hexadecimales, \Users y \Unidad dejan de ser escapes y
+&& los \u00e1 legítimos siguen funcionando igual.
+&& --------------------------------------------------------------------
+		local lcUnicode, lcHex, lcChar, lnPos, lnAt
 		lnPos = 1
 		do while .t.
-			lbReplace = .f.
-			lcUnicode = substr(tcLexeme, at('\u', tcLexeme, lnPos), 6)
-			if len(lcUnicode) == 6
-				lbReplace = .t.
-			else
-				lcUnicode = substr(tcLexeme, at('\U', tcLexeme, lnPos), 6)
-				if len(lcUnicode) == 6
-					lbReplace = .t.
-				endif
-			endif
-			if lbReplace
-				tcLexeme = strtran(tcLexeme, lcUnicode, strtran(strconv(lcUnicode,16), chr(0)))
-			else
+			&& OJO: en VFP el tercer argumento de AT() es la OCURRENCIA, no
+			&& la posicion desde la que buscar. Por eso se busca sobre el
+			&& trozo que queda y luego se suma el desplazamiento.
+			lnAt = at('\u', lower(substr(tcLexeme, lnPos)))
+			if lnAt = 0
 				exit
+			endif
+			lnAt = lnAt + lnPos - 1
+
+			lcHex = substr(tcLexeme, lnAt + 2, 4)
+			if len(lcHex) == 4 and this.IsHex4(lcHex)
+				lcUnicode = substr(tcLexeme, lnAt, 6)
+				lcChar = strtran(strconv(lcUnicode, 16), chr(0))
+				tcLexeme = stuff(tcLexeme, lnAt, 6, lcChar)
+				&& Seguir DESPUÉS de lo sustituido. El bucle viejo hacía un
+				&& strtran global y volvía a empezar; con stuff hay que
+				&& avanzar a mano o se relee lo mismo eternamente.
+				lnPos = lnAt + max(len(lcChar), 1)
+			else
+				&& No es un escape: es una barra seguida de una u, como en
+				&& C:\Users. Se salta y se sigue buscando.
+				lnPos = lnAt + 2
 			endif
 		enddo
 && IRODG 09/10/2023 Fin
+	endproc
+
+
+	&& Los cuatro caracteres de un \uXXXX. Sin esto, cualquier cosa detrás de
+	&& una barra y una u se tomaba por un escape unicode.
+	procedure IsHex4(tcHex)
+		local llOk, lnI, lcC
+		llOk = .t.
+		for lnI = 1 to 4
+			lcC = upper(substr(tcHex, lnI, 1))
+			if !(isdigit(lcC) or inlist(lcC, 'A', 'B', 'C', 'D', 'E', 'F'))
+				llOk = .f.
+				exit
+			endif
+		endfor
+		return llOk
 	endproc
 
 	function scanTokens
