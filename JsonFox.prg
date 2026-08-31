@@ -540,7 +540,7 @@ define class Tokenizer as custom
 	endfunc
 
 	procedure escapeCharacters(tcLexeme)
-		if len(tcLexeme) < 100
+		if len(tcLexeme) < 100 or chr(1) $ tcLexeme
 			local lcResult, i, lcChar, lcNextChar
 			lcResult = ""
 			i = 1
@@ -576,13 +576,28 @@ define class Tokenizer as custom
 			enddo
 			tcLexeme = lcResult
 		else
-			tcLexeme = strtran(tcLexeme, '\\', '\')
+			&& Los strtran en cadena NO valen tal cual: el primero deja
+			&& barras LITERALES y los siguientes las vuelven a tomar por
+			&& escapes, asi que una ruta de Windows salia partida:
+			&&
+			&&   C:\\Users\\rodri  ->  C:\Users\rodri  ->  C:\Users<CR>odri
+			&&
+			&& Con un marcador, la barra literal queda fuera del alcance de
+			&& los strtran que vienen detras. chr(1) no puede aparecer aqui:
+			&& si estuviera en el dato, el IF de arriba manda el lexema al
+			&& recorrido caracter a caracter, que no necesita marcador.
+			&&
+			&& Las dos ramas tienen que decir lo MISMO: pasar de 99 a 100
+			&& caracteres no puede cambiar como se escapa.
+			&& Corregido 2026-08-31. Fijado por tests\jsonfoxtests.prg.
+			tcLexeme = strtran(tcLexeme, '\\', chr(1))
 			tcLexeme = strtran(tcLexeme, '\/', '/')
 			tcLexeme = strtran(tcLexeme, '\n', chr(10))
 			tcLexeme = strtran(tcLexeme, '\r', chr(13))
 			tcLexeme = strtran(tcLexeme, '\t', chr(9))
 			tcLexeme = strtran(tcLexeme, '\"', '"')
 			tcLexeme = strtran(tcLexeme, "\'", "'")
+			tcLexeme = strtran(tcLexeme, chr(1), '\')
 		endif
 	endproc
 
