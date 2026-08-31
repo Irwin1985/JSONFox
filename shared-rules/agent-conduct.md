@@ -14,27 +14,27 @@ Protocolo para añadir reglas: `README.md`. **La numeración no se reordena.**
 
 ## 1. Todo lo que toque VFP pasa por FoxAgent
 
-No lances `vfp9.exe` a pelo. Sin FoxAgent estás ciego: un diálogo modal cuelga el proceso
-y no hay forma de saber por qué — el proceso sigue vivo, no devuelve, y no hay traza.
+**La regla entera, con el porqué y la lista de qué usar para cada cosa, está en
+`REGLAS-VFP.md` §2** — la fuente de verdad, que va al lado de este fichero. Aquí solo el
+titular y lo que añade la práctica:
 
-```text
-inspeccionar una sesion viva   ->  list_instances, get_variables, get_cursors, get_call_stack
-conducir un formulario         ->  list_open_forms, find_control, click_control, send_key,
-                                   set_control_text, invoke_method
-escribir un fuente VFP         ->  write_source_file  (encoding + backup, ver regla 3)
-compilar / ejecutar            ->  build_project, exec_command, run_tests
-```
+> Si vas a ejecutar, compilar o inspeccionar algo de VFP, hazlo a través de FoxAgent.
+> Un `vfp9.exe` lanzado a pelo es un proceso sin ojos.
 
-Si aun así hay que lanzar `vfp9.exe`: **ruta absoluta** al `.prg` y un `CONFIG.FPW` con
-`RESOURCE = OFF`. Sin eso, VFP arranca con el directorio por defecto en `SYSTEM32` y
-cualquier ruta relativa abre un diálogo "Open".
+Un modal deja el proceso esperando para siempre; el agente ve un *timeout* y no sabe por
+qué. Con FoxAgent la sesión sigue viva y `take_screenshot`/`send_key` funcionan: **un
+diálogo inesperado pasa de ser un cuelgue a ser un dato.**
+
+Lo que este fichero añade, porque no es de codificación sino de conducta:
 
 **No improvises VFP dentro de `eval_expression`/`EXECSCRIPT` para operar la interfaz.** Un
 script improvisado ya abrió un diálogo de error en la sesión de producción de alguien y le
-bloqueó la UI. Para la interfaz existen las tools tipadas; son la única vía.
+bloqueó la UI. Para la interfaz existen las tools tipadas (`list_open_forms`,
+`find_control`, `click_control`, `send_key`, `set_control_text`, `invoke_method`); son la
+única vía.
 
-*Origen: memoria `feedback_foxagent_para_pruebas_vfp`; instrucciones del servidor MCP de
-FoxAgent.*
+*Origen: `REGLAS-VFP.md` §2; memoria `feedback_foxagent_para_pruebas_vfp`; instrucciones
+del servidor MCP de FoxAgent.*
 
 ---
 
@@ -61,22 +61,28 @@ encontró cuatro en una sola pasada (2026-08-30).
 
 ## 3. Los fuentes VFP son CP1252 — y los acentos se escriben
 
-La regla completa, con el porqué y cómo comprobarlo, es la **9 (y la 51)** de
-`vfp-coding-rules.md`. Lo que importa para la conducta:
+**La regla entera está en `REGLAS-VFP.md` §1**, que manda sobre codificación: el porqué en
+bytes, la medición de 2026-08-30, las dos excepciones (los `.prg` de X# van en UTF-8 con
+BOM; los `.ps1` en ASCII puro) y el script de emergencia. Léela antes de escribir tu primer
+`.prg`. Y las reglas 9 y 51 de `vfp-coding-rules.md` la citan desde el lado del lenguaje.
 
-- Un `.prg` de VFP se lee y se escribe **siempre** en CP1252. Nunca UTF-8.
-- Los acentos y las eñes **se escriben**: en CP1252 ocupan un byte y VFP los muestra bien.
-  Lo de "ASCII puro" era una limitación de la herramienta, no de VFP.
-- La tool `Write` escribe UTF-8: **no sirve** para un `.prg` con acentos.
-  Usa `write_source_file` de FoxAgent, o Python con `encoding='cp1252'`.
-- Los `.prg` de **X#** son otra cosa: UTF-8 con BOM. No les apliques esto.
-- Nunca `Set-Content -Encoding utf8` en PowerShell 5.1 sobre un fuente: corrompe los
-  acentos en silencio.
+El titular, y las dos trampas de herramienta que se pagan en esta capa:
 
-Los binarios (`.scx`, `.vcx`, `.frx`, `.mnx`) **no se editan a mano y no se mueven sin su
-fichero de memo** (`.sct`, `.vct`, `.frt`, `.mnt`): ahí es donde vive el código.
+> Un fuente de VFP se lee y se escribe SIEMPRE en CP1252. Nunca UTF-8, nunca con BOM.
+> Y los acentos y la eñe **se escriben**, también en los comentarios.
 
-*Origen: `REGLAS-VFP.md` (fuente de verdad); memorias
+- **La tool `Write` del agente escribe UTF-8.** Vale para ASCII puro; con acentos hay que
+  reconvertir después. La vía buena es `write_source_file` de FoxAgent (pone la
+  codificación y hace copia con marca de tiempo) o Python con `encoding='cp1252'`.
+- **Nunca `Set-Content -Encoding utf8` en PowerShell 5.1** sobre un fuente: corrompe los
+  acentos en silencio. Si hay que revertirlo, se hace con CP1252, **no con Latin1**, y se
+  verifica contando caracteres U+FFFD, no buscando un patrón.
+
+Y una que es de formato de fichero, no de codificación: los binarios (`.scx`, `.vcx`,
+`.frx`, `.mnx`) **no se editan a mano y no se mueven sin su fichero de memo** (`.sct`,
+`.vct`, `.frt`, `.mnt`): ahí es donde vive el código.
+
+*Origen: `REGLAS-VFP.md` §1 (fuente de verdad); memorias
 `feedback_reglas_vfp_fuente_de_verdad`, `feedback_powershell_encoding_corruption`.*
 
 ---
