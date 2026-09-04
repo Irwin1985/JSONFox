@@ -7,7 +7,7 @@ Cómo consultarlo, cómo añadir una regla y por qué la numeración es sagrada:
 |---|---|
 | **Alcance** | El **lenguaje** VFP 9 y sus formatos de fichero. Las reglas de herramientas (FoxUnit, `vfp2text`, `foxengine`) están en `tooling-rules.md`; las de X#, en `xsharp-coding-rules.md` |
 | **Origen** | Unificado el 2026-08-15 desde cuatro copias divergentes (`VFP.AI.SDK/docs/`, raíz, `FoxPilot/Docs/`, `FoxFE Core/Docs/`) más reglas dispersas en prosa por siete proyectos |
-| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22) |
+| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22); 56 en el FLL de FoxMind (2026-09-04) |
 | **Regla de oro** | **Nunca se renumera.** Una regla que se cae se marca obsoleta y su número se retira |
 
 ---
@@ -1757,3 +1757,50 @@ la biblioteca. Anotado aquí el 2026-08-22 al descubrir que el plan de la fase 2
 FoxServer proponía un API fluido —`Request(...).WithQuery(...).Run()`— que el lenguaje no
 admite sobre un objeto nativo. El banco se escribió sin encadenar; `WITH` era la otra
 salida.*
+
+---
+
+## 56. `FSIZE()` devuelve 0 sin error: el tamaño de un fichero se pide con `ADIR()`
+
+El síntoma es un cero donde tenía que haber un tamaño, y **ninguna** advertencia. Y lo caro no es
+el cero: es lo que se compara contra él. Un `IF LEN(lcTexto) >= FSIZE(lcRuta) - 8` es siempre
+cierto con cero, así que la comprobación sale en **verde sin haber medido nada**.
+
+```foxpro
+* INCORRECTO -- sin segundo argumento, FSIZE() no mira el disco: interpreta el nombre
+* como un CAMPO de la tabla actual (así lo documenta Microsoft) y devuelve 0 si no lo hay
+lnBytes = FSIZE("C:\datos\foxmind.app")            && 0
+
+* INCORRECTO -- con el segundo argumento debería ser el tamaño en disco, y en los VFP
+* de esta casa TAMBIÉN devuelve 0, para cualquier fichero, también para .app de 1 MB
+lnBytes = FSIZE("C:\datos\foxmind.app", 1)         && 0
+
+* CORRECTO -- ADIR() devuelve el tamaño en la segunda columna
+FUNCTION TamFichero(tcRuta)
+    LOCAL ARRAY laF[1, 5]
+    IF FILE(tcRuta) AND ADIR(laF, tcRuta) > 0
+        RETURN laF[1, 2]
+    ENDIF
+    RETURN -1                                      && -1 = "no pude medir", que NO es cero
+ENDFUNC
+```
+
+Dos cosas que hay que saber para no volver a caer:
+
+- **El cero es indistinguible de un fichero vacío.** Por eso el ayudante devuelve `-1` cuando no
+  puede medir: un test que compara contra `-1` se pone en rojo; uno que compara contra `0` se
+  pone en verde con el instrumento roto.
+- Para un fichero pequeño, `LEN(FILETOSTR(ruta))` también vale y no tiene la trampa. Para uno
+  grande, no: lo lee entero en memoria.
+
+La causa de que `FSIZE(ruta, 1)` devuelva cero **no está determinada** (el sospechoso es `SET
+COMPATIBLE`, y no se ha medido). No hace falta determinarla para aplicar la regla: el instrumento
+bueno existe y es `ADIR()`.
+
+*Origen: encontrada tres veces en prosa antes de ser regla, y por eso se repitió una cuarta.
+`Nexum.Http\tests\vfp-e2e.prg` (2026-08); `FoxMind\feedback-real\20260902.2\FEEDBACK-R13.md`
+§3.1 (2026-09-02, la certificación reportó "no existe" de ficheros que existían: era el
+instrumento); `FoxServer\testenv\projects\DemoApp\build-demoapp.prg` (2026-08). La cuarta,
+`FoxMind\fll\smoke_fll.prg` (2026-09-04): el smoke del FLL dio "presente (0 bytes)" de un
+fichero de 24 KB y un `ok` del paso 7 salió verde sin medir. Costó una ronda de certificación y
+una hora de smoke; la regla se escribió ese día.*
