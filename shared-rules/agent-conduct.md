@@ -175,3 +175,101 @@ cabeceras de plan que mienten sobre su propio estado.
 
 *Origen: la limpieza del 2026-08-31; el propio `PLAN-ORDEN-DE-LA-CASA.md` abre pidiendo que
 sus cabeceras no mientan.*
+---
+
+## 9. Un fichero escrito desde un script puede llevar un byte de control que NO se ve en el diff — bárrelo antes de dar la pieza por hecha
+
+El síntoma es siempre el mismo, y por eso cuesta tanto: **el fichero se ve bien**. En
+pantalla, en el diff y en la revisión. Lo que falla es otra cosa, y apunta a otro sitio.
+
+| Lo que se escribió | Lo que quedó | Cómo se manifestó |
+|---|---|---|
+| `WindowsPowerShell\v1.0` en un `.iss` | `WindowsPowerShell` + **0x0B** + `1.0` | Inno **compilaba tan tranquilo**; el instalador no configuraba nada |
+| `.\build\` en un `.md` | `.` + **0x08** + `uild\` | Una ruta que nadie encontraba |
+| `sub\año-...` en un `.ps1` | **0x07** (BEL) pegado al texto | El script «funcionaba» hasta que no |
+| `bin\Debug\net8.0` en un `.md` | el `\n` **expandido**, la ruta partida en dos líneas | Una ruta copiada a mano que no existe |
+| `licenses\tester3-...` en un `.md` | un **tabulador** de verdad (0x09) dentro de una tabla | Se coló en un commit y se vio al releer el diff |
+
+La causa no es descuido: es que **el texto atraviesa capas y cada una se come una barra**.
+Un `\v`, un `\a`, un `\b`, un `\t` o un `\n` dentro de una cadena no cruda de Python,
+PowerShell o bash **es una secuencia de escape**, y cuando el mismo texto pasa por dos o
+tres capas —la llamada de una tool, el shell, el intérprete— un `\` bien escrito puede
+llegar como `\` al final del recorrido.
+
+**Qué hacer, y son tres cosas:**
+
+1. **Escribe con cadenas crudas**: `r'...'` en Python, heredoc con el delimitador entre
+   comillas (`<<'EOF'`) en bash, comillas simples en PowerShell. Nunca dobles para rutas.
+2. **Barre siempre lo que acabas de escribir.** Los cinco clásicos, en el árbol entero:
+   ```bash
+   grep -rlP "[\x00-\x08\x0B\x0C\x0E-\x1F]" --include=*.md --include=*.ps1 --include=*.iss --include=*.prg --include=*.cs .
+   ```
+   Salida vacía es lo que se espera. Cualquier fichero listado se mira con `od -c`.
+3. **El tabulador (0x09) NO entra en ese barrido, y por eso hay que contarlo aparte.**
+   Prohibirlo sería falso —los `.prg` de VFP se indentan con tabuladores, y el propio
+   `vfp-coding-rules.md` los usa en sus ejemplos—, así que la comprobación no es «hay
+   tabs», es **«hay tabs que antes no había»**:
+   ```bash
+   git show HEAD:ruta/fichero.md | grep -c "$(printf '\t')"   # antes
+   grep -c "$(printf '\t')" ruta/fichero.md                   # despues
+   ```
+   Si el fichero no tenía ninguno y ahora tiene uno, eso no es indentación: es un `\t` que
+   se expandió. Es la misma técnica de contar antes y después que usa el humo de Golem con
+   las reglas del cortafuegos, y por el mismo motivo: lo que se mide es **el cambio**, no
+   el valor absoluto.
+
+Y una cuarta que no cuesta nada: **relee el diff de lo que escribiste**, no solo el
+resultado. Cuatro de los cinco casos de la tabla se cazaron ahí.
+
+*Origen: Golem, 2026-09-08 y 2026-09-09. Cuatro casos en dos días (`Golem\PLAN.md` §13 D.3
+los cuenta) más el tabulador del 09-09, que se coló precisamente porque el barrido de los
+cinco clásicos excluye el 0x09. Costó una tarde el primero; los demás, minutos, porque ya
+se sabía dónde mirar.*
+
+---
+
+## 10. Una librería prestada se arregla en su repositorio canónico, y la copia se reemplaza entera: nunca se edita
+
+El síntoma: el mismo fichero, con el mismo nombre y la misma clase, se porta distinto según el
+repositorio que lo cargue. Un arreglo «ya está hecho» y el defecto sigue vivo en otro sitio. O
+un build borra un arreglo sin decir nada.
+
+Cuando un repositorio de la casa usa una librería de otro (JSONFox es el caso que lo destapó),
+lo que vive en el consumidor es una **copia**, y la fuente de verdad es el repositorio de la
+librería: `C:\Desarrollo\IrwinRodriguez.dev\<Librería>`. Una copia no se toca. Ni para un
+arreglo urgente, ni «solo la codificación», ni un comentario.
+
+**Qué hacer:**
+
+1. **Busca el canónico.** Si la librería se ensambla, la fuente es lo que entra al build y el
+   ensamblado también es una salida. En JSONFox: `src\` → `build_jsonfox.prg` → `JsonFox.prg`,
+   y `JsonFox.prg` tampoco se edita a mano (`tests\JsonFoxBuildSyncTests.prg` lo vigila).
+2. **Antes de arreglar, compara la copia con el canónico.** Si la copia tiene cambios que el
+   canónico no tiene, llévalos primero al canónico: al reemplazar la copia se perderían.
+3. **Arregla en el canónico**, con el test en **su** suite, en rojo antes y en verde después,
+   y lanza su build.
+4. **Copia el fichero entero** al consumidor, tal cual sale.
+5. **Deja en el consumidor un test que compare la copia con el canónico** y que diga qué hacer
+   si difieren. El de VFP.AI.SDK es `Tests\CopiasPrestadasTests.prg`. Compara sin CR: el mismo
+   fichero sale con LF o con CRLF según cómo se sacó de git, y eso no es una divergencia.
+
+No hay atajo para la urgencia: arreglar en el canónico cuesta lo mismo que arreglar en la copia,
+y es lo único que no deja dos versiones.
+
+**Lo que no es:**
+
+- Las salidas congeladas de una release (`FoxServer\release\out\…`) son la foto de una versión
+  publicada. No se editan, y tampoco se ponen al día.
+- Una copia no es un fork. Si un proyecto necesita que la librería haga otra cosa, la librería
+  gana una opción en su canónico; el proyecto no se queda con una variante.
+
+*Origen: VFP.AI.SDK y JSONFox, 2026-09-19. El `JSONFox.prg` del SDK entró el 2026-08-16 como
+copia y se editó en el SDK tres veces (la regla 6, la codificación y un arreglo del
+desescapado). Mientras, el canónico recibió dos arreglos el 30 y el 31 de agosto que nunca
+llegaron al SDK, y el del 31 se hizo a mano en `JsonFox.prg` y no en `src\`, así que el primer
+build que se lanzó después lo borró sin avisar. El arreglo del desescapado se hizo primero en la
+copia y hubo que rehacerlo. El inventario de ese día: 15 copias vivas de JSONFox fuera del
+canónico, sin contar releases ni worktrees, en cinco versiones distintas. Solo la del SDK
+coincidía con el canónico. Las otras 14 seguían desescapando dos veces las `\u`, medido con la
+suite del canónico, y cinco de ellas partían además las rutas bajo `C:\Users`. Entre las 14
+está la de `IrwinPortalApi`, que está en producción.*

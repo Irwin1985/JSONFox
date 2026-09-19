@@ -7,7 +7,7 @@ Cómo consultarlo, cómo añadir una regla y por qué la numeración es sagrada:
 |---|---|
 | **Alcance** | El **lenguaje** VFP 9 y sus formatos de fichero. Las reglas de herramientas (FoxUnit, `vfp2text`, `foxengine`) están en `tooling-rules.md`; las de X#, en `xsharp-coding-rules.md` |
 | **Origen** | Unificado el 2026-08-15 desde cuatro copias divergentes (`VFP.AI.SDK/docs/`, raíz, `FoxPilot/Docs/`, `FoxFE Core/Docs/`) más reglas dispersas en prosa por siete proyectos |
-| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22); 56 en el FLL de FoxMind (2026-09-04) |
+| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22); 56 en el FLL de FoxMind (2026-09-04); **57 y 58** en la integracion del ERP de FoxMind (2026-09-09); **59** en D2.1 de FoxMind (2026-09-18) |
 | **Regla de oro** | **Nunca se renumera.** Una regla que se cae se marca obsoleta y su número se retira |
 
 ---
@@ -97,12 +97,32 @@ CATCH
 ENDTRY
 ```
 
-## 6. RETURN fuera de TRY/CATCH
+## 6. RETURN fuera de TRY/CATCH: dentro lanza el 2060, y un CATCH vacío lo esconde
 
-`RETURN` no puede aparecer dentro de `TRY/CATCH/ENDTRY` (Error 2060).
-Siempre fuera del bloque.
+`RETURN` no puede aparecer dentro de `TRY/CATCH/FINALLY/ENDTRY`: lanza el **error 2060**
+«RETURN/RETRY statement not allowed in TRY/CATCH». Siempre fuera del bloque.
+
+**El síntoma que cuesta una tarde** (amplía la regla, 2026-09-06): el 2060 es un error como
+cualquier otro, así que **un `CATCH` vacío se lo traga**. La función no aborta: sigue por detrás
+del `ENDTRY` y devuelve lo que haya allí. Nada falla, el valor es otro, y nadie lo ve. Si el
+`RETURN` está en el propio `CATCH`, el 2060 sale sin manejar al llamador. Con `FINALLY`, igual.
+Y un `RETURN` **sin valor** lanza exactamente el mismo 2060: en un `PROCEDURE` que «sale pronto»
+desde dentro de un `TRY`, el salto al `CATCH` vacío imita la salida y nadie lo nota hasta que
+alguien escribe una línea en ese `CATCH`.
 
 ```foxpro
+* INCORRECTO -- compila, no da error, y devuelve "" SIEMPRE
+FUNCTION HashOf(tcText)
+    LOCAL loHasher
+    TRY
+        loHasher = CREATEOBJECT("VfpAiAuditHash")
+        RETURN loHasher.HashText(tcText)   && lanza 2060...
+    CATCH
+                                            && ...y aquí se pierde
+    ENDTRY
+    RETURN ""                              && esto es lo que devuelve
+ENDFUNC
+
 * CORRECTO
 FUNCTION DoSomething()
     LOCAL llResult
@@ -115,6 +135,15 @@ FUNCTION DoSomething()
     RETURN llResult
 ENDFUNC
 ```
+
+Una sonda con `CATCH` vacío no diagnostica esto: reproduce el fallo que investiga. Para verlo,
+`CATCH TO loEx` y mirar `loEx.ErrorNo` (2060).
+
+*Origen: VFP.AI.SDK, `SemanticRag.prg` (`FakeEmbeddingProvider.HashOf`), encontrado el 2026-09-06
+al portar A13 a X# y medir contra el original: todos los vectores del proveedor léxico nacían con
+`ContentHash` vacío desde A13b sin que ningún test lo viera. El barrido posterior encontró veinte
+sitios en diez ficheros del mismo repositorio (diez con valor y diez sin él), tres de ellos en
+`JSONFox.prg`. Medido con seis sondas por `foxengine` sobre VFP 09.00.0000.7423.*
 
 ## 7. IF sin THEN, una linea por bloque
 
@@ -309,6 +338,10 @@ VFP **no** admite `this.Metodo().OtroMetodo()`: parsea `Metodo()` como referenci
 array y falla con *'RESULTFACTORY' is not an array* o *Invalid subscript reference*.
 
 Es la misma familia que la regla ya conocida de `CREATEOBJECT(...).Metodo()`.
+
+Y la **regla 57** es la tercera de la familia, por una causa distinta: un identificador que el
+compilador **no puede ver** —porque su `.prg` está fuera de alcance o en una carpeta del `SET
+PATH`— también se compila como acceso a un array, y da este mismo error.
 
 ```foxpro
 * INCORRECTO
@@ -1804,3 +1837,140 @@ instrumento); `FoxServer\testenv\projects\DemoApp\build-demoapp.prg` (2026-08). 
 `FoxMind\fll\smoke_fll.prg` (2026-09-04): el smoke del FLL dio "presente (0 bytes)" de un
 fichero de 24 KB y un `ok` del paso 7 salió verde sin medir. Costó una ronda de certificación y
 una hora de smoke; la regla se escribió ese día.*
+
+---
+
+## 57. El compilador NO busca funciones en el `SET PATH`: un `NOMBRE()` que no conoce lo compila como ACCESO A UN ARRAY
+
+El síntoma es *"Invalid subscript reference"* **en ejecución**, en la línea de la llamada, y no
+menciona ni funciones ni rutas. Compila sin una queja.
+
+```foxpro
+* INCORRECTO -- FMRAIZERP.prg está en una carpeta del SET PATH,
+* pero el compilador del fichero que llama NO lo ve
+lcRaiz = FMRAIZERP()          && compila como laFMRAIZERP[...]
+                              && y en ejecución: Invalid subscript reference
+
+* CORRECTO -- cualquiera de estas tres, y todas hacen que el
+* compilador SEPA que es una llamada:
+SET PROCEDURE TO FMRAIZERP.prg ADDITIVE
+lcRaiz = FMRAIZERP()
+
+DO FMRAIZERP                  && DO SÍ busca en el SET PATH.
+lcRaiz = gcFmRaizErp          && la función deja el valor en una pública
+
+lcRaiz = EVALUATE("FMRAIZERP()")   && resuelve en ejecución, no al compilar
+```
+
+**La causa, y es la que lo hace tan caro:** VFP decide **al compilar** si `NOMBRE()` es una llamada
+o un subíndice de array, y para eso solo mira lo que tiene delante — el fichero, sus `#INCLUDE`, y
+lo que esté cargado con `SET PROCEDURE`. **El `SET PATH` es cosa del RUNTIME**, así que un `.prg`
+suelto en una carpeta del path no existe para el compilador. Al no conocer el identificador, lo
+compila como acceso a un array, que es la otra cosa que puede ser `NOMBRE(...)` en VFP.
+
+Es la **misma familia que la regla 15** —VFP resolviendo `algo()` como array— por una causa
+distinta: allí es el encadenamiento, aquí es un identificador que el compilador no puede ver.
+
+Y hay una trampa dentro de la trampa: **una `FUNCTION` escrita al final de un `.prg` solo está en
+alcance mientras ESE `.prg` está en la pila.** Si el `.prg` arranca algo y termina, y la pantalla
+llama a la función después, ya no existe — y el error es el mismo. Sacarla a su propio `.prg` en
+una carpeta del `SET PATH` **no** lo arregla, por lo de arriba.
+
+**La forma sana, si no quieres pensar en cuál de las tres usar:** no llamar por nombre a nada que el
+compilador no pueda ver en el fichero. Una pública rellenada con `DO` no tiene ninguno de los dos
+problemas.
+
+*Origen: FoxMind, integración del lado del ERP, 2026-09-09 (ronda 186 del ciclo de certificación).
+Costó una tarde y dejó la integración con `oFoxMind.Listo = .F.` y el motivo `"Invalid subscript
+reference. (linea 327)"` comido por un `TRY` del formulario — el modo silencioso. Lo que la aisló:
+con el `.fxp` del llamante recompilado a las 16:29:02, DESPUÉS de la edición de las 16:26:57, el
+error seguía; y en la misma sesión `FM_RAIZ_ERP()` evaluado suelto SÍ devolvía la ruta. Eso descarta
+a la vez "no existe" y "el compilado es viejo".*
+
+---
+
+## 58. `#DEFINE` es sustitución TEXTUAL: colisiona POR PREFIJO con el nombre de un `.prg`
+
+El síntoma es el **error 107** (*"Operator/operand type mismatch"* o una línea que no tiene sentido)
+en un sitio donde no hay ningún operador raro. El mensaje no menciona el `#DEFINE` ni el nombre que
+colisiona.
+
+```foxpro
+* INCORRECTO
+#DEFINE FM_RAIZ  gcFmRaizErp
+...
+DO FM_RAIZ_ERP                && el preprocesador sustituye el PREFIJO:
+                              && queda  DO gcFmRaizErp_ERP  -> error 107
+
+* CORRECTO -- que los nombres no se solapen por delante
+#DEFINE FM_RAIZ  gcFmRaizErp
+DO FMRAIZERP
+```
+
+**La causa:** el preprocesador de VFP sustituye texto antes de compilar y **no exige que el símbolo
+termine en un límite de palabra**. Cualquier identificador que EMPIECE por el nombre del `#DEFINE`
+queda partido, y lo que llega al compilador ya no es lo que escribiste.
+
+Vale para cualquier identificador, no solo para un `DO`: nombres de variables, de campos y de
+procedimientos.
+
+**Qué hacer cuando no puedes renombrar:** mira el fichero después del preprocesador antes de
+teorizar. Y como norma barata, que un `#DEFINE` no sea prefijo de ningún nombre del proyecto — es
+más fácil de mantener que recordar esta regla.
+
+*Origen: FoxMind, integración del lado del ERP, 2026-09-09 (ronda 186). Salió al convertir una
+función en una pública: el `#DEFINE FM_RAIZ` empezó a partir el `DO FM_RAIZ_ERP` que llevaba
+funcionando toda la tarde. Renombrar el `.prg` a `FMRAIZERP` hizo desaparecer el 107 sin tocar
+nada más.*
+
+---
+
+## 59. Una función de un FLL se llama con `EVALUATE("FM_X()")` en código que se construye en un proyecto: escrita a pelo, el builder deja un `Locate File` modal
+
+El síntoma: el **build** del proyecto se para y no termina. Con el IDE delante se ve el diálogo;
+sin él (`foxengine build`, `build_project` de FoxAgent, un build desatendido) solo se ve que se
+agota el tiempo, y la herramienta mata el VFP con un *"A modal dialog is the usual cause"*. Las
+suites no lo ven nunca: no construyen.
+
+```text
+Locate File
+Unable to find Unknown FM_EVENTS_COUNT
+[Locate] [Ignore] [Ignore all] [Cancel]
+```
+
+```foxpro
+* INCORRECTO -- compila, corre, pasa todos los tests... y el build se cuelga
+try
+	lnCount = FM_EVENTS_COUNT()
+catch
+	lnCount = 0
+endtry
+
+* CORRECTO -- dentro de una cadena el builder no mira
+try
+	lnCount = evaluate("FM_EVENTS_COUNT()")
+catch
+	lnCount = 0
+endtry
+```
+
+**La causa:** al construir, el Project Manager recorre el código buscando dependencias, y cada
+llamada a una función que no está definida en el proyecto la trata como **un `.prg` que falta**.
+Las funciones de un FLL solo existen después de `SET LIBRARY TO`, que es cosa del runtime, así que
+en el build no están: el builder pregunta dónde está el fichero y espera a una persona. El `TRY`
+de alrededor no ayuda, porque esto no pasa al ejecutar.
+
+Es la **misma familia que la regla 57** (el compilador no ve lo que solo existe en tiempo de
+ejecución), del lado del **build** en vez del de la compilación. Y la salida es la misma:
+`EVALUATE()` resuelve el nombre en ejecución y al builder no le enseña nada.
+
+**Qué hacer:** toda función de un FLL, en código que sea miembro de un `.pjx`, se llama por
+`EVALUATE("...")`. Si hay argumentos, se componen en la cadena. Y como la valla es barata, un
+invariante de árbol que lo compruebe: en FoxMind lo hace
+`Test_Arbol_LasFuncionesDelFllSoloSeLlamanPorEvaluate` (`FoxMindSecurityTests.prg`).
+
+*Origen: FoxMind, D2.1 (el bombeo del FLL a `ide.*`), 2026-09-18. El tramo cerró con 113 tests en
+verde y el build colgado sin que nadie lo viera: el último `foxmind.app` construido era de nueve
+días antes. Lo descubrió la ronda 2 del canal FoxMind (el build se agotaba también en `HEAD`) y lo
+midió la coordinación con FoxAgent, `launch_instance` + `BUILD APP ... RECOMPILE` +
+`take_screenshot`, que es lo que enseñó el diálogo. Tres llamadas en `FoxMindIdeFll`.*
