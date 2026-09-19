@@ -119,28 +119,30 @@ define class JSONFox as session
 		try
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
+			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
+			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
 			if empty(tcCursor) or !used(tcCursor)
 				this.SetError("CursorToJSON: cursor '" + tcCursor + "' is not in use.")
-				return ""
-			endif
-			set datasession to tnDataSession
-			lcTmp = sys(2015)
-			if tbCurrentRow
-				lnRecno = recno(tcCursor)
-				select * from (tcCursor) where recno() = lnRecno into cursor (lcTmp)
 			else
-				select * from (tcCursor) into cursor (lcTmp)
+				set datasession to tnDataSession
+				lcTmp = sys(2015)
+				if tbCurrentRow
+					lnRecno = recno(tcCursor)
+					select * from (tcCursor) where recno() = lnRecno into cursor (lcTmp)
+				else
+					select * from (tcCursor) into cursor (lcTmp)
+				endif
+				loParser = createobject("CursorToArray")
+				loParser.CurName    = lcTmp
+				loParser.nSessionID = tnDataSession
+				loParser.ParseUTF8  = m.tlParseUtf8
+				loParser.TrimChars  = m.tlTrimChars
+				loParser.oUtils     = this.oUtils
+				lcResult = loParser.CursorToArray()
+				loParser = .null.
+				release loParser
+				use in (select(lcTmp))
 			endif
-			loParser = createobject("CursorToArray")
-			loParser.CurName    = lcTmp
-			loParser.nSessionID = tnDataSession
-			loParser.ParseUTF8  = m.tlParseUtf8
-			loParser.TrimChars  = m.tlTrimChars
-			loParser.oUtils     = this.oUtils
-			lcResult = loParser.CursorToArray()
-			loParser = .null.
-			release loParser
-			use in (select(lcTmp))
 		catch to loEx
 			this.SetError(loEx.message)
 		endtry
@@ -181,25 +183,27 @@ define class JSONFox as session
 		try
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
+			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
+			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
 			if empty(tcCursor) or !used(tcCursor)
 				this.SetError("CursorToJSONObject: cursor '" + tcCursor + "' is not in use.")
-				return .null.
-			endif
-			set datasession to tnDataSession
-			lcTmp = sys(2015)
-			if tbCurrentRow
-				lnRecno = recno(tcCursor)
-				select * from (tcCursor) where recno() = lnRecno into cursor (lcTmp)
 			else
-				select * from (tcCursor) into cursor (lcTmp)
+				set datasession to tnDataSession
+				lcTmp = sys(2015)
+				if tbCurrentRow
+					lnRecno = recno(tcCursor)
+					select * from (tcCursor) where recno() = lnRecno into cursor (lcTmp)
+				else
+					select * from (tcCursor) into cursor (lcTmp)
+				endif
+				loParser = createobject("CursorToJsonObject")
+				loParser.CurName    = lcTmp
+				loParser.nSessionID = tnDataSession
+				loResult = loParser.CursorToJSONObject()
+				loParser = .null.
+				release loParser
+				use in (select(lcTmp))
 			endif
-			loParser = createobject("CursorToJsonObject")
-			loParser.CurName    = lcTmp
-			loParser.nSessionID = tnDataSession
-			loResult = loParser.CursorToJSONObject()
-			loParser = .null.
-			release loParser
-			use in (select(lcTmp))
 		catch to loEx
 			this.SetError(loEx.message)
 		endtry
@@ -223,19 +227,21 @@ define class JSONFox as session
 		try
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
+			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
+			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
 			if empty(tcCursor)
 				this.SetError("CursorStructure: cursor name cannot be empty.")
-				return ""
+			else
+				loClass = createobject("StructureToJSON")
+				loClass.oUtils     = this.oUtils
+				loClass.CurName    = tcCursor
+				loClass.nSessionID = tnDataSession
+				loClass.lExtended  = m.tlCopyExtended
+				loClass.lJustArray = m.tlJustArray
+				lcResult = loClass.StructureToJSON()
+				loClass = .null.
+				release loClass
 			endif
-			loClass = createobject("StructureToJSON")
-			loClass.oUtils     = this.oUtils
-			loClass.CurName    = tcCursor
-			loClass.nSessionID = tnDataSession
-			loClass.lExtended  = m.tlCopyExtended
-			loClass.lJustArray = m.tlJustArray
-			lcResult = loClass.StructureToJSON()
-			loClass = .null.
-			release loClass
 		catch to loEx
 			this.SetError(loEx.message)
 		finally
@@ -316,7 +322,7 @@ define class JSONFox as session
 	function destroy
 		try
 			if this.lTablePrompt
-				set tableprompt (iif(this.lTablePrompt, 'ON', 'OFF'))
+				set tableprompt on
 			endif
 		catch
 		endtry

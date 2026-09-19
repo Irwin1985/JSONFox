@@ -151,7 +151,6 @@ define class Tokenizer as custom
 
 			lexeme = substr(.source, .start+1, .current-.start-2)
 			.escapeCharacters(@lexeme)
-			.checkUnicodeFormat(@lexeme)
 			return .addToken(T_STRING, lexeme)
 		endwith
 	endfunc
@@ -193,124 +192,143 @@ define class Tokenizer as custom
 		endwith
 	endfunc
 
+* escapeCharacters: deshace los escapes de una cadena JSON en UNA sola
+* pasada de izquierda a derecha (RFC 8259). Cada barra se consume con
+* lo que la sigue, y lo que sale ya no se vuelve a mirar.
+*
+* CORREGIDO 2026-09-19. Hasta aquí eran DOS pasadas -- esta y
+* checkUnicodeFormat() --, y la segunda volvía a interpretar lo que la
+* primera había dejado como texto: el JSON "x\\u0022" daba x" en vez de
+* x\u0022. Los arreglos del 30 y el 31 de agosto (exigir cuatro
+* hexadecimales, y un marcador en la rama de cadenas largas) tapaban
+* las rutas de Windows pero no esto, y el 31 solo llegó al JsonFox.prg
+* ensamblado, no aquí. Con una pasada no hacen falta ninguno de los dos:
+* una barra escapada es una barra y lo que la sigue ya no se relee.
+* Medido el 2026-09-18 (FoxMind, ronda 13). Fijado por
+* tests\JsonFoxUnescapeTests.prg.
+*
+* \uXXXX pasa de UTF-16 a la página 1252 por STRCONV(..., 6, 1252, 1);
+* un par sustituto se convierte entero. Lo que no es un escape conocido
+* se deja tal cual, barra incluida.
 	procedure escapeCharacters(tcLexeme)
-		if len(tcLexeme) < 100
-			local lcResult, i, lcChar, lcNextChar
-			lcResult = ""
-			i = 1
+		local lcIn, lcOut, lnLen, lnPos, lnOcc, lnAt, lcNext, lnSkip
 
-			do while i <= len(tcLexeme)
-				lcChar = substr(tcLexeme, i, 1)
-				if lcChar == "\" and i < len(tcLexeme)
-					lcNextChar = substr(tcLexeme, i + 1, 1)
-					do case
-					case lcNextChar == "\"
-						lcResult = lcResult + "\"
-					case lcNextChar == "/"
-						lcResult = lcResult + "/"
-					case lcNextChar == "n"
-						lcResult = lcResult + chr(10)
-					case lcNextChar == "r"
-						lcResult = lcResult + chr(13)
-					case lcNextChar == "t"
-						lcResult = lcResult + chr(9)
-					case lcNextChar == '"'
-						lcResult = lcResult + '"'
-					case lcNextChar == "'"
-						lcResult = lcResult + "'"
-					otherwise
-* Unknown escape sequence, keep both characters
-						lcResult = lcResult + "\" + lcNextChar
-					endcase
-					i = i + 2 && Advance 2 chars
-				else
-					lcResult = lcResult + lcChar
-					i = i + 1 && Advance 1 char
-				endif
-			enddo
-			tcLexeme = lcResult
-		else
-			tcLexeme = strtran(tcLexeme, '\\', '\')
-			tcLexeme = strtran(tcLexeme, '\/', '/')
-			tcLexeme = strtran(tcLexeme, '\n', chr(10))
-			tcLexeme = strtran(tcLexeme, '\r', chr(13))
-			tcLexeme = strtran(tcLexeme, '\t', chr(9))
-			tcLexeme = strtran(tcLexeme, '\"', '"')
-			tcLexeme = strtran(tcLexeme, "\'", "'")
+		if at("\", tcLexeme) = 0
+			return
 		endif
-	endproc
 
-	procedure checkUnicodeFormat(tcLexeme)
-* Look for unicode format
-** This conversion is better (in performance) than Regular Expressions.
-&& IRODG 09/10/2023 Inicio
-&& --------------------------------------------------------------------
-&& CORREGIDO 2026-08-30: hay que comprobar que sean CUATRO hexadecimales.
-&&
-&& Antes convertía los seis caracteres que siguen a una barra y una u sin
-&& mirar lo que eran, y strconv(...,16) se salta los que no son
-&& hexadecimales y usa los que sí. Con eso, una RUTA de Windows se rompía:
-&&
-&&   C:\Users\rodri\x.dll  ->  C:\rodri\x.dll   (se come "Users" entero)
-&&   C:\Unidad\otra.dll    ->  de "\Unida" saca "da" -> chr(218), la U con tilde
-&&
-&& Pasa porque escapeCharacters ya ha convertido la barra doble en simple
-&& ANTES de llegar aquí, así que lo que se ve es una barra literal, no un
-&& escape. Y pasa también AL SERIALIZAR, porque Stringify vuelve a
-&& tokenizar el JSON que acaba de montar.
-&&
-&& No se veía porque todo el código de la casa vive en C:\Desarrollo\. Un
-&& proyecto creado en el perfil del usuario nacía con el manifiesto partido
-&& y el JSON parecía válido.
-&&
-&& Exigiendo cuatro hexadecimales, \Users y \Unidad dejan de ser escapes y
-&& los \u00e1 legítimos siguen funcionando igual.
-&& --------------------------------------------------------------------
-		local lcUnicode, lcHex, lcChar, lnPos, lnAt
+		lcIn = tcLexeme
+		lcOut = ""
+		lnLen = len(lcIn)
 		lnPos = 1
+		lnOcc = 1
+
 		do while .t.
-			&& OJO: en VFP el tercer argumento de AT() es la OCURRENCIA, no
-			&& la posicion desde la que buscar. Por eso se busca sobre el
-			&& trozo que queda y luego se suma el desplazamiento.
-			lnAt = at('\u', lower(substr(tcLexeme, lnPos)))
+			lnAt = at("\", lcIn, lnOcc)
 			if lnAt = 0
+				lcOut = lcOut + substr(lcIn, lnPos)
 				exit
 			endif
-			lnAt = lnAt + lnPos - 1
+			if lnAt < lnPos
+* Una barra ya consumida por el escape anterior (la segunda de \\).
+				lnOcc = lnOcc + 1
+				loop
+			endif
 
-			lcHex = substr(tcLexeme, lnAt + 2, 4)
-			if len(lcHex) == 4 and this.IsHex4(lcHex)
-				lcUnicode = substr(tcLexeme, lnAt, 6)
-				lcChar = strtran(strconv(lcUnicode, 16), chr(0))
-				tcLexeme = stuff(tcLexeme, lnAt, 6, lcChar)
-				&& Seguir DESPUÉS de lo sustituido. El bucle viejo hacía un
-				&& strtran global y volvía a empezar; con stuff hay que
-				&& avanzar a mano o se relee lo mismo eternamente.
-				lnPos = lnAt + max(len(lcChar), 1)
-			else
-				&& No es un escape: es una barra seguida de una u, como en
-				&& C:\Users. Se salta y se sigue buscando.
-				lnPos = lnAt + 2
+			lcOut = lcOut + substr(lcIn, lnPos, lnAt - lnPos)
+			lcNext = substr(lcIn, lnAt + 1, 1)
+			lnSkip = 2
+
+			do case
+			case lcNext == '"'
+				lcOut = lcOut + '"'
+			case lcNext == "\"
+				lcOut = lcOut + "\"
+			case lcNext == "/"
+				lcOut = lcOut + "/"
+			case lcNext == "b"
+				lcOut = lcOut + chr(8)
+			case lcNext == "f"
+				lcOut = lcOut + chr(12)
+			case lcNext == "n"
+				lcOut = lcOut + chr(10)
+			case lcNext == "r"
+				lcOut = lcOut + chr(13)
+			case lcNext == "t"
+				lcOut = lcOut + chr(9)
+			case lcNext == "'"
+				lcOut = lcOut + "'"
+			case (lcNext == "u" or lcNext == "U") and this.isHex4(substr(lcIn, lnAt + 2, 4))
+				lnSkip = this.appendUnicode(lcIn, lnAt, @lcOut)
+			otherwise
+* Un escape que no existe se queda tal cual, barra incluida.
+				lcOut = lcOut + "\" + lcNext
+			endcase
+
+			lnPos = lnAt + lnSkip
+			lnOcc = lnOcc + 1
+			if lnPos > lnLen
+				exit
 			endif
 		enddo
-&& IRODG 09/10/2023 Fin
+
+		tcLexeme = lcOut
 	endproc
 
+* appendUnicode: \uXXXX (y su pareja si es un sustituto alto) a la
+* página 1252. Devuelve cuántos caracteres de la entrada consumió.
+	hidden function appendUnicode(tcIn, tnAt, tcOut)
+		local lnCode, lnLow, lcUtf16, lnSkip
 
-	&& Los cuatro caracteres de un \uXXXX. Sin esto, cualquier cosa detrás de
-	&& una barra y una u se tomaba por un escape unicode.
-	procedure IsHex4(tcHex)
-		local llOk, lnI, lcC
-		llOk = .t.
-		for lnI = 1 to 4
-			lcC = upper(substr(tcHex, lnI, 1))
-			if !(isdigit(lcC) or inlist(lcC, 'A', 'B', 'C', 'D', 'E', 'F'))
-				llOk = .f.
-				exit
+		lnCode = this.hex4ToInt(substr(tcIn, tnAt + 2, 4))
+		lcUtf16 = chr(bitand(lnCode, 0xFF)) + chr(bitrshift(lnCode, 8))
+		lnSkip = 6
+
+		if between(lnCode, 0xD800, 0xDBFF) and upper(substr(tcIn, tnAt + 6, 2)) == "\U" ;
+				and this.isHex4(substr(tcIn, tnAt + 8, 4))
+			lnLow = this.hex4ToInt(substr(tcIn, tnAt + 8, 4))
+			if between(lnLow, 0xDC00, 0xDFFF)
+				lcUtf16 = lcUtf16 + chr(bitand(lnLow, 0xFF)) + chr(bitrshift(lnLow, 8))
+				lnSkip = 12
 			endif
-		endfor
-		return llOk
-	endproc
+		endif
+
+		if lnCode < 128
+			tcOut = tcOut + chr(lnCode)
+		else
+			tcOut = tcOut + strconv(lcUtf16, 6, 1252, 1)
+		endif
+
+		return lnSkip
+	endfunc
+
+* isHex4: los cuatro caracteres de un \uXXXX. Sin esto, cualquier cosa
+* detrás de una barra y una u se tomaba por un escape unicode.
+	hidden function isHex4(tcText)
+		local lnI
+
+		if len(tcText) != 4
+			return .f.
+		endif
+		for lnI = 1 to 4
+			if !(upper(substr(tcText, lnI, 1)) $ "0123456789ABCDEF")
+				return .f.
+			endif
+		next
+		return .t.
+	endfunc
+
+* hex4ToInt: cuatro dígitos hex (ya validados por isHex4) a entero. Sin
+* EVALUATE(): los consumidores con invariante de seguridad los cuentan.
+	hidden function hex4ToInt(tcHex)
+		local lnI, lnValue
+
+		lnValue = 0
+		for lnI = 1 to 4
+			lnValue = lnValue * 16 + at(upper(substr(tcHex, lnI, 1)), "0123456789ABCDEF") - 1
+		next
+		return lnValue
+	endfunc
 
 	function scanTokens
 		with this
