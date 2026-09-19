@@ -389,6 +389,10 @@ define class JSONClass as session
 		endtry
 
 		if type('loResult', 1) == 'A'
+* EXTERNAL ARRAY: sin esto el build del .pjx toma loResult[i] por una llamada
+* y abre 'Locate File: Unable to find Unknown LORESULT', que deja colgado un
+* build desatendido (medido el 2026-09-19).
+			external array loResult
 			local i
 			for i = 1 to alen(loResult, 1)
 				dimension this.aCustomArray[i]
@@ -526,7 +530,9 @@ define class JSONClass as session
 	function destroy
 		try
 			if this.lTablePrompt
-				set tableprompt (iif(this.lTablePrompt, 'ON', 'OFF'))
+* SET TABLEPROMPT no admite expresion: con (iif(...)) el .app no compilaba.
+* Si estaba en ON al entrar, se vuelve a ON (mismo arreglo que el autocontenido).
+				set tableprompt on
 			endif
 		catch
 		endtry
