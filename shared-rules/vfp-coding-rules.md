@@ -7,7 +7,7 @@ Cómo consultarlo, cómo añadir una regla y por qué la numeración es sagrada:
 |---|---|
 | **Alcance** | El **lenguaje** VFP 9 y sus formatos de fichero. Las reglas de herramientas (FoxUnit, `vfp2text`, `foxengine`) están en `tooling-rules.md`; las de X#, en `xsharp-coding-rules.md` |
 | **Origen** | Unificado el 2026-08-15 desde cuatro copias divergentes (`VFP.AI.SDK/docs/`, raíz, `FoxPilot/Docs/`, `FoxFE Core/Docs/`) más reglas dispersas en prosa por siete proyectos |
-| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22); 56 en el FLL de FoxMind (2026-09-04); **57 y 58** en la integracion del ERP de FoxMind (2026-09-09); **59** en D2.1 de FoxMind (2026-09-18) |
+| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22); 56 en el FLL de FoxMind (2026-09-04); **57 y 58** en la integracion del ERP de FoxMind (2026-09-09); **59** en D2.1 de FoxMind (2026-09-18); **60** en la ronda 45 del canal FoxMind (2026-09-19); **61** en la ventana del banco de FoxServer (2026-09-20) |
 | **Regla de oro** | **Nunca se renumera.** Una regla que se cae se marca obsoleta y su número se retira |
 
 ---
@@ -1974,3 +1974,93 @@ verde y el build colgado sin que nadie lo viera: el último `foxmind.app` constr
 días antes. Lo descubrió la ronda 2 del canal FoxMind (el build se agotaba también en `HEAD`) y lo
 midió la coordinación con FoxAgent, `launch_instance` + `BUILD APP ... RECOMPILE` +
 `take_screenshot`, que es lo que enseñó el diálogo. Tres llamadas en `FoxMindIdeFll`.*
+
+---
+
+## 60. Una propiedad que se llama como una variable de sistema (`_windows`) no deja construir la clase: *"Must be a variable or array"*
+
+El síntoma: `CREATEOBJECT()` de la clase falla con *"Must be a variable or array"*, y el error
+sale **en la línea que la crea**, no en la clase. Si la clase es un doble de tests, caen de golpe
+todas las suites que lo usan, cada una en su `CREATEOBJECT`, y el mensaje no nombra la propiedad.
+
+```foxpro
+* INCORRECTO -- _WINDOWS es una variable de sistema de VFP
+define class MiDoble as custom
+	hidden _windows
+
+	procedure init
+		this._windows = createobject("Collection")
+	endproc
+enddefine
+
+* CORRECTO -- cualquier otro nombre
+define class MiDoble as custom
+	hidden _wintable
+
+	procedure init
+		this._wintable = createobject("Collection")
+	endproc
+enddefine
+```
+
+La causa: `_WINDOWS` es una variable de sistema de VFP, y declarar una propiedad con ese nombre
+choca con ella al construir la clase. Otra clase del mismo fichero, igual pero con `hidden _pick`,
+se construye bien: el problema es el nombre, no `hidden` ni el `init`.
+
+**Qué hacer:** una propiedad no se llama como una variable de sistema. Las de VFP empiezan por `_`
+(`_WINDOWS`, `_TALLY`, `_PAGENO`, `_SCREEN`…), así que un nombre de propiedad con `_` delante se
+mira antes contra la lista de variables de sistema de la ayuda. Medido solo con `_WINDOWS`. Y si
+un `CREATEOBJECT` da *"Must be a variable or array"*, lo primero es buscar en la clase un
+nombre así.
+
+*Origen: FoxMind, ronda 45 del canal FoxMind (2026-09-19), `FoxMindFakeIdeSource` en
+`FoxMindEvents.prg`. Costó la primera pasada entera: siete suites cayeron en su `CREATEOBJECT`
+del doble. Se aisló con un `.prg` de tres `CREATEOBJECT`: las dos clases hermanas se construían y
+el doble no.*
+
+---
+
+## 61. `ALLTRIM()` no quita tabuladores, y `ALINES(..., 1)` tampoco: una línea con sangría de tabulador no casa con nada
+
+El síntoma: recorres un `.prg` línea a línea buscando `PROCEDURE`, `DEFINE CLASS` o lo que sea,
+el patrón no casa **en ningún fichero con sangría de tabulador**, y no hay error. En un fichero
+con sangría de espacios el mismo código funciona, así que parece cosa del fichero.
+
+```foxpro
+* INCORRECTO -- ALLTRIM() quita SOLO espacios (CHR(32))
+lcLinea = ALLTRIM(laL[i])
+IF UPPER(LEFT(lcLinea, 10)) == "PROCEDURE "      && nunca entra si la sangría es de tabulador
+
+* CORRECTO -- los tabuladores, a espacios, y luego el ALLTRIM de siempre
+lcLinea = ALLTRIM(CHRTRAN(laL[i], CHR(9), " "))
+
+* CORRECTO -- o el ALLTRIM de VFP 9 con los DOS caracteres
+lcLinea = ALLTRIM(laL[i], 0, CHR(9), " ")
+```
+
+La causa: en VFP, *trim* significa **espacios**. `ALLTRIM()`, `LTRIM()` y `RTRIM()` sin
+argumentos no tocan `CHR(9)`. Medido sobre `CHR(9) + CHR(9) + "PROCEDURE pX(req, res)" + CHR(9)`:
+`LEN()` vale **25 antes y 25 después** de `ALLTRIM()` y de `LTRIM()`, y el primer carácter sigue
+siendo `ASC()` 9.
+
+**Y `ALINES()` con recorte tampoco.** `ALINES(laL, lcTexto, 1)` recorta la línea que empieza por
+espacios (primer carácter 80, la `P`) y **deja intacta** la que empieza por tabulador (primer
+carácter 9). Quien lee un fuente con `ALINES(..., 1)` creyendo que ya viene limpio, se lleva el
+mismo golpe.
+
+**Ojo con la forma de VFP 9**, que es la que parece más limpia: en cuanto se le pasa un carácter,
+`ALLTRIM()` **deja de quitar espacios**. Medido sobre `CHR(9) + " " + CHR(9) + "PROCEDURE pX()"`:
+`ALLTRIM(lc, 0, CHR(9))` deja 17 de 19 caracteres y **no casa**, porque se para en el espacio del
+medio; `ALLTRIM(lc, 0, CHR(9), " ")` deja 14 y casa. Si se usa esa forma, hay que nombrar los dos.
+
+**Qué hacer:** cualquier código que parsee un fuente ajeno line a línea normaliza la sangría antes
+de comparar. `CHRTRAN(linea, CHR(9), " ")` es la forma corta y además deja las palabras separadas
+por espacios, que es lo que `GETWORDNUM()` necesita. Si el contenido interior importa y no se
+quiere tocar, la forma de dos caracteres. Y lo mismo vale para `CHR(160)` (espacio duro) si el
+texto viene de una página web pegada.
+
+*Origen: FoxForge, `providers\web\prg\ui\frmbench.prg` (2026-09-20), la ventana del banco de
+pruebas de FoxServer. El combo de endpoints salía vacío para el controlador del tutorial y lleno
+para el generado por la plantilla: el primero tiene sangría de tabulador y el segundo de espacios.
+Costó una pasada de depuración con el fichero delante, leyendo las líneas una a una, porque el
+`ATC("help", …)` sí las encontraba: lo que fallaba era el `LEFT()` de después.*
