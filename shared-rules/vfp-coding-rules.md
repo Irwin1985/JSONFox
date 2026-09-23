@@ -7,7 +7,7 @@ Cómo consultarlo, cómo añadir una regla y por qué la numeración es sagrada:
 |---|---|
 | **Alcance** | El **lenguaje** VFP 9 y sus formatos de fichero. Las reglas de herramientas (FoxUnit, `vfp2text`, `foxengine`) están en `tooling-rules.md`; las de X#, en `xsharp-coding-rules.md` |
 | **Origen** | Unificado el 2026-08-15 desde cuatro copias divergentes (`VFP.AI.SDK/docs/`, raíz, `FoxPilot/Docs/`, `FoxFE Core/Docs/`) más reglas dispersas en prosa por siete proyectos |
-| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22); 56 en el FLL de FoxMind (2026-09-04); **57 y 58** en la integracion del ERP de FoxMind (2026-09-09); **59** en D2.1 de FoxMind (2026-09-18); **60** en la ronda 45 del canal FoxMind (2026-09-19); **61** en la ventana del banco de FoxServer (2026-09-20) |
+| **Numeración** | 1-42 conservadas **verbatim** de `VFP.AI.SDK/docs/vfp-coding-rules.md`, que tenía 86 referencias entrantes. 43-52 incorporadas en la unificación; 53 añadida en A14b de VFP.AI.SDK (2026-08-16); 54 y 55 en FoxServer 0.9 (2026-08-21); **55.1** ampliando la 55 en FoxServer 0.9 (2026-08-22); 56 en el FLL de FoxMind (2026-09-04); **57 y 58** en la integracion del ERP de FoxMind (2026-09-09); **59** en D2.1 de FoxMind (2026-09-18); **60** en la ronda 45 del canal FoxMind (2026-09-19); **61** en la ventana del banco de FoxServer (2026-09-20); **62, 63 y 64** en el banco de pruebas de FoxCli (2026-09-21/22) |
 | **Regla de oro** | **Nunca se renumera.** Una regla que se cae se marca obsoleta y su número se retira |
 
 ---
@@ -2064,3 +2064,110 @@ pruebas de FoxServer. El combo de endpoints salía vacío para el controlador de
 para el generado por la plantilla: el primero tiene sangría de tabulador y el segundo de espacios.
 Costó una pasada de depuración con el fichero delante, leyendo las líneas una a una, porque el
 `ATC("help", …)` sí las encontraba: lo que fallaba era el `LEFT()` de después.*
+
+---
+
+## 62. Un `.app` cargado se queda con los nombres de sus programas: `SET PROCEDURE` y `NEWOBJECT` con la ruta ABSOLUTA de otro fichero cargan el suyo
+
+El síntoma es absurdo, y por eso cuesta: pides un fichero por su ruta completa, VFP dice que sí,
+y la clase que hay dentro **no existe**.
+
+```foxpro
+* Con FoxForge.app cargado (lleva dentro un programa llamado "main"):
+SET PROCEDURE TO "c:\misclis\dbf2json\src\main.prg" ADDITIVE
+? SET("PROCEDURE")
+* -> ... , C:\DESARROLLO\FOXFORGE\FOXFORGE.APP      && ¡el .app, no tu fichero!
+
+lo = CREATEOBJECT("Dbf2jsonCommand")     && "Class definition ... is not found"
+lo = NEWOBJECT("Dbf2jsonCommand", "c:\misclis\dbf2json\src\main.prg")   && lo mismo
+```
+
+VFP resuelve un módulo por su **nombre**, y busca primero dentro de los `.app` cargados. La ruta
+que le pasas no le hace cambiar de opinión: si el `.app` lleva un `main`, tu `src\main.prg` no
+se carga nunca. Desde la ventana de comandos, la misma línea entra bien — lo que distingue un
+caso del otro es qué está cargado, no desde dónde se llama.
+
+**Qué hacer:** que el `.app` **no contenga ningún programa con un nombre que sus proyectos vayan
+a cargar**. `main.prg` es el peor de todos, porque es el nombre por defecto de medio mundo. Un
+`.app` que orquesta proyectos ajenos nombra su entrada `ffmain.prg`, `shellmain.prg` o lo que
+sea, pero no `main`.
+
+Comprobarlo es barato: `SET("PROCEDURE")` después del `SET PROCEDURE` tiene que nombrar **tu**
+fichero (por su `.FXP`). Si nombra otra cosa, es esto.
+
+*Origen: FoxForge, banco de pruebas de FoxCli (2026-09-21). El banco no podía instanciar la clase
+del comando de NINGÚN proyecto CLI, porque todos tienen su fuente en `src\main.prg` y
+`FoxForge.app` llevaba dentro su propio `main.prg`. Costó media tarde: el `COMPILE` funcionaba,
+el `.fxp` aparecía en disco, `SET PROCEDURE` devolvía `.T.` y la misma línea desde la ventana de
+comandos entraba a la primera. La prueba decisiva fue copiar el fuente a `sonda_nombre.prg` y
+cargarlo: funcionó sin tocar nada más. El arreglo fue renombrar `main.prg` de FoxForge a
+`ffmain.prg`.*
+
+---
+
+## 63. `STRTOFILE()` y `COPY FILE` sobre un fichero que YA EXISTE abren un modal con `SET SAFETY ON`; `ERASE` no pregunta
+
+```foxpro
+SET SAFETY ON
+STRTOFILE(lcTexto, lcFichero)   && si lcFichero existe: "... already exists, overwrite it?"
+```
+
+El diálogo espera un clic, y en un proceso sin nadie delante —un build, una CLI, un servicio— el
+proceso se queda ahí hasta que alguien lo mata. **La primera ejecución nunca lo ve**, porque el
+fichero todavía no está: aparece a la segunda, que es cuando ya nadie sospecha del guardado.
+
+```foxpro
+* CORRECTO -- apagado solo para esta escritura, y devuelto como estaba
+LOCAL lcSafety
+lcSafety = SET("SAFETY")
+SET SAFETY OFF
+STRTOFILE(lcTexto, lcFichero)
+IF lcSafety == "ON"
+    SET SAFETY ON
+ENDIF
+```
+
+No vale apagarlo al arrancar y olvidarse: el `SET SAFETY` es global y de la sesión, así que
+dejarlo apagado cambia el comportamiento de todo lo demás, incluido el `ZAP` de otro.
+
+**`ERASE` y `DELETE FILE` NO preguntan** (medido el 2026-09-22 con `SAFETY ON`), así que un
+código que sólo borra temporales no necesita tocar nada. Apagar el `SAFETY` «por si acaso» es
+como no tenerlo.
+
+*Origen: es el tercer sitio de la casa donde muerde el mismo diente. FoxForge
+`providers\cli\hook\foxclihook.vcx` (`deploycli`, `COPY FILE` sobre el `.exe`), FoxForge
+`shared\Settings.prg` (`Save()`, 2026-09-17) y FoxForge `providers\cli\CliProvider.prg`
+(`RunProject`, 2026-09-22). En este último el modal salía al ejecutar la CLI por SEGUNDA vez
+sobre el mismo proyecto.*
+
+---
+
+## 64. Una clase VFP que imita un objeto COM no puede heredar de `Custom` si el COM expone `Width()`, `Height()` o `Name()` como MÉTODOS
+
+`Custom` trae `Width`, `Height` y `Name` como **propiedades**. Si tu clase declara un método con
+ese nombre, VFP no lo acepta:
+
+```foxpro
+DEFINE CLASS MiConsola AS Custom
+    FUNCTION Width          && "Property WIDTH is not a method or event"
+        RETURN 80
+    ENDFUNC
+ENDDEFINE
+
+* CORRECTO -- Session no tiene nada visual
+DEFINE CLASS MiConsola AS Session
+```
+
+Y aunque compilara, el daño sería peor: el código que hace `oCon.Width()` contra el objeto COM
+de verdad haría `oCon.Width()` contra una propiedad en el doble, que es un error donde el
+original es una llamada. Un doble tiene que fallar por lo que finge, no por lo que hereda.
+
+`Session` es la base con menos miembros que hay y no tiene nada visual. **Lo que no se puede
+evitar es `Error()`**: todo objeto de VFP tiene ese evento, así que si el COM expone un
+`Error()` —escribir en stderr, por ejemplo— tu método recibe también los errores internos, con
+tres parámetros. Se distinguen por `PCOUNT()`, o un fallo del doble acaba contado como salida
+del código que estás probando.
+
+*Origen: FoxForge, `providers\cli\foxclibench.prg` (2026-09-21), el `oCon` y el `oArgs` del
+banco de FoxCli, que imitan `ConsoleBridge` y `ArgsBridge` del host .NET. `CREATEOBJECT` fallaba
+con «Property WIDTH is not a method or event» y el banco no llegaba a arrancar.*
