@@ -5,7 +5,7 @@ define class JSONFox as session
 	lError          = .f.
 	cLastError      = ""
 	UseArrayObjects = .t.
-	version         = "13.1"
+	version         = "13.1.1"
 	hidden oUtils
 	hidden lTablePrompt
 	dimension aCustomArray[1]
@@ -78,6 +78,11 @@ define class JSONFox as session
 		store .null. to loLexer, loParser
 		release loLexer, loParser
 		if type('loResult', 1) == 'A'
+* EXTERNAL ARRAY: sin esto el build de un .pjx que incluye JsonFox.prg
+* toma loResult[i] por una llamada y abre 'Locate File: Unable to find
+* Unknown LORESULT'. Lo mismo que jsonclass.prg desde el 2026-09-19;
+* aquí faltaba (visto el 2026-09-25 al compilar FoxPack).
+			external array loResult
 			local i
 			for i = 1 to alen(loResult, 1)
 				dimension this.aCustomArray[i]
@@ -208,6 +213,11 @@ define class JSONFox as session
 			this.SetError(loEx.message)
 		endtry
 		if type('loResult', 1) == 'A'
+* EXTERNAL ARRAY: sin esto el build de un .pjx que incluye JsonFox.prg
+* toma loResult[i] por una llamada y abre 'Locate File: Unable to find
+* Unknown LORESULT'. Lo mismo que jsonclass.prg desde el 2026-09-19;
+* aquí faltaba (visto el 2026-09-25 al compilar FoxPack).
+			external array loResult
 			local i
 			for i = 1 to alen(loResult, 1)
 				dimension this.aCustomArray[i]

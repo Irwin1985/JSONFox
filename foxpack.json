@@ -1,6 +1,6 @@
 {
   "name": "jsonfox",
-  "version": "13.1",
+  "version": "13.1.1",
   "description": "JSON parser and serializer for VFP in a single PRG: parse, stringify, cursor to JSON and JSON to cursor.",
   "license": "MIT",
   "files": [

@@ -1,10 +1,14 @@
 * ========================================================================
 * JSONFox - Self-contained standalone library
-* Version: 13.1
+* Version: 13.1.1
 * Description: Complete JSON parser and serializer for Visual FoxPro
 * Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")
 *
 * Changelog:
+*   13.1.1 (2026-09-25) - Fixed: EXTERNAL ARRAY loResult en Parse y en
+*               CursorToJSONObject. Sin él, compilar un proyecto que
+*               incluye JsonFox.prg abría el diálogo Locate File
+*               (Unknown LORESULT) y colgaba un build desatendido.
 *   13.1 (2026-09-25) - La versión de este fichero pasa a ser la de la
 *               librería, la misma que la propiedad version (13.1).
 *               Sin cambios de código: la numeración 1.x de antes
@@ -2214,7 +2218,7 @@ define class JSONFox as session
 	lError          = .f.
 	cLastError      = ""
 	UseArrayObjects = .t.
-	version         = "13.1"
+	version         = "13.1.1"
 	hidden oUtils
 	hidden lTablePrompt
 	dimension aCustomArray[1]
@@ -2287,6 +2291,11 @@ define class JSONFox as session
 		store .null. to loLexer, loParser
 		release loLexer, loParser
 		if type('loResult', 1) == 'A'
+* EXTERNAL ARRAY: sin esto el build de un .pjx que incluye JsonFox.prg
+* toma loResult[i] por una llamada y abre 'Locate File: Unable to find
+* Unknown LORESULT'. Lo mismo que jsonclass.prg desde el 2026-09-19;
+* aquí faltaba (visto el 2026-09-25 al compilar FoxPack).
+			external array loResult
 			local i
 			for i = 1 to alen(loResult, 1)
 				dimension this.aCustomArray[i]
@@ -2417,6 +2426,11 @@ define class JSONFox as session
 			this.SetError(loEx.message)
 		endtry
 		if type('loResult', 1) == 'A'
+* EXTERNAL ARRAY: sin esto el build de un .pjx que incluye JsonFox.prg
+* toma loResult[i] por una llamada y abre 'Locate File: Unable to find
+* Unknown LORESULT'. Lo mismo que jsonclass.prg desde el 2026-09-19;
+* aquí faltaba (visto el 2026-09-25 al compilar FoxPack).
+			external array loResult
 			local i
 			for i = 1 to alen(loResult, 1)
 				dimension this.aCustomArray[i]

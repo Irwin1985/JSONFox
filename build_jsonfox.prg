@@ -22,7 +22,16 @@ lcOut = JsonFoxAssemble(lcRoot)
 
 * -- Escribir JsonFox.prg --------------------------------------------------- *
 lcOutFile = lcRoot + "JsonFox.prg"
+* SAFETY OFF para el STRTOFILE (regla 63): con SAFETY ON, lo normal en el
+* IDE, preguntaba si sobrescribir JsonFox.prg y un build lanzado desde
+* fuera se quedaba esperando (visto el 2026-09-25).
+local lcSafety
+lcSafety = set("SAFETY")
+set safety off
 strtofile(lcOut, lcOutFile)
+if lcSafety == "ON"
+	set safety on
+endif
 
 * -- Compilar --------------------------------------------------------------- *
 compile (lcOutFile)
@@ -47,11 +56,19 @@ function JsonFoxAssemble(tcRoot)
 	lcOut = ;
 		"* ========================================================================" + lcSep + ;
 		"* JSONFox - Self-contained standalone library" + lcSep + ;
-		"* Version: 1.1.1" + lcSep + ;
+		"* Version: 13.1.1" + lcSep + ;
 		"* Description: Complete JSON parser and serializer for Visual FoxPro" + lcSep + ;
 		[* Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")] + lcSep + ;
 		"*" + lcSep + ;
 		"* Changelog:" + lcSep + ;
+		"*   13.1.1 (2026-09-25) - Fixed: EXTERNAL ARRAY loResult en Parse y en" + lcSep + ;
+		"*               CursorToJSONObject. Sin él, compilar un proyecto que" + lcSep + ;
+		"*               incluye JsonFox.prg abría el diálogo Locate File" + lcSep + ;
+		"*               (Unknown LORESULT) y colgaba un build desatendido." + lcSep + ;
+		"*   13.1 (2026-09-25) - La versión de este fichero pasa a ser la de la" + lcSep + ;
+		"*               librería, la misma que la propiedad version (13.1)." + lcSep + ;
+		"*               Sin cambios de código: la numeración 1.x de antes" + lcSep + ;
+		"*               queda en este historial." + lcSep + ;
 		"*   1.1.1 (2026-09-19) - Fixed: el tokenizer desescapaba DOS veces las \u" + lcSep + ;
 		[*               ("x\\u0022" daba x"); ahora una sola pasada, con \b, \f] + lcSep + ;
 		"*               y pares sustitutos. RETURN fuera de TRY en CursorToJSON," + lcSep + ;
