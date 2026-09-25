@@ -1,10 +1,14 @@
 * ========================================================================
 * JSONFox - Self-contained standalone library
-* Version: 1.1.1
+* Version: 13.1
 * Description: Complete JSON parser and serializer for Visual FoxPro
 * Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")
 *
 * Changelog:
+*   13.1 (2026-09-25) - La versión de este fichero pasa a ser la de la
+*               librería, la misma que la propiedad version (13.1).
+*               Sin cambios de código: la numeración 1.x de antes
+*               queda en este historial.
 *   1.1.1 (2026-09-19) - Fixed: el tokenizer desescapaba DOS veces las \u
 *               ("x\\u0022" daba x"); ahora una sola pasada, con \b, \f
 *               y pares sustitutos. RETURN fuera de TRY en CursorToJSON,
