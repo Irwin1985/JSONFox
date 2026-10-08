@@ -56,11 +56,17 @@ function JsonFoxAssemble(tcRoot)
 	lcOut = ;
 		"* ========================================================================" + lcSep + ;
 		"* JSONFox - Self-contained standalone library" + lcSep + ;
-		"* Version: 13.1.2" + lcSep + ;
+		"* Version: 13.1.3" + lcSep + ;
 		"* Description: Complete JSON parser and serializer for Visual FoxPro" + lcSep + ;
 		[* Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")] + lcSep + ;
 		"*" + lcSep + ;
 		"* Changelog:" + lcSep + ;
+		"*   13.1.3 (2026-10-08) - Fixed (issue #65): los números salían" + lcSep + ;
+		"*               redondeados a SET DECIMALS (2 por defecto): un N(10,4)" + lcSep + ;
+		"*               con 1.2345 daba 1.23. Ahora CursorToJSON usa los" + lcSep + ;
+		"*               decimales del campo, y Stringify y los Double 15" + lcSep + ;
+		"*               cifras significativas. Fixed: un campo llamado i" + lcSep + ;
+		"*               rompía CursorToJSON (m. en el SCAN y en GetString)." + lcSep + ;
 		[*   13.1.2 (2026-10-08) - Fixed (issue #66): un campo Double (B) salía] + lcSep + ;
 		[*               como "" en CursorToJSON. MasterDetailToJSON perdía su] + lcSep + ;
 		"*               error (en el autocontenido lanzaba uno del Tokenizer)." + lcSep + ;

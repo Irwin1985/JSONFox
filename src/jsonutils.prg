@@ -69,7 +69,7 @@ define class jsonutils as custom
 			endcase
 		case tctype $ "YFINB"
 			if this.HasDecimals(tcvalue)
-				tcvalue = strtran(alltrim(transform(tcvalue, "@T")), ',', '.')
+				tcvalue = this.NumberToJson(tcvalue)
 			else
 				tcvalue = strtran(alltrim(transform(tcvalue)), ',', '.')
 			endif
@@ -84,6 +84,34 @@ define class jsonutils as custom
 			tnTolerance = 0.0000001
 		endif
 		return abs(tnValue - int(tnValue)) > tnTolerance
+	endfunc
+
+&& ======================================================================== &&
+&& Function NumberToJson
+&& Un número escrito como lo quiere JSON: con punto decimal y con todos sus
+&& decimales. TRANSFORM(x, "@T") redondeaba a SET DECIMALS, que vale 2 por
+&& defecto, y un N(10,4) con 1.2345 salía como 1.23 (issue #65).
+&& tnDecimals: los decimales del campo. Sin él (un número suelto, o un
+&& Double, que guarda más de lo que enseña) se escribe con 15 cifras
+&& significativas, las que un double guarda sin ruido, y sin los ceros de
+&& la derecha.
+&& ======================================================================== &&
+	function NumberToJson(tnValue, tnDecimals)
+		local lcNum, llTrim, lnIntDigits
+		* Con m. por lo mismo que GetString: se la llama dentro de un SCAN.
+		llTrim = vartype(m.tnDecimals) != 'N'
+		if m.llTrim
+			lnIntDigits = iif(int(abs(m.tnValue)) = 0, 0, len(alltrim(str(int(abs(m.tnValue)), 40, 0))))
+			tnDecimals  = max(0, 15 - m.lnIntDigits)
+		endif
+		lcNum = alltrim(str(m.tnValue, 40, min(m.tnDecimals, 18)))
+		if set("POINT") != '.'
+			lcNum = strtran(m.lcNum, set("POINT"), '.')
+		endif
+		if m.llTrim and '.' $ m.lcNum and !('E' $ upper(m.lcNum))
+			lcNum = rtrim(rtrim(m.lcNum, 0, '0'), 0, '.')
+		endif
+		return m.lcNum
 	endfunc
 
 && ======================================================================== &&
@@ -176,58 +204,61 @@ define class jsonutils as custom
 && ======================================================================== &&
 	function getString as string
 		lparameters tcString as string, tlParseUTF8 as Boolean
+* Todo con m.: a GetString se la llama dentro del SCAN de CursorToArray, y
+* ahí un campo pisa a la variable del mismo nombre. Con un campo llamado i,
+* SUBSTR(tcString, i, 1) leía el campo y la cadena salía vacía.
 		local llEscapeOptionalChars
 
 * Get optional escape config from the class
 		llEscapeOptionalChars = this.EscapeOptionalChars
 
 * Validate input parameter
-		tcString = iif(vartype(tcString) != "C", "", tcString)
+		tcString = iif(vartype(m.tcString) != "C", "", m.tcString)
 
 * MANDATORY ESCAPES per RFC 8259 standard
-		tcString = strtran(tcString, '\', '\\' )  && Backslash
-		tcString = strtran(tcString, chr(8),  '\b' )   && Backspace
-		tcString = strtran(tcString, chr(9),  '\t' )  && Tab
-		tcString = strtran(tcString, chr(10), '\n' )  && Newline
-		tcString = strtran(tcString, chr(12), '\f' )   && Form feed
-		tcString = strtran(tcString, chr(13), '\r' )  && Carriage return
+		tcString = strtran(m.tcString, '\', '\\' )  && Backslash
+		tcString = strtran(m.tcString, chr(8),  '\b' )   && Backspace
+		tcString = strtran(m.tcString, chr(9),  '\t' )  && Tab
+		tcString = strtran(m.tcString, chr(10), '\n' )  && Newline
+		tcString = strtran(m.tcString, chr(12), '\f' )   && Form feed
+		tcString = strtran(m.tcString, chr(13), '\r' )  && Carriage return
 
 * Handle quotes
-		if left(alltrim(tcString), 1) == '"' and right(alltrim(tcString),1) == '"'
-			tcString = substr(tcString, 2, len(tcString)-2)
+		if left(alltrim(m.tcString), 1) == '"' and right(alltrim(m.tcString),1) == '"'
+			tcString = substr(m.tcString, 2, len(m.tcString)-2)
 		endif
-		tcString = strtran(tcString, '"', '\"' )  && Double quotes (mandatory)
+		tcString = strtran(m.tcString, '"', '\"' )  && Double quotes (mandatory)
 
 * Escape all chars > 127 automatically
 		local i, nChar, lcChar, lcResult
 		lcResult = ""
-		for i=1 to len(tcString)
-			lcChar = substr(tcString,i,1)
-			nChar = asc(lcChar)
+		for i=1 to len(m.tcString)
+			lcChar = substr(m.tcString,m.i,1)
+			nChar = asc(m.lcChar)
 
-			if nChar > 127
+			if m.nChar > 127
 				* Convert to Unicode escape \uXXXX
-				lcResult = lcResult + '\u' + right('0000' + transform(nChar, '@0'), 4)
+				lcResult = m.lcResult + '\u' + right('0000' + transform(m.nChar, '@0'), 4)
 			else
-				lcResult = lcResult + lcChar
+				lcResult = m.lcResult + m.lcChar
 			endif
 		next
 
-		tcString = lcResult
+		tcString = m.lcResult
 
 		* Add quotes if missing
 		LOCAL lnLen, lcLastChar, lcPrevChar
 
-		lnLen = LEN(tcString)
-		lcLastChar = RIGHT(tcString, 1)
-		lcPrevChar = IIF(lnLen > 1, SUBSTR(tcString, lnLen-1, 1), "")
+		lnLen = LEN(m.tcString)
+		lcLastChar = RIGHT(m.tcString, 1)
+		lcPrevChar = IIF(m.lnLen > 1, SUBSTR(m.tcString, m.lnLen-1, 1), "")
 
 		* Check if starts and ends with unescaped quote
-		IF LEFT(tcString, 1) != '"' OR lcLastChar != '"' OR lcPrevChar = "\"
-		    RETURN '"' + tcString + '"'
+		IF LEFT(m.tcString, 1) != '"' OR m.lcLastChar != '"' OR m.lcPrevChar = "\"
+			RETURN '"' + m.tcString + '"'
 		ENDIF
 
-		return tcString
+		return m.tcString
 	endfunc
 && ======================================================================== &&
 && Function CheckProp
