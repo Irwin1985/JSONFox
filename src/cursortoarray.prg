@@ -54,7 +54,7 @@ define class CursorToArray as session
 						lcOutput = lcOutput + lcValue
 					else
 						do case
-						case aColumns[i, 2] $ "CDTBGMQVW"
+						case aColumns[i, 2] $ "CDTGMQVW"
 							do case
 							case aColumns[i, 2] = 'D'
 								if !empty(lcValue)
@@ -72,7 +72,7 @@ define class CursorToArray as session
 								lcValue = JSONUtils.GetString(Iif(this.TrimChars, Alltrim(lcValue), lcValue), this.ParseUTF8)
 							endcase
 							lcOutput = lcOutput + Iif(this.TrimChars, Alltrim(lcValue), lcValue)
-						case aColumns[i, 2] $ "YFIN"
+						case aColumns[i, 2] $ "YFINB"
 							lcOutput = lcOutput + alltrim(transform(lcValue, "@T"))
 						case aColumns[i, 2] = "L"
 							lcOutput = lcOutput + iif(lcValue, "true", "false")

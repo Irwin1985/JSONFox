@@ -5,7 +5,7 @@ define class JSONFox as session
 	lError          = .f.
 	cLastError      = ""
 	UseArrayObjects = .t.
-	version         = "13.1.1"
+	version         = "13.1.2"
 	hidden oUtils
 	hidden lTablePrompt
 	dimension aCustomArray[1]
@@ -275,7 +275,11 @@ define class JSONFox as session
 		catch to loEx
 			this.SetError(loEx.message)
 		endtry
-		lcResult = this.Stringify(@loResult, "", .t., .t.)
+		* Stringify empieza con ResetError: con el error puesto lo borraba,
+		* y con loResult a .NULL. lanzaba un error desde el Tokenizer.
+		if !this.lError
+			lcResult = this.Stringify(@loResult, "", .t., .t.)
+		endif
 		return lcResult
 	endfunc
 

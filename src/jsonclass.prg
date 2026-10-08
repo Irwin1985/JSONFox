@@ -421,7 +421,11 @@ define class JSONClass as session
 			release loClass
 		endtry
 *lcResult = this.stringify(@loResult)
-		lcResult = this.Encode(@loResult, "", .t., .t.)
+		* Encode empieza con ResetError: con el error puesto lo borraba.
+		lcResult = ""
+		if !this.lError
+			lcResult = this.Encode(@loResult, "", .t., .t.)
+		endif
 		return lcResult
 	endfunc
 

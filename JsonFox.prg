@@ -1,10 +1,14 @@
 * ========================================================================
 * JSONFox - Self-contained standalone library
-* Version: 13.1.1
+* Version: 13.1.2
 * Description: Complete JSON parser and serializer for Visual FoxPro
 * Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")
 *
 * Changelog:
+*   13.1.2 (2026-10-08) - Fixed (issue #66): un campo Double (B) salía
+*               como "" en CursorToJSON. MasterDetailToJSON perdía su
+*               error (en el autocontenido lanzaba uno del Tokenizer).
+*               Fuera cinco STRTRAN de getString que no hacían nada.
 *   13.1.1 (2026-09-25) - Fixed: EXTERNAL ARRAY loResult en Parse y en
 *               CursorToJSONObject. Sin él, compilar un proyecto que
 *               incluye JsonFox.prg abría el diálogo Locate File
@@ -109,7 +113,7 @@ define class jsonutils as custom
 	function getValue as string
 		lparameters tcvalue as string, tctype as character, tlParseUTF8 as Boolean, tlTrimChars as Boolean
 		do case
-		case tctype $ "CDTBGMQVWX"
+		case tctype $ "CDTGMQVWX"
 			do case
 			case tctype == 'D'
 				tcvalue = '"' + left(ttoc(tcvalue,3),10) + '"'
@@ -120,7 +124,7 @@ define class jsonutils as custom
 			otherwise
 				tcvalue = this.getString(iif(tlTrimChars, alltrim(tcvalue), tcvalue), tlParseUTF8)
 			endcase
-		case tctype $ "YFIN"
+		case tctype $ "YFINB"
 			if this.HasDecimals(tcvalue)
 				tcvalue = strtran(alltrim(transform(tcvalue, "@T")), ',', '.')
 			else
@@ -267,16 +271,6 @@ define class jsonutils as custom
 		next
 
 		tcString = lcResult
-
-		* OPTIONAL ESCAPES
-		if tlParseUTF8
-			* Special characters
-			tcString = strtran(tcString,"&","&")
-			tcString = strtran(tcString,"+","+")
-			tcString = strtran(tcString,"-","-")
-			tcString = strtran(tcString,"#","#")
-			tcString = strtran(tcString,"%","%")
-		endif
 
 		* Add quotes if missing
 		LOCAL lnLen, lcLastChar, lcPrevChar
@@ -1989,7 +1983,7 @@ define class CursorToArray as session
 						lcOutput = lcOutput + lcValue
 					else
 						do case
-						case aColumns[i, 2] $ "CDTBGMQVW"
+						case aColumns[i, 2] $ "CDTGMQVW"
 							do case
 							case aColumns[i, 2] = 'D'
 								if !empty(lcValue)
@@ -2007,7 +2001,7 @@ define class CursorToArray as session
 								lcValue = JSONUtils.GetString(Iif(this.TrimChars, Alltrim(lcValue), lcValue), this.ParseUTF8)
 							endcase
 							lcOutput = lcOutput + Iif(this.TrimChars, Alltrim(lcValue), lcValue)
-						case aColumns[i, 2] $ "YFIN"
+						case aColumns[i, 2] $ "YFINB"
 							lcOutput = lcOutput + alltrim(transform(lcValue, "@T"))
 						case aColumns[i, 2] = "L"
 							lcOutput = lcOutput + iif(lcValue, "true", "false")
@@ -2218,7 +2212,7 @@ define class JSONFox as session
 	lError          = .f.
 	cLastError      = ""
 	UseArrayObjects = .t.
-	version         = "13.1.1"
+	version         = "13.1.2"
 	hidden oUtils
 	hidden lTablePrompt
 	dimension aCustomArray[1]
@@ -2488,7 +2482,11 @@ define class JSONFox as session
 		catch to loEx
 			this.SetError(loEx.message)
 		endtry
-		lcResult = this.Stringify(@loResult, "", .t., .t.)
+		* Stringify empieza con ResetError: con el error puesto lo borraba,
+		* y con loResult a .NULL. lanzaba un error desde el Tokenizer.
+		if !this.lError
+			lcResult = this.Stringify(@loResult, "", .t., .t.)
+		endif
 		return lcResult
 	endfunc
 

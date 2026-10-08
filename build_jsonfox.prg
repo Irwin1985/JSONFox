@@ -56,11 +56,15 @@ function JsonFoxAssemble(tcRoot)
 	lcOut = ;
 		"* ========================================================================" + lcSep + ;
 		"* JSONFox - Self-contained standalone library" + lcSep + ;
-		"* Version: 13.1.1" + lcSep + ;
+		"* Version: 13.1.2" + lcSep + ;
 		"* Description: Complete JSON parser and serializer for Visual FoxPro" + lcSep + ;
 		[* Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")] + lcSep + ;
 		"*" + lcSep + ;
 		"* Changelog:" + lcSep + ;
+		[*   13.1.2 (2026-10-08) - Fixed (issue #66): un campo Double (B) salía] + lcSep + ;
+		[*               como "" en CursorToJSON. MasterDetailToJSON perdía su] + lcSep + ;
+		"*               error (en el autocontenido lanzaba uno del Tokenizer)." + lcSep + ;
+		"*               Fuera cinco STRTRAN de getString que no hacían nada." + lcSep + ;
 		"*   13.1.1 (2026-09-25) - Fixed: EXTERNAL ARRAY loResult en Parse y en" + lcSep + ;
 		"*               CursorToJSONObject. Sin él, compilar un proyecto que" + lcSep + ;
 		"*               incluye JsonFox.prg abría el diálogo Locate File" + lcSep + ;
@@ -89,7 +93,7 @@ function JsonFoxAssemble(tcRoot)
 * objecttojson depende de utils
 * arraytocursor depende de tokenizer + utils
 * cursortoarray depende de utils
-* cursortojsonobject no depende de utils (usa SCATTER)
+* cursortojsonobject depende de parser (TParserInternalArray)
 * structuretojson depende de utils
 * jsonfox_class (facade) depende de todo lo anterior
 	local laFiles[10]

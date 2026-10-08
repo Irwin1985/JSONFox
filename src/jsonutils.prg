@@ -56,7 +56,7 @@ define class jsonutils as custom
 	function getValue as string
 		lparameters tcvalue as string, tctype as character, tlParseUTF8 as Boolean, tlTrimChars as Boolean
 		do case
-		case tctype $ "CDTBGMQVWX"
+		case tctype $ "CDTGMQVWX"
 			do case
 			case tctype == 'D'
 				tcvalue = '"' + left(ttoc(tcvalue,3),10) + '"'
@@ -67,7 +67,7 @@ define class jsonutils as custom
 			otherwise
 				tcvalue = this.getString(iif(tlTrimChars, alltrim(tcvalue), tcvalue), tlParseUTF8)
 			endcase
-		case tctype $ "YFIN"
+		case tctype $ "YFINB"
 			if this.HasDecimals(tcvalue)
 				tcvalue = strtran(alltrim(transform(tcvalue, "@T")), ',', '.')
 			else
@@ -214,16 +214,6 @@ define class jsonutils as custom
 		next
 
 		tcString = lcResult
-
-		* OPTIONAL ESCAPES
-		if tlParseUTF8
-			* Special characters
-			tcString = strtran(tcString,"&","&")
-			tcString = strtran(tcString,"+","+")
-			tcString = strtran(tcString,"-","-")
-			tcString = strtran(tcString,"#","#")
-			tcString = strtran(tcString,"%","%")
-		endif
 
 		* Add quotes if missing
 		LOCAL lnLen, lcLastChar, lcPrevChar
