@@ -128,10 +128,10 @@ define class jsonutils as custom
 && Function DoubleToJson
 && Un Double (campo B) con el decimal más corto que vuelve al MISMO Double:
 && 15 cifras significativas y, si no basta, 16 o 17. Con 15 fijas, 1/3 y
-&& 0.1 + 0.2 volvían a otro Double y 1E-20 salía 0 (FoxDock, P6b-M0).
+&& 0.1 + 0.2 volvían a otro Double y 1E-20 salía 0.
 && Vuelve como lo lee JSONToCursor, con EVALUATE, y se compara con BINTOC
 && porque el == de VFP da 0.1 + 0.2 igual a 0.3. Sin exponente entre 1e-20
-&& y 1e20, como DataTable.DoubleText de FoxDock. Un infinito, que JSON no
+&& y 1e20; más allá, con él. Un infinito, que JSON no
 && tiene, sale null.
 && ======================================================================== &&
 	function DoubleToJson(tnValue)
@@ -332,7 +332,7 @@ define class jsonutils as custom
 && Function EscapeUnicode
 && Cada carácter que no es ASCII imprimible, como \uXXXX de su código
 && Unicode. Se escapaba el BYTE: el € (0x80 en 1252) salía \u0080, que en
-&& JSON es un carácter de control (FoxDock, P6b-M0). La cadena pasa a
+&& JSON es un carácter de control. La cadena pasa a
 && UTF-16 desde CPCURRENT(), la página de los valores que VFP ya leyó, y el
 && tokenizer hace la vuelta con la misma. Los de control (< 32) que no
 && tienen escape corto también van así: JSON no los deja ir sueltos.

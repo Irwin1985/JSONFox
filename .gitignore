@@ -38,3 +38,5 @@ _result.txt
 !standalone/JsonFox.fxp
 shared-rules/
 medidas/
+tests/
+JSONFoxHelper/obj/

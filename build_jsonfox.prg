@@ -7,9 +7,9 @@
 * LA FUENTE DE VERDAD ES src\. JsonFox.prg es una SALIDA: no se edita a
 * mano. Los arreglos del 30 y el 31 de agosto de 2026 se hicieron
 * directamente en JsonFox.prg, el de 31 no llegó nunca a src\, y el
-* primer build que se lanzó después (lo lanza tests\test_build.prg) lo
-* deshizo sin avisar. tests\JsonFoxBuildSyncTests.prg comprueba que
-* JsonFox.prg es exactamente lo que este script produce desde src\.
+* primer build que se lanzó después lo deshizo sin avisar. Por eso
+* JsonFox.prg tiene que ser exactamente lo que este script produce
+* desde src\.
 *
 * Y este fichero va en CP1252 como cualquier .prg: hasta el 2026-09-19
 * iba en UTF-8 y metía en JsonFox.prg los separadores de línea como
@@ -22,7 +22,7 @@ lcOut = JsonFoxAssemble(lcRoot)
 
 * -- Escribir JsonFox.prg --------------------------------------------------- *
 lcOutFile = lcRoot + "JsonFox.prg"
-* SAFETY OFF para el STRTOFILE (regla 63): con SAFETY ON, lo normal en el
+* SAFETY OFF para el STRTOFILE: con SAFETY ON, lo normal en el
 * IDE, preguntaba si sobrescribir JsonFox.prg y un build lanzado desde
 * fuera se quedaba esperando (visto el 2026-09-25).
 local lcSafety
@@ -61,7 +61,7 @@ function JsonFoxAssemble(tcRoot)
 		[* Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")] + lcSep + ;
 		"*" + lcSep + ;
 		"* Changelog:" + lcSep + ;
-		"*   13.2.0 (2026-10-30) - Cambia lo que sale (P6b-M0 de FoxDock):" + lcSep + ;
+		"*   13.2.0 (2026-10-30) - Cambia lo que sale, para no perder datos:" + lcSep + ;
 		[*               CursorToJSON da Varbinary (Q) y Blob (W) en base64] + lcSep + ;
 		[*               (antes, ""). Lo que no es ASCII sale como \u del] + lcSep + ;
 		"*               carácter Unicode (el € era \u0080, ahora \u20AC), y" + lcSep + ;
@@ -95,7 +95,7 @@ function JsonFoxAssemble(tcRoot)
 		"*   1.1.1 (2026-09-19) - Fixed: el tokenizer desescapaba DOS veces las \u" + lcSep + ;
 		[*               ("x\\u0022" daba x"); ahora una sola pasada, con \b, \f] + lcSep + ;
 		"*               y pares sustitutos. RETURN fuera de TRY en CursorToJSON," + lcSep + ;
-		"*               CursorToJSONObject y CursorStructure (regla 6)." + lcSep + ;
+		"*               CursorToJSONObject y CursorStructure." + lcSep + ;
 		"*   1.1.0 (2026-06-14) - Fixed: lTablePrompt macro bug in Destroy," + lcSep + ;
 		"*               ISO 8601 dates via TTOC(val,3), LOCAL llIsCollection" + lcSep + ;
 		"*   1.0.0 (2026-06-14) - Initial self-contained standalone release" + lcSep + ;

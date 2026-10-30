@@ -5,7 +5,7 @@
 * Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")
 *
 * Changelog:
-*   13.2.0 (2026-10-30) - Cambia lo que sale (P6b-M0 de FoxDock):
+*   13.2.0 (2026-10-30) - Cambia lo que sale, para no perder datos:
 *               CursorToJSON da Varbinary (Q) y Blob (W) en base64
 *               (antes, ""). Lo que no es ASCII sale como \u del
 *               carácter Unicode (el € era \u0080, ahora \u20AC), y
@@ -39,7 +39,7 @@
 *   1.1.1 (2026-09-19) - Fixed: el tokenizer desescapaba DOS veces las \u
 *               ("x\\u0022" daba x"); ahora una sola pasada, con \b, \f
 *               y pares sustitutos. RETURN fuera de TRY en CursorToJSON,
-*               CursorToJSONObject y CursorStructure (regla 6).
+*               CursorToJSONObject y CursorStructure.
 *   1.1.0 (2026-06-14) - Fixed: lTablePrompt macro bug in Destroy,
 *               ISO 8601 dates via TTOC(val,3), LOCAL llIsCollection
 *   1.0.0 (2026-06-14) - Initial self-contained standalone release
@@ -204,10 +204,10 @@ define class jsonutils as custom
 && Function DoubleToJson
 && Un Double (campo B) con el decimal más corto que vuelve al MISMO Double:
 && 15 cifras significativas y, si no basta, 16 o 17. Con 15 fijas, 1/3 y
-&& 0.1 + 0.2 volvían a otro Double y 1E-20 salía 0 (FoxDock, P6b-M0).
+&& 0.1 + 0.2 volvían a otro Double y 1E-20 salía 0.
 && Vuelve como lo lee JSONToCursor, con EVALUATE, y se compara con BINTOC
 && porque el == de VFP da 0.1 + 0.2 igual a 0.3. Sin exponente entre 1e-20
-&& y 1e20, como DataTable.DoubleText de FoxDock. Un infinito, que JSON no
+&& y 1e20; más allá, con él. Un infinito, que JSON no
 && tiene, sale null.
 && ======================================================================== &&
 	function DoubleToJson(tnValue)
@@ -408,7 +408,7 @@ define class jsonutils as custom
 && Function EscapeUnicode
 && Cada carácter que no es ASCII imprimible, como \uXXXX de su código
 && Unicode. Se escapaba el BYTE: el € (0x80 en 1252) salía \u0080, que en
-&& JSON es un carácter de control (FoxDock, P6b-M0). La cadena pasa a
+&& JSON es un carácter de control. La cadena pasa a
 && UTF-16 desde CPCURRENT(), la página de los valores que VFP ya leyó, y el
 && tokenizer hace la vuelta con la misma. Los de control (< 32) que no
 && tienen escape corto también van así: JSON no los deja ir sueltos.
@@ -697,8 +697,7 @@ define class Tokenizer as custom
 * las rutas de Windows pero no esto, y el 31 solo llegó al JsonFox.prg
 * ensamblado, no aquí. Con una pasada no hacen falta ninguno de los dos:
 * una barra escapada es una barra y lo que la sigue ya no se relee.
-* Medido el 2026-09-18 (FoxMind, ronda 13). Fijado por
-* tests\JsonFoxUnescapeTests.prg.
+* Medido el 2026-09-18.
 *
 * \uXXXX pasa de UTF-16 a la página de VFP, CPCURRENT(), por STRCONV(...,
 * 6, CPCURRENT(), 1): la misma con la que JSONUtils.EscapeUnicode hace la
@@ -1969,7 +1968,7 @@ Define Class ArrayToCursor As Session
 
 	* ============================================================= *
 	* NumberType
-	* El campo para un número JSON, sin perder nada (FoxDock, P6b-M0):
+	* El campo para un número JSON, sin perder nada:
 	*   I  un entero que cabe en un Integer.
 	*   N  un entero más grande, o uno con decimales: N(w,d) con los
 	*      decimales del literal. Un N guarda el número como texto y lo
@@ -2520,7 +2519,7 @@ define class JSONFox as session
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
 			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
-			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
+			* dentro lanzaba el 2060 y el CATCH lo pisaba.
 			if empty(tcCursor) or !used(tcCursor)
 				this.SetError("CursorToJSON: cursor '" + tcCursor + "' is not in use.")
 			else
@@ -2584,7 +2583,7 @@ define class JSONFox as session
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
 			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
-			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
+			* dentro lanzaba el 2060 y el CATCH lo pisaba.
 			if empty(tcCursor) or !used(tcCursor)
 				this.SetError("CursorToJSONObject: cursor '" + tcCursor + "' is not in use.")
 			else
@@ -2633,7 +2632,7 @@ define class JSONFox as session
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
 			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
-			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
+			* dentro lanzaba el 2060 y el CATCH lo pisaba.
 			if empty(tcCursor)
 				this.SetError("CursorStructure: cursor name cannot be empty.")
 			else

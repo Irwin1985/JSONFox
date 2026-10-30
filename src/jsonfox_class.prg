@@ -125,7 +125,7 @@ define class JSONFox as session
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
 			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
-			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
+			* dentro lanzaba el 2060 y el CATCH lo pisaba.
 			if empty(tcCursor) or !used(tcCursor)
 				this.SetError("CursorToJSON: cursor '" + tcCursor + "' is not in use.")
 			else
@@ -189,7 +189,7 @@ define class JSONFox as session
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
 			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
-			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
+			* dentro lanzaba el 2060 y el CATCH lo pisaba.
 			if empty(tcCursor) or !used(tcCursor)
 				this.SetError("CursorToJSONObject: cursor '" + tcCursor + "' is not in use.")
 			else
@@ -238,7 +238,7 @@ define class JSONFox as session
 			tcCursor      = evl(tcCursor, alias())
 			tnDataSession = evl(tnDataSession, set("Datasession"))
 			* El mensaje de SetError tiene que sobrevivir: un RETURN aquí
-			* dentro lanzaba el 2060 y el CATCH lo pisaba (regla 6).
+			* dentro lanzaba el 2060 y el CATCH lo pisaba.
 			if empty(tcCursor)
 				this.SetError("CursorStructure: cursor name cannot be empty.")
 			else

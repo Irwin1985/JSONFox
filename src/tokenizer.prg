@@ -204,8 +204,7 @@ define class Tokenizer as custom
 * las rutas de Windows pero no esto, y el 31 solo llegó al JsonFox.prg
 * ensamblado, no aquí. Con una pasada no hacen falta ninguno de los dos:
 * una barra escapada es una barra y lo que la sigue ya no se relee.
-* Medido el 2026-09-18 (FoxMind, ronda 13). Fijado por
-* tests\JsonFoxUnescapeTests.prg.
+* Medido el 2026-09-18.
 *
 * \uXXXX pasa de UTF-16 a la página de VFP, CPCURRENT(), por STRCONV(...,
 * 6, CPCURRENT(), 1): la misma con la que JSONUtils.EscapeUnicode hace la

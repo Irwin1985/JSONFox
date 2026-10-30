@@ -296,7 +296,7 @@ Define Class ArrayToCursor As Session
 
 	* ============================================================= *
 	* NumberType
-	* El campo para un número JSON, sin perder nada (FoxDock, P6b-M0):
+	* El campo para un número JSON, sin perder nada:
 	*   I  un entero que cabe en un Integer.
 	*   N  un entero más grande, o uno con decimales: N(w,d) con los
 	*      decimales del literal. Un N guarda el número como texto y lo
