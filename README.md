@@ -130,8 +130,27 @@ oApi2 = NEWOBJECT("JSONFox", "JsonFox.fxp")
 * ![](docs/prop.gif) **tbCurrentRow:** ¿Would you like to serialize the current row? .F. as default.
 * ![](docs/prop.gif) **tnDataSession:** Provide this parameter if you're working in a private session.
 * ![](docs/prop.gif) **tbJustArray:** if is set to .T. then you get just an array with the data, otherwise you'll get an object containing both the cursor name and the array data.
-* ![](docs/prop.gif) **tbParseUTF8:** if is set to .T. then all special characters will be encoded. Eg: 'é' => '\u00e9'
+* ![](docs/prop.gif) **tbParseUTF8:** kept for compatibility. Since 13.2 every character outside printable ASCII is written as `\uXXXX` of its Unicode code point, whatever this parameter says. Eg: 'é' => '\u00E9', '€' => '\u20AC'
 * ![](docs/prop.gif) **tbTrimChars:** if is set to .T. then all right blank spaces will be trimed.
+
+### Field types in CursorToJSON and JSONToCursor (13.2)
+
+| Field | CursorToJSON writes | JSONToCursor reads it back as |
+|---|---|---|
+| C, V, M | string; non-ASCII as `\uXXXX` of the Unicode character (`€` is `\u20AC`), control characters as `\u00XX` | C (M past 254) |
+| N, F, Y | number with the field's decimals (`1234.50`) | N(w,d) when every row has the same decimals |
+| I | integer (`42`) | I (N(w,0) past 2147483647) |
+| B | the shortest decimal that reads back as the same Double (`0.30000000000000004`, `0.3333333333333333`) | B, bit for bit |
+| D, T | ISO 8601 (`"1990-05-17"`, `"2026-10-30T10:20:30"`); empty: `null` | D, T |
+| L | `true` / `false` | L |
+| Q, W | base64 (`"QUIAQw=="`) | C with the base64 text: decode it with `STRCONV(x, 14)` |
+| NULL | `null` | NULL |
+
+JSONToCursor puts a number in a **B** field when it has an exponent (`1e-7`), more than 15 significant digits or more than 20 characters, and when the rows of a column have different decimals (`3.14159` and `0`). So `CursorToJSON` → `JSONToCursor` → `CursorToJSON` gives the same JSON. The conversion to and from `\uXXXX` uses `CPCURRENT()`; a character the code page does not have comes back as `?`.
+
+**ES.** Desde la 13.2, CursorToJSON escribe Varbinary y Blob en base64, cada carácter fuera del ASCII como `\uXXXX` de su código Unicode (el € es `\u20AC`) y un Double con el decimal más corto que vuelve al mismo Double. JSONToCursor manda a un campo B los números con exponente, con más de 15 cifras significativas o de más de 20 de ancho, y las columnas con decimales distintos en cada fila: la ida y la vuelta dan el mismo JSON.
+
+**DE.** Seit 13.2 schreibt CursorToJSON Varbinary und Blob als Base64, jedes Zeichen außerhalb von ASCII als `\uXXXX` seines Unicode-Codepoints (das € ist `\u20AC`) und ein Double mit der kürzesten Dezimalzahl, die wieder denselben Double ergibt. JSONToCursor legt Zahlen mit Exponent, mit mehr als 15 signifikanten Stellen oder mehr als 20 Zeichen sowie Spalten mit unterschiedlichen Nachkommastellen in einem B-Feld an: Hin- und Rückweg ergeben dasselbe JSON.
 
 <hr>
 

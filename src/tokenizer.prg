@@ -207,9 +207,11 @@ define class Tokenizer as custom
 * Medido el 2026-09-18 (FoxMind, ronda 13). Fijado por
 * tests\JsonFoxUnescapeTests.prg.
 *
-* \uXXXX pasa de UTF-16 a la página 1252 por STRCONV(..., 6, 1252, 1);
-* un par sustituto se convierte entero. Lo que no es un escape conocido
-* se deja tal cual, barra incluida.
+* \uXXXX pasa de UTF-16 a la página de VFP, CPCURRENT(), por STRCONV(...,
+* 6, CPCURRENT(), 1): la misma con la que JSONUtils.EscapeUnicode hace la
+* ida (hasta la 13.1.3 era 1252 fija; en una máquina en 1252 es lo mismo).
+* Un par sustituto se convierte entero; lo que la página no tiene sale
+* '?'. Lo que no es un escape conocido se deja tal cual, barra incluida.
 	procedure escapeCharacters(tcLexeme)
 		local lcIn, lcOut, lnLen, lnPos, lnOcc, lnAt, lcNext, lnSkip
 
@@ -276,7 +278,7 @@ define class Tokenizer as custom
 	endproc
 
 * appendUnicode: \uXXXX (y su pareja si es un sustituto alto) a la
-* página 1252. Devuelve cuántos caracteres de la entrada consumió.
+* página de VFP. Devuelve cuántos caracteres de la entrada consumió.
 	hidden function appendUnicode(tcIn, tnAt, tcOut)
 		local lnCode, lnLow, lcUtf16, lnSkip
 
@@ -296,7 +298,7 @@ define class Tokenizer as custom
 		if lnCode < 128
 			tcOut = tcOut + chr(lnCode)
 		else
-			tcOut = tcOut + strconv(lcUtf16, 6, 1252, 1)
+			tcOut = tcOut + strconv(lcUtf16, 6, cpcurrent(), 1)
 		endif
 
 		return lnSkip

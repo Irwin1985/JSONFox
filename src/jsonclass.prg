@@ -4,7 +4,7 @@ define class JSONClass as session
 	LastErrorText 	= ""
 	lError 			= .f.
 	lShowErrors 	= .t.
-	version 		= "13.2"
+	version 		= "13.2.0"
 	hidden lInternal
 	hidden lTablePrompt
 	dimension aCustomArray[1]

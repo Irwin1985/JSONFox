@@ -5,7 +5,7 @@ define class JSONFox as session
 	lError          = .f.
 	cLastError      = ""
 	UseArrayObjects = .t.
-	version         = "13.1.3"
+	version         = "13.2.0"
 	hidden oUtils
 	hidden lTablePrompt
 	dimension aCustomArray[1]

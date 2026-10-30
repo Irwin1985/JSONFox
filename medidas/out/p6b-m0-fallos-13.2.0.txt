@@ -1,0 +1,77 @@
+p6b-m0-fallos 2026-10-30T21:20:26 VERSION(4)=09.00.0000.7423 CPCURRENT()=1252
+autocontenido 13.2.0, app 13.2.0
+
+== 1 y 2. CursorToJSON(m0types)
+-- autocontenido, lError=.F. 
+[{"cc":"Mu\u00F1oz ","vv":"\u20AC\u00F1\u00E9\u00FC","mm":"a\r\nb","nn":1234.50,"n0":42,"ff":3.125,"ii":42,"bb":3.14159,"yy":19.9900,"dd":"1990-05-17","tt":"2026-10-30T10:20:30","ll":true,"qq":"QUIAQw==","ww":"eHl6AP8="},{"cc":null,"vv":null,"mm":null,"nn":null,"n0":null,"ff":null,"ii":null,"bb":null,"yy":null,"dd":null,"tt":null,"ll":null,"qq":null,"ww":null}]
+-- app, lError=.F. 
+[{"cc":"Mu\u00F1oz ","vv":"\u20AC\u00F1\u00E9\u00FC","mm":"a\r\nb","nn":1234.50,"n0":42,"ff":3.125,"ii":42,"bb":3.14159,"yy":19.9900,"dd":"1990-05-17","tt":"2026-10-30T10:20:30","ll":true,"qq":"QUIAQw==","ww":"eHl6AP8="},{"cc":null,"vv":null,"mm":null,"nn":null,"n0":null,"ff":null,"ii":null,"bb":null,"yy":null,"dd":null,"tt":null,"ll":null,"qq":null,"ww":null}]
+   VARTYPE(qq)=Q VARTYPE(ww)=Q  STRCONV(qq, 13)=QUIAQw==  STRCONV(ww, 13)=eHl6AP8=
+   STRCONV(REPLICATE('x', 200), 13) lleva CR o LF: .F.
+
+== 3. una C con 80 F1 E9 FC 9A 01 78 (€ ñ é ü š, CHR(1), x)
+-- autocontenido: [{"s":"\u20AC\u00F1\u00E9\u00FC\u0161\u0001x"}]
+-- app:           [{"s":"\u20AC\u00F1\u00E9\u00FC\u0161\u0001x"}]
+-- STRCONV(s, 5, 1252, 1) (UTF-16LE): AC 20 F1 00 E9 00 FC 00 61 01 01 00 78 00
+-- STRCONV(s, 5, CPCURRENT(), 1):     AC 20 F1 00 E9 00 FC 00 61 01 01 00 78 00
+-- y la vuelta, Parse:
+   autocontenido Parse("\u20AC\u00F1\u00E9\u00FC\u0161") = 80 F1 E9 FC 9A
+   autocontenido Parse("\u0080") = 3F
+   autocontenido Parse("\u4E2D") = 3F
+   app Parse("\u20AC\u00F1\u00E9\u00FC\u0161") = 80 F1 E9 FC 9A
+   app Parse("\u4E2D") = 3F
+-- STRCONV(CHR(0x2D) + CHR(0x4E), 6, 1252, 1): 3F
+
+== 4. JSONToCursor y los números
+   autocontenido m0dbl
+   ida:    [{"d":0.3333333333333333},{"d":0.30000000000000004},{"d":0},{"d":2.5},{"d":0.00000000000000000001},{"d":123456789.123}]
+   vuelta: [{"d":0.3333333333333333},{"d":0.30000000000000004},{"d":0},{"d":2.5},{"d":0.00000000000000000001},{"d":123456789.123}]
+   iguales: .T.
+   campos: d B(8,18)
+   bits (original | vuelta):
+     55 55 55 55 55 55 D5 3F | 55 55 55 55 55 55 D5 3F  igual
+     34 33 33 33 33 33 D3 3F | 34 33 33 33 33 33 D3 3F  igual
+     00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00  igual
+     00 00 00 00 00 00 04 40 | 00 00 00 00 00 00 04 40  igual
+     23 42 92 0C A1 9C C7 3B | 23 42 92 0C A1 9C C7 3B  igual
+     B6 F3 7D 54 34 6F 9D 41 | B6 F3 7D 54 34 6F 9D 41  igual
+   app m0dbl
+   ida:    [{"d":0.3333333333333333},{"d":0.30000000000000004},{"d":0},{"d":2.5},{"d":0.00000000000000000001},{"d":123456789.123}]
+   vuelta: [{"d":0.3333333333333333},{"d":0.30000000000000004},{"d":0},{"d":2.5},{"d":0.00000000000000000001},{"d":123456789.123}]
+   iguales: .T.
+   campos: d B(8,18)
+   bits (original | vuelta):
+     55 55 55 55 55 55 D5 3F | 55 55 55 55 55 55 D5 3F  igual
+     34 33 33 33 33 33 D3 3F | 34 33 33 33 33 33 D3 3F  igual
+     00 00 00 00 00 00 00 00 | 00 00 00 00 00 00 00 00  igual
+     00 00 00 00 00 00 04 40 | 00 00 00 00 00 00 04 40  igual
+     23 42 92 0C A1 9C C7 3B | 23 42 92 0C A1 9C C7 3B  igual
+     B6 F3 7D 54 34 6F 9D 41 | B6 F3 7D 54 34 6F 9D 41  igual
+
+-- 4b. la tabla de los trece tipos, ida, vuelta e ida
+   autocontenido m0types
+   ida:    [{"cc":"Mu\u00F1oz ","vv":"\u20AC\u00F1\u00E9\u00FC","mm":"a\r\nb","nn":1234.50,"n0":42,"ff":3.125,"ii":42,"bb":3.14159,"yy":19.9900,"dd":"1990-05-17","tt":"2026-10-30T10:20:30","ll":true,"qq":"QUIAQw==","ww":"eHl6AP8="},{"cc":null,"vv":null,"mm":null,"nn":null,"n0":null,"ff":null,"ii":null,"bb":null,"yy":null,"dd":null,"tt":null,"ll":null,"qq":null,"ww":null}]
+   vuelta: [{"cc":"Mu\u00F1oz ","vv":"\u20AC\u00F1\u00E9\u00FC","mm":"a\r\nb","nn":1234.50,"n0":42,"ff":3.125,"ii":42,"bb":3.14159,"yy":19.9900,"dd":"1990-05-17","tt":"2026-10-30T10:20:30","ll":true,"qq":"QUIAQw==","ww":"eHl6AP8="},{"cc":null,"vv":null,"mm":null,"nn":null,"n0":null,"ff":null,"ii":null,"bb":null,"yy":null,"dd":null,"tt":null,"ll":null,"qq":null,"ww":null}]
+   iguales: .T.
+   campos: cc C(6,0) vv C(4,0) mm C(4,0) nn N(7,2) n0 I(4,0) ff N(5,3) ii I(4,0) bb N(7,5) yy N(7,4) dd D(8,0) tt T(8,0) ll L(1,0) qq C(8,0) ww C(8,0)
+   app m0types
+   ida:    [{"cc":"Mu\u00F1oz ","vv":"\u20AC\u00F1\u00E9\u00FC","mm":"a\r\nb","nn":1234.50,"n0":42,"ff":3.125,"ii":42,"bb":3.14159,"yy":19.9900,"dd":"1990-05-17","tt":"2026-10-30T10:20:30","ll":true,"qq":"QUIAQw==","ww":"eHl6AP8="},{"cc":null,"vv":null,"mm":null,"nn":null,"n0":null,"ff":null,"ii":null,"bb":null,"yy":null,"dd":null,"tt":null,"ll":null,"qq":null,"ww":null}]
+   vuelta: [{"cc":"Mu\u00F1oz ","vv":"\u20AC\u00F1\u00E9\u00FC","mm":"a\r\nb","nn":1234.50,"n0":42,"ff":3.125,"ii":42,"bb":3.14159,"yy":19.9900,"dd":"1990-05-17","tt":"2026-10-30T10:20:30","ll":true,"qq":"QUIAQw==","ww":"eHl6AP8="},{"cc":null,"vv":null,"mm":null,"nn":null,"n0":null,"ff":null,"ii":null,"bb":null,"yy":null,"dd":null,"tt":null,"ll":null,"qq":null,"ww":null}]
+   iguales: .T.
+   campos: cc C(6,0) vv C(4,0) mm C(4,0) nn N(7,2) n0 I(4,0) ff N(5,3) ii I(4,0) bb N(7,5) yy N(7,4) dd D(8,0) tt T(8,0) ll L(1,0) qq C(8,0) ww C(8,0)
+
+-- 4c. JSON a mano
+   [{"x":0.30000000000000004},{"x":0.3333333333333333}] -> B(8,17) -> [{"x":0.30000000000000004},{"x":0.3333333333333333}]
+   [{"x":null},{"x":3.14}] -> N(4,2) -> [{"x":null},{"x":3.14}]
+   [{"x":1.5},{"x":12345.25}] -> B(8,2) -> [{"x":1.5},{"x":12345.25}]
+   [{"x":12345},{"x":1.5}] -> B(8,1) -> [{"x":12345},{"x":1.5}]
+   [{"x":1e-7},{"x":2E+3}] -> B(8,7) -> [{"x":0.0000001},{"x":2000}]
+   [{"x":-3000000000}] -> N(11,0) -> [{"x":-3000000000}]
+   [{"x":12345678901234567890.5}] -> B(8,1) -> [{"x":12345678901234570000}]
+
+-- 4d. el literal de VFP y los bits
+   BINTOC(0.1 + 0.2)=34 33 33 33 33 33 D3 3F  EVALUATE('0.30000000000000004')=34 33 33 33 33 33 D3 3F  EVALUATE('0.3')=33 33 33 33 33 33 D3 3F
+   BINTOC(1/3)=55 55 55 55 55 55 D5 3F  EVALUATE('0.3333333333333333')=55 55 55 55 55 55 D5 3F  EVALUATE('0.333333333333333')=4F 55 55 55 55 55 D5 3F
+   _snprintf('%.17g', 0.1 + 0.2)=0.30000000000000004  ('%.17g', 1E-20)=9.9999999999999995e-021  EVALUATE('1e-20') == 1E-20: .T.
+   B(18) y N(20,18): se pueden crear
+   N(21,2): Field width or number of decimal places is invalid.

@@ -1,10 +1,23 @@
 * ========================================================================
 * JSONFox - Self-contained standalone library
-* Version: 13.1.3
+* Version: 13.2.0
 * Description: Complete JSON parser and serializer for Visual FoxPro
 * Usage: jsonFox = NEWOBJECT("JSONFox", "JSONFox.prg")
 *
 * Changelog:
+*   13.2.0 (2026-10-30) - Cambia lo que sale (P6b-M0 de FoxDock):
+*               CursorToJSON da Varbinary (Q) y Blob (W) en base64
+*               (antes, ""). Lo que no es ASCII sale como \u del
+*               carácter Unicode (el € era \u0080, ahora \u20AC), y
+*               los de control (< 32) también. Un Double sale con el
+*               decimal más corto que vuelve al mismo Double (15, 16
+*               o 17 cifras). JSONToCursor: un número con exponente,
+*               con más de 15 cifras o de más de 20 de ancho va a un
+*               campo B, y una columna con decimales distintos,
+*               también. Fixed: un null en la primera fila perdía
+*               los decimales y mandaba el campo al final; 12345 y
+*               1.5 desbordaban; 1e-7 era 0 (también en Parse). La
+*               vuelta de \u usa CPCURRENT(), como la ida.
 *   13.1.3 (2026-10-08) - Fixed (issue #65): los números salían
 *               redondeados a SET DECIMALS (2 por defecto): un N(10,4)
 *               con 1.2345 daba 1.23. Ahora CursorToJSON usa los
@@ -69,10 +82,16 @@
 define class jsonutils as custom
 	EscapeOptionalChars = .t.
 	oRegEx = .null.
+	* Los caracteres que van tal cual en una cadena JSON: el ASCII imprimible.
+	cPlainChars = ""
 
 	dimension aPattern[8, 2]
 
 	function init
+		local lnChar
+		for lnChar = 32 to 127
+			this.cPlainChars = this.cPlainChars + chr(lnChar)
+		endfor
 		this.oRegEx = createobject("VBScript.RegExp")
 		this.oRegEx.global = .t.
 && Match a date format in the following pattern
@@ -127,6 +146,10 @@ define class jsonutils as custom
 				tcvalue = '"' + ttoc(tcvalue,3) + '"'
 			case tctype == 'X'
 				tcvalue = "null"
+			case tctype == 'Q'
+				* Varbinary y Blob (VARTYPE da Q a los dos) en base64, como
+				* CursorToJSON. Antes, "": GetString no lee lo que no es C.
+				tcvalue = '"' + strconv(tcvalue, 13) + '"'
 			otherwise
 				tcvalue = this.getString(iif(tlTrimChars, alltrim(tcvalue), tcvalue), tlParseUTF8)
 			endcase
@@ -175,6 +198,76 @@ define class jsonutils as custom
 			lcNum = rtrim(rtrim(m.lcNum, 0, '0'), 0, '.')
 		endif
 		return m.lcNum
+	endfunc
+
+&& ======================================================================== &&
+&& Function DoubleToJson
+&& Un Double (campo B) con el decimal más corto que vuelve al MISMO Double:
+&& 15 cifras significativas y, si no basta, 16 o 17. Con 15 fijas, 1/3 y
+&& 0.1 + 0.2 volvían a otro Double y 1E-20 salía 0 (FoxDock, P6b-M0).
+&& Vuelve como lo lee JSONToCursor, con EVALUATE, y se compara con BINTOC
+&& porque el == de VFP da 0.1 + 0.2 igual a 0.3. Sin exponente entre 1e-20
+&& y 1e20, como DataTable.DoubleText de FoxDock. Un infinito, que JSON no
+&& tiene, sale null.
+&& ======================================================================== &&
+	function DoubleToJson(tnValue)
+		local lcRef, lnDigits, lcNum, lvBack
+		lcRef = bintoc(m.tnValue, "B")
+		for lnDigits = 15 to 17
+			lcNum = this.PlainNumber(this.FormatG(m.tnValue, m.lnDigits))
+			try
+				lvBack = evaluate(m.lcNum)
+			catch
+				lvBack = .null.
+			endtry
+			if vartype(m.lvBack) != 'N' or bintoc(m.lvBack, "B") == m.lcRef
+				exit
+			endif
+		endfor
+		return iif(vartype(m.lvBack) == 'N', m.lcNum, "null")
+	endfunc
+
+&& FormatG: el %.<n>g de msvcrt (STR no da más de 16 cifras).
+	hidden function FormatG(tnValue, tnDigits)
+		local lcBuf, lcFormat, lnLen
+		lcBuf = replicate(chr(0), 64)
+		lcFormat = "%." + transform(m.tnDigits) + "g"
+		try
+			lnLen = JsonFoxSnprintf(@lcBuf, 63, m.lcFormat, m.tnValue)
+		catch
+			* La primera vez, o después de un CLEAR DLLS del programa que
+			* nos usa.
+			declare integer _snprintf in msvcrt as JsonFoxSnprintf ;
+				string @cBuf, integer nCount, string cFormat, double nValue
+			lnLen = JsonFoxSnprintf(@lcBuf, 63, m.lcFormat, m.tnValue)
+		endtry
+		return left(m.lcBuf, max(0, m.lnLen))
+	endfunc
+
+&& PlainNumber: el número de %g sin exponente (msvcrt escribe 1e-020 y
+&& 1e+020) si el exponente no pasa de 20; si pasa, con él (1.5e+300).
+	hidden function PlainNumber(tcNum)
+		local lnE, lcMant, lnExp, lcSign, lcDigits, lnPoint
+		lnE = at("e", m.tcNum)
+		if m.lnE = 0
+			return m.tcNum
+		endif
+		lcMant = left(m.tcNum, m.lnE - 1)
+		lnExp = int(val(substr(m.tcNum, m.lnE + 1)))
+		if abs(m.lnExp) > 20
+			return m.lcMant + "e" + iif(m.lnExp > 0, "+", "-") + transform(abs(m.lnExp))
+		endif
+		lcSign = iif(left(m.lcMant, 1) == "-", "-", "")
+		lcMant = chrtran(m.lcMant, "-", "")
+		lcDigits = chrtran(m.lcMant, ".", "")
+		lnPoint = iif(at(".", m.lcMant) = 0, len(m.lcMant), at(".", m.lcMant) - 1) + m.lnExp
+		do case
+		case m.lnPoint <= 0
+			return m.lcSign + "0." + replicate("0", -m.lnPoint) + m.lcDigits
+		case m.lnPoint >= len(m.lcDigits)
+			return m.lcSign + m.lcDigits + replicate("0", m.lnPoint - len(m.lcDigits))
+		endcase
+		return m.lcSign + left(m.lcDigits, m.lnPoint) + "." + substr(m.lcDigits, m.lnPoint + 1)
 	endfunc
 
 && ======================================================================== &&
@@ -292,22 +385,10 @@ define class jsonutils as custom
 		endif
 		tcString = strtran(m.tcString, '"', '\"' )  && Double quotes (mandatory)
 
-* Escape all chars > 127 automatically
-		local i, nChar, lcChar, lcResult
-		lcResult = ""
-		for i=1 to len(m.tcString)
-			lcChar = substr(m.tcString,m.i,1)
-			nChar = asc(m.lcChar)
-
-			if m.nChar > 127
-				* Convert to Unicode escape \uXXXX
-				lcResult = m.lcResult + '\u' + right('0000' + transform(m.nChar, '@0'), 4)
-			else
-				lcResult = m.lcResult + m.lcChar
-			endif
-		next
-
-		tcString = m.lcResult
+* Lo que no es ASCII imprimible, como \uXXXX del carácter Unicode.
+		if len(chrtran(m.tcString, this.cPlainChars, "")) > 0
+			tcString = this.EscapeUnicode(m.tcString)
+		endif
 
 		* Add quotes if missing
 		LOCAL lnLen, lcLastChar, lcPrevChar
@@ -322,6 +403,29 @@ define class jsonutils as custom
 		ENDIF
 
 		return m.tcString
+	endfunc
+&& ======================================================================== &&
+&& Function EscapeUnicode
+&& Cada carácter que no es ASCII imprimible, como \uXXXX de su código
+&& Unicode. Se escapaba el BYTE: el € (0x80 en 1252) salía \u0080, que en
+&& JSON es un carácter de control (FoxDock, P6b-M0). La cadena pasa a
+&& UTF-16 desde CPCURRENT(), la página de los valores que VFP ya leyó, y el
+&& tokenizer hace la vuelta con la misma. Los de control (< 32) que no
+&& tienen escape corto también van así: JSON no los deja ir sueltos.
+&& ======================================================================== &&
+	function EscapeUnicode(tcString)
+		local lcWide, lcOut, lnPos, lnCode
+		lcWide = strconv(m.tcString, 5, cpcurrent(), 1)
+		lcOut = ""
+		for lnPos = 1 to len(m.lcWide) - 1 step 2
+			lnCode = asc(substr(m.lcWide, m.lnPos, 1)) + 256 * asc(substr(m.lcWide, m.lnPos + 1, 1))
+			if between(m.lnCode, 32, 127)
+				lcOut = m.lcOut + chr(m.lnCode)
+			else
+				lcOut = m.lcOut + '\u' + right(transform(m.lnCode, '@0'), 4)
+			endif
+		endfor
+		return m.lcOut
 	endfunc
 && ======================================================================== &&
 && Function CheckProp
@@ -596,9 +700,11 @@ define class Tokenizer as custom
 * Medido el 2026-09-18 (FoxMind, ronda 13). Fijado por
 * tests\JsonFoxUnescapeTests.prg.
 *
-* \uXXXX pasa de UTF-16 a la página 1252 por STRCONV(..., 6, 1252, 1);
-* un par sustituto se convierte entero. Lo que no es un escape conocido
-* se deja tal cual, barra incluida.
+* \uXXXX pasa de UTF-16 a la página de VFP, CPCURRENT(), por STRCONV(...,
+* 6, CPCURRENT(), 1): la misma con la que JSONUtils.EscapeUnicode hace la
+* ida (hasta la 13.1.3 era 1252 fija; en una máquina en 1252 es lo mismo).
+* Un par sustituto se convierte entero; lo que la página no tiene sale
+* '?'. Lo que no es un escape conocido se deja tal cual, barra incluida.
 	procedure escapeCharacters(tcLexeme)
 		local lcIn, lcOut, lnLen, lnPos, lnOcc, lnAt, lcNext, lnSkip
 
@@ -665,7 +771,7 @@ define class Tokenizer as custom
 	endproc
 
 * appendUnicode: \uXXXX (y su pareja si es un sustituto alto) a la
-* página 1252. Devuelve cuántos caracteres de la entrada consumió.
+* página de VFP. Devuelve cuántos caracteres de la entrada consumió.
 	hidden function appendUnicode(tcIn, tnAt, tcOut)
 		local lnCode, lnLow, lcUtf16, lnSkip
 
@@ -685,7 +791,7 @@ define class Tokenizer as custom
 		if lnCode < 128
 			tcOut = tcOut + chr(lnCode)
 		else
-			tcOut = tcOut + strconv(lcUtf16, 6, 1252, 1)
+			tcOut = tcOut + strconv(lcUtf16, 6, cpcurrent(), 1)
 		endif
 
 		return lnSkip
@@ -1009,7 +1115,8 @@ define class Parser as custom
 			If lcPoint != '.'
 				lcValue = Strtran(lcValue, '.', lcPoint)
 			EndIf
-			return iif(at(lcPoint, lcValue) > 0, evaluate(lcValue), int(Val(lcValue)))
+			* Con exponente también por EVALUATE: INT(VAL('1e-7')) era 0.
+			return iif(at(lcPoint, lcValue) > 0 or 'e' $ lower(lcValue), evaluate(lcValue), int(Val(lcValue)))
 			
 		case this.match(T_BOOLEAN)
 			return (this.previous.value == 'true')
@@ -1697,15 +1804,7 @@ Define Class ArrayToCursor As Session
 			lnDecimals = 0
 			Do Case
 			Case lcType == 'N'
-				local lcNumStr
-				lcNumStr = lxValue.Literal
-				lcType = Iif(Occurs('.', lcNumStr) > 0 or lxValue.Value > INTEGER_MAX_CAPACITY, 'N', 'I')
-				&& >>>>>>> IRODG 03/17/24
-				If lcType == 'N'
-					lnFieldLength = Len(lcNumStr)
-					lnDecimals = len(GetWordNum(lcNumStr,2,'.'))
-				EndIf
-				&& <<<<<<< IRODG 03/17/24
+				lcType = .NumberType(lxValue.Literal, lxValue.Value, @lnFieldLength, @lnDecimals)
 			Case lcType == 'C'
 				If Len(lxValue.Value) > STRING_MAX_SIZE
 					lcType = 'M'
@@ -1752,7 +1851,8 @@ Define Class ArrayToCursor As Session
 				lcValue = .previous.value
 				loToken.type = 'N'
 				loToken.literal = .previous.value
-				loToken.value = iif(at('.', lcValue) > 0, evaluate(lcValue), int(Val(lcValue)))
+				* Con exponente también por EVALUATE: INT(VAL('1e-7')) era 0.
+				loToken.value = iif(at('.', lcValue) > 0 or 'e' $ lower(lcValue), evaluate(lcValue), int(Val(lcValue)))
 
 			case .match(T_BOOLEAN)
 				loToken.type = 'L'
@@ -1810,8 +1910,11 @@ Define Class ArrayToCursor As Session
 					loPair.FieldType = 'L'
 				Case loPair.FieldType == 'C'
 					lcFlags = '(' + Alltrim(Str(loPair.FieldLength)) + ')'
-				Case loPair.FieldType == 'N'					
+				Case loPair.FieldType == 'N'
 					lcFlags = "("+Alltrim(Str(loPair.FieldLength))+","+Alltrim(Str(loPair.FieldDecimals))+")" && Integer part 18 and Decimal part 5
+				Case loPair.FieldType == 'B'
+					* Los decimales de un B solo son los que enseña: guarda el Double entero.
+					lcFlags = "(" + Alltrim(Str(loPair.FieldDecimals)) + ")"
 				EndCase
 				cQuery = cQuery + loPair.FieldType + lcFlags + " NULL"			
 			EndFor
@@ -1826,56 +1929,32 @@ Define Class ArrayToCursor As Session
 	* ============================================================= *
 	* CheckStructure
 	* Adds or Updates an entry key in the oTableStruct dictionary
+	*
+	* loPair es una referencia: se cambia en su sitio. Antes se quitaba
+	* y se volvía a añadir, y el campo pasaba al final del cursor: con
+	* un null en la primera fila, el JSON de vuelta cambiaba de orden.
 	* ============================================================= *
 	Function CheckStructure(tcFieldName, tcType, tnLength, tnDecimals)
 		With this
-			Local nFieldIdx, loPair, lbUpdate
+			Local nFieldIdx, loPair
 			nFieldIdx = .oTableStruct.GetKey(tcFieldName)
 			If nFieldIdx > 0
 				loPair = .oTableStruct.Item(nFieldIdx)
-				* Check for .NULL. type and Update
 				Do case
+				case tcType == 'X'
+					* Un null no cambia el campo.
 				case loPair.fieldType == 'X'
-					loPair.fieldType   = tcType
-					loPair.fieldLength = tnLength
-					* Remove the key and registry a new one
-					.oTableStruct.Remove(nFieldIdx)
-					.oTableStruct.Add(loPair, tcFieldName)
+					loPair.fieldType     = tcType
+					loPair.fieldLength   = tnLength
+					* Sin esto, [null, 3.14] hacía un N(4,0) y volvía 3.
+					loPair.fieldDecimals = tnDecimals
 
 				case loPair.fieldType == 'C' && Check string length (always saves the longest)
 					If tnLength > loPair.fieldLength
 						loPair.fieldLength = tnLength
-						* Remove the key and registry a new one
-						.oTableStruct.Remove(nFieldIdx)
-						.oTableStruct.Add(loPair, tcFieldName)
 					EndIf
-				&& >>>>>>> IRODG 03/17/24
-				case loPair.fieldType == 'N' && Check integer and decimal part length (always saves the longest)
-					If tnLength > loPair.fieldLength
-						loPair.fieldLength = tnLength
-						lbUpdate = .T.
-					EndIf
-					If tnDecimals > loPair.fieldDecimals
-						loPair.fieldDecimals = tnDecimals
-						lbUpdate = .T.
-					EndIf
-					If lbUpdate
-						* Remove the key and registry a new one
-						.oTableStruct.Remove(nFieldIdx)
-						.oTableStruct.Add(loPair, tcFieldName)
-					EndIf
-				Case loPair.fieldType == 'I' and tcType == 'N' && Check string length (always saves the longest)
-					loPair.fieldType = tcType
-					If tnLength > loPair.fieldLength
-						loPair.fieldLength = tnLength
-					EndIf
-					If tnDecimals > loPair.fieldDecimals
-						loPair.fieldDecimals = tnDecimals
-					EndIf
-					* Remove the key and registry a new one
-					.oTableStruct.Remove(nFieldIdx)
-					.oTableStruct.Add(loPair, tcFieldName)
-				&& <<<<<<< IRODG 03/17/24
+				case loPair.fieldType $ 'INB' and tcType $ 'INB'
+					.MergeNumber(loPair, tcType, tnLength, tnDecimals)
 				EndCase
 			Else
 				* Insert new field.
@@ -1887,7 +1966,68 @@ Define Class ArrayToCursor As Session
 			EndIf
 		EndWith
 	EndFunc
-		
+
+	* ============================================================= *
+	* NumberType
+	* El campo para un número JSON, sin perder nada (FoxDock, P6b-M0):
+	*   I  un entero que cabe en un Integer.
+	*   N  un entero más grande, o uno con decimales: N(w,d) con los
+	*      decimales del literal. Un N guarda el número como texto y lo
+	*      devuelve igual hasta 15 cifras significativas.
+	*   B  con exponente, con más de 15 cifras significativas o más de
+	*      20 de ancho (lo más que admite un N): un Double, que EVALUATE
+	*      lee bit a bit. Antes, 0.30000000000000004 volvía 0.3, 1e-7
+	*      volvía 0 y un N de 21 no se podía crear.
+	* Devuelve el tipo, y por referencia el ancho y los decimales (en un
+	* B, los que enseña).
+	* ============================================================= *
+	Hidden Function NumberType(tcLiteral, tnValue, tnLength, tnDecimals)
+		Local lcLower, lnExp, lcMant, lnDot, lnSignificant
+		lcLower = Lower(tcLiteral)
+		lnExp = At('e', lcLower)
+		lcMant = Iif(lnExp > 0, Left(lcLower, lnExp - 1), lcLower)
+		lnDot = At('.', lcMant)
+		* Las cifras sin los ceros de la izquierda: los de la derecha cuentan.
+		lnSignificant = Len(Ltrim(Chrtran(lcMant, '-.', ''), 0, '0'))
+		tnLength = Len(tcLiteral)
+		tnDecimals = Iif(lnDot > 0, Len(lcMant) - lnDot, 0)
+		Do Case
+		Case lnExp > 0 or lnSignificant > 15 or tnLength > 20
+			If lnExp > 0
+				tnDecimals = tnDecimals - Int(Val(Substr(lcLower, lnExp + 1)))
+			EndIf
+			tnDecimals = Min(Max(tnDecimals, 0), 18)
+			Return 'B'
+		Case lnDot > 0 or Abs(tnValue) > INTEGER_MAX_CAPACITY
+			Return 'N'
+		EndCase
+		Return 'I'
+	EndFunc
+
+	* ============================================================= *
+	* MergeNumber
+	* Una columna de números que ya tiene tipo y recibe otro número.
+	* Con los mismos decimales se queda en I o en N (con el ancho mayor);
+	* con decimales distintos va a B: un N(w,d) los igualaba (un 0 de un
+	* Double volvía 0.00000) y 12345 seguido de 1.5 hacía un N(3,1) en el
+	* que el 12345 desbordaba.
+	* ============================================================= *
+	Hidden Function MergeNumber(toPair, tcType, tnLength, tnDecimals)
+		Local lnHave, lnNew
+		lnHave = Iif(toPair.fieldType == 'I', 0, toPair.fieldDecimals)
+		lnNew = Iif(tcType == 'I', 0, tnDecimals)
+		toPair.fieldLength = Max(toPair.fieldLength, tnLength)
+		Do Case
+		Case toPair.fieldType == 'B' or tcType == 'B' or lnHave != lnNew or toPair.fieldLength > 20
+			toPair.fieldType = 'B'
+			toPair.fieldDecimals = Min(Max(lnHave, lnNew), 18)
+		Case toPair.fieldType == 'I' and tcType == 'I'
+		Otherwise
+			toPair.fieldType = 'N'
+			toPair.fieldDecimals = lnNew
+		EndCase
+	EndFunc
+
 	Function match(tnTokenType)
 		With this
 			If .check(tnTokenType)
@@ -2023,7 +2163,11 @@ define class CursorToArray as session
 						lcOutput = m.lcOutput + m.lcValue
 					else
 						do case
-						case m.aColumns[m.i, 2] $ "CDTGMQVW"
+						case m.aColumns[m.i, 2] $ "QW"
+							* Varbinary y Blob en base64, como los da SQL Server
+							* (FOR JSON). Salían "": GetString no lee lo que no es C.
+							lcOutput = m.lcOutput + '"' + strconv(m.lcValue, 13) + '"'
+						case m.aColumns[m.i, 2] $ "CDTGMV"
 							do case
 							case m.aColumns[m.i, 2] = 'D'
 								if !empty(m.lcValue)
@@ -2042,8 +2186,9 @@ define class CursorToArray as session
 							endcase
 							lcOutput = m.lcOutput + Iif(this.TrimChars, Alltrim(m.lcValue), m.lcValue)
 						case m.aColumns[m.i, 2] = "B"
-							* Un Double guarda más decimales de los que enseña.
-							lcOutput = m.lcOutput + m.JSONUtils.NumberToJson(m.lcValue)
+							* Un Double guarda más decimales de los que enseña: sale
+							* con los que hacen falta para volver al mismo Double.
+							lcOutput = m.lcOutput + m.JSONUtils.DoubleToJson(m.lcValue)
 						case m.aColumns[m.i, 2] $ "YFIN"
 							lcOutput = m.lcOutput + m.JSONUtils.NumberToJson(m.lcValue, m.aColumns[m.i, 4])
 						case m.aColumns[m.i, 2] = "L"
@@ -2255,7 +2400,7 @@ define class JSONFox as session
 	lError          = .f.
 	cLastError      = ""
 	UseArrayObjects = .t.
-	version         = "13.1.3"
+	version         = "13.2.0"
 	hidden oUtils
 	hidden lTablePrompt
 	dimension aCustomArray[1]

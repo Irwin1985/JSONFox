@@ -57,7 +57,11 @@ define class CursorToArray as session
 						lcOutput = m.lcOutput + m.lcValue
 					else
 						do case
-						case m.aColumns[m.i, 2] $ "CDTGMQVW"
+						case m.aColumns[m.i, 2] $ "QW"
+							* Varbinary y Blob en base64, como los da SQL Server
+							* (FOR JSON). Salían "": GetString no lee lo que no es C.
+							lcOutput = m.lcOutput + '"' + strconv(m.lcValue, 13) + '"'
+						case m.aColumns[m.i, 2] $ "CDTGMV"
 							do case
 							case m.aColumns[m.i, 2] = 'D'
 								if !empty(m.lcValue)
@@ -76,8 +80,9 @@ define class CursorToArray as session
 							endcase
 							lcOutput = m.lcOutput + Iif(this.TrimChars, Alltrim(m.lcValue), m.lcValue)
 						case m.aColumns[m.i, 2] = "B"
-							* Un Double guarda más decimales de los que enseña.
-							lcOutput = m.lcOutput + m.JSONUtils.NumberToJson(m.lcValue)
+							* Un Double guarda más decimales de los que enseña: sale
+							* con los que hacen falta para volver al mismo Double.
+							lcOutput = m.lcOutput + m.JSONUtils.DoubleToJson(m.lcValue)
 						case m.aColumns[m.i, 2] $ "YFIN"
 							lcOutput = m.lcOutput + m.JSONUtils.NumberToJson(m.lcValue, m.aColumns[m.i, 4])
 						case m.aColumns[m.i, 2] = "L"

@@ -131,15 +131,7 @@ Define Class ArrayToCursor As Session
 			lnDecimals = 0
 			Do Case
 			Case lcType == 'N'
-				local lcNumStr
-				lcNumStr = lxValue.Literal
-				lcType = Iif(Occurs('.', lcNumStr) > 0 or lxValue.Value > INTEGER_MAX_CAPACITY, 'N', 'I')
-				&& >>>>>>> IRODG 03/17/24
-				If lcType == 'N'
-					lnFieldLength = Len(lcNumStr)
-					lnDecimals = len(GetWordNum(lcNumStr,2,'.'))
-				EndIf
-				&& <<<<<<< IRODG 03/17/24
+				lcType = .NumberType(lxValue.Literal, lxValue.Value, @lnFieldLength, @lnDecimals)
 			Case lcType == 'C'
 				If Len(lxValue.Value) > STRING_MAX_SIZE
 					lcType = 'M'
@@ -186,7 +178,8 @@ Define Class ArrayToCursor As Session
 				lcValue = .previous.value
 				loToken.type = 'N'
 				loToken.literal = .previous.value
-				loToken.value = iif(at('.', lcValue) > 0, evaluate(lcValue), int(Val(lcValue)))
+				* Con exponente también por EVALUATE: INT(VAL('1e-7')) era 0.
+				loToken.value = iif(at('.', lcValue) > 0 or 'e' $ lower(lcValue), evaluate(lcValue), int(Val(lcValue)))
 
 			case .match(T_BOOLEAN)
 				loToken.type = 'L'
@@ -244,8 +237,11 @@ Define Class ArrayToCursor As Session
 					loPair.FieldType = 'L'
 				Case loPair.FieldType == 'C'
 					lcFlags = '(' + Alltrim(Str(loPair.FieldLength)) + ')'
-				Case loPair.FieldType == 'N'					
+				Case loPair.FieldType == 'N'
 					lcFlags = "("+Alltrim(Str(loPair.FieldLength))+","+Alltrim(Str(loPair.FieldDecimals))+")" && Integer part 18 and Decimal part 5
+				Case loPair.FieldType == 'B'
+					* Los decimales de un B solo son los que enseña: guarda el Double entero.
+					lcFlags = "(" + Alltrim(Str(loPair.FieldDecimals)) + ")"
 				EndCase
 				cQuery = cQuery + loPair.FieldType + lcFlags + " NULL"			
 			EndFor
@@ -260,56 +256,32 @@ Define Class ArrayToCursor As Session
 	* ============================================================= *
 	* CheckStructure
 	* Adds or Updates an entry key in the oTableStruct dictionary
+	*
+	* loPair es una referencia: se cambia en su sitio. Antes se quitaba
+	* y se volvía a añadir, y el campo pasaba al final del cursor: con
+	* un null en la primera fila, el JSON de vuelta cambiaba de orden.
 	* ============================================================= *
 	Function CheckStructure(tcFieldName, tcType, tnLength, tnDecimals)
 		With this
-			Local nFieldIdx, loPair, lbUpdate
+			Local nFieldIdx, loPair
 			nFieldIdx = .oTableStruct.GetKey(tcFieldName)
 			If nFieldIdx > 0
 				loPair = .oTableStruct.Item(nFieldIdx)
-				* Check for .NULL. type and Update
 				Do case
+				case tcType == 'X'
+					* Un null no cambia el campo.
 				case loPair.fieldType == 'X'
-					loPair.fieldType   = tcType
-					loPair.fieldLength = tnLength
-					* Remove the key and registry a new one
-					.oTableStruct.Remove(nFieldIdx)
-					.oTableStruct.Add(loPair, tcFieldName)
+					loPair.fieldType     = tcType
+					loPair.fieldLength   = tnLength
+					* Sin esto, [null, 3.14] hacía un N(4,0) y volvía 3.
+					loPair.fieldDecimals = tnDecimals
 
 				case loPair.fieldType == 'C' && Check string length (always saves the longest)
 					If tnLength > loPair.fieldLength
 						loPair.fieldLength = tnLength
-						* Remove the key and registry a new one
-						.oTableStruct.Remove(nFieldIdx)
-						.oTableStruct.Add(loPair, tcFieldName)
 					EndIf
-				&& >>>>>>> IRODG 03/17/24
-				case loPair.fieldType == 'N' && Check integer and decimal part length (always saves the longest)
-					If tnLength > loPair.fieldLength
-						loPair.fieldLength = tnLength
-						lbUpdate = .T.
-					EndIf
-					If tnDecimals > loPair.fieldDecimals
-						loPair.fieldDecimals = tnDecimals
-						lbUpdate = .T.
-					EndIf
-					If lbUpdate
-						* Remove the key and registry a new one
-						.oTableStruct.Remove(nFieldIdx)
-						.oTableStruct.Add(loPair, tcFieldName)
-					EndIf
-				Case loPair.fieldType == 'I' and tcType == 'N' && Check string length (always saves the longest)
-					loPair.fieldType = tcType
-					If tnLength > loPair.fieldLength
-						loPair.fieldLength = tnLength
-					EndIf
-					If tnDecimals > loPair.fieldDecimals
-						loPair.fieldDecimals = tnDecimals
-					EndIf
-					* Remove the key and registry a new one
-					.oTableStruct.Remove(nFieldIdx)
-					.oTableStruct.Add(loPair, tcFieldName)
-				&& <<<<<<< IRODG 03/17/24
+				case loPair.fieldType $ 'INB' and tcType $ 'INB'
+					.MergeNumber(loPair, tcType, tnLength, tnDecimals)
 				EndCase
 			Else
 				* Insert new field.
@@ -321,7 +293,68 @@ Define Class ArrayToCursor As Session
 			EndIf
 		EndWith
 	EndFunc
-		
+
+	* ============================================================= *
+	* NumberType
+	* El campo para un número JSON, sin perder nada (FoxDock, P6b-M0):
+	*   I  un entero que cabe en un Integer.
+	*   N  un entero más grande, o uno con decimales: N(w,d) con los
+	*      decimales del literal. Un N guarda el número como texto y lo
+	*      devuelve igual hasta 15 cifras significativas.
+	*   B  con exponente, con más de 15 cifras significativas o más de
+	*      20 de ancho (lo más que admite un N): un Double, que EVALUATE
+	*      lee bit a bit. Antes, 0.30000000000000004 volvía 0.3, 1e-7
+	*      volvía 0 y un N de 21 no se podía crear.
+	* Devuelve el tipo, y por referencia el ancho y los decimales (en un
+	* B, los que enseña).
+	* ============================================================= *
+	Hidden Function NumberType(tcLiteral, tnValue, tnLength, tnDecimals)
+		Local lcLower, lnExp, lcMant, lnDot, lnSignificant
+		lcLower = Lower(tcLiteral)
+		lnExp = At('e', lcLower)
+		lcMant = Iif(lnExp > 0, Left(lcLower, lnExp - 1), lcLower)
+		lnDot = At('.', lcMant)
+		* Las cifras sin los ceros de la izquierda: los de la derecha cuentan.
+		lnSignificant = Len(Ltrim(Chrtran(lcMant, '-.', ''), 0, '0'))
+		tnLength = Len(tcLiteral)
+		tnDecimals = Iif(lnDot > 0, Len(lcMant) - lnDot, 0)
+		Do Case
+		Case lnExp > 0 or lnSignificant > 15 or tnLength > 20
+			If lnExp > 0
+				tnDecimals = tnDecimals - Int(Val(Substr(lcLower, lnExp + 1)))
+			EndIf
+			tnDecimals = Min(Max(tnDecimals, 0), 18)
+			Return 'B'
+		Case lnDot > 0 or Abs(tnValue) > INTEGER_MAX_CAPACITY
+			Return 'N'
+		EndCase
+		Return 'I'
+	EndFunc
+
+	* ============================================================= *
+	* MergeNumber
+	* Una columna de números que ya tiene tipo y recibe otro número.
+	* Con los mismos decimales se queda en I o en N (con el ancho mayor);
+	* con decimales distintos va a B: un N(w,d) los igualaba (un 0 de un
+	* Double volvía 0.00000) y 12345 seguido de 1.5 hacía un N(3,1) en el
+	* que el 12345 desbordaba.
+	* ============================================================= *
+	Hidden Function MergeNumber(toPair, tcType, tnLength, tnDecimals)
+		Local lnHave, lnNew
+		lnHave = Iif(toPair.fieldType == 'I', 0, toPair.fieldDecimals)
+		lnNew = Iif(tcType == 'I', 0, tnDecimals)
+		toPair.fieldLength = Max(toPair.fieldLength, tnLength)
+		Do Case
+		Case toPair.fieldType == 'B' or tcType == 'B' or lnHave != lnNew or toPair.fieldLength > 20
+			toPair.fieldType = 'B'
+			toPair.fieldDecimals = Min(Max(lnHave, lnNew), 18)
+		Case toPair.fieldType == 'I' and tcType == 'I'
+		Otherwise
+			toPair.fieldType = 'N'
+			toPair.fieldDecimals = lnNew
+		EndCase
+	EndFunc
+
 	Function match(tnTokenType)
 		With this
 			If .check(tnTokenType)

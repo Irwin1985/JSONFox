@@ -6,10 +6,16 @@
 define class jsonutils as custom
 	EscapeOptionalChars = .t.
 	oRegEx = .null.
+	* Los caracteres que van tal cual en una cadena JSON: el ASCII imprimible.
+	cPlainChars = ""
 
 	dimension aPattern[8, 2]
 
 	function init
+		local lnChar
+		for lnChar = 32 to 127
+			this.cPlainChars = this.cPlainChars + chr(lnChar)
+		endfor
 		this.oRegEx = createobject("VBScript.RegExp")
 		this.oRegEx.global = .t.
 && Match a date format in the following pattern
@@ -64,6 +70,10 @@ define class jsonutils as custom
 				tcvalue = '"' + ttoc(tcvalue,3) + '"'
 			case tctype == 'X'
 				tcvalue = "null"
+			case tctype == 'Q'
+				* Varbinary y Blob (VARTYPE da Q a los dos) en base64, como
+				* CursorToJSON. Antes, "": GetString no lee lo que no es C.
+				tcvalue = '"' + strconv(tcvalue, 13) + '"'
 			otherwise
 				tcvalue = this.getString(iif(tlTrimChars, alltrim(tcvalue), tcvalue), tlParseUTF8)
 			endcase
@@ -112,6 +122,76 @@ define class jsonutils as custom
 			lcNum = rtrim(rtrim(m.lcNum, 0, '0'), 0, '.')
 		endif
 		return m.lcNum
+	endfunc
+
+&& ======================================================================== &&
+&& Function DoubleToJson
+&& Un Double (campo B) con el decimal más corto que vuelve al MISMO Double:
+&& 15 cifras significativas y, si no basta, 16 o 17. Con 15 fijas, 1/3 y
+&& 0.1 + 0.2 volvían a otro Double y 1E-20 salía 0 (FoxDock, P6b-M0).
+&& Vuelve como lo lee JSONToCursor, con EVALUATE, y se compara con BINTOC
+&& porque el == de VFP da 0.1 + 0.2 igual a 0.3. Sin exponente entre 1e-20
+&& y 1e20, como DataTable.DoubleText de FoxDock. Un infinito, que JSON no
+&& tiene, sale null.
+&& ======================================================================== &&
+	function DoubleToJson(tnValue)
+		local lcRef, lnDigits, lcNum, lvBack
+		lcRef = bintoc(m.tnValue, "B")
+		for lnDigits = 15 to 17
+			lcNum = this.PlainNumber(this.FormatG(m.tnValue, m.lnDigits))
+			try
+				lvBack = evaluate(m.lcNum)
+			catch
+				lvBack = .null.
+			endtry
+			if vartype(m.lvBack) != 'N' or bintoc(m.lvBack, "B") == m.lcRef
+				exit
+			endif
+		endfor
+		return iif(vartype(m.lvBack) == 'N', m.lcNum, "null")
+	endfunc
+
+&& FormatG: el %.<n>g de msvcrt (STR no da más de 16 cifras).
+	hidden function FormatG(tnValue, tnDigits)
+		local lcBuf, lcFormat, lnLen
+		lcBuf = replicate(chr(0), 64)
+		lcFormat = "%." + transform(m.tnDigits) + "g"
+		try
+			lnLen = JsonFoxSnprintf(@lcBuf, 63, m.lcFormat, m.tnValue)
+		catch
+			* La primera vez, o después de un CLEAR DLLS del programa que
+			* nos usa.
+			declare integer _snprintf in msvcrt as JsonFoxSnprintf ;
+				string @cBuf, integer nCount, string cFormat, double nValue
+			lnLen = JsonFoxSnprintf(@lcBuf, 63, m.lcFormat, m.tnValue)
+		endtry
+		return left(m.lcBuf, max(0, m.lnLen))
+	endfunc
+
+&& PlainNumber: el número de %g sin exponente (msvcrt escribe 1e-020 y
+&& 1e+020) si el exponente no pasa de 20; si pasa, con él (1.5e+300).
+	hidden function PlainNumber(tcNum)
+		local lnE, lcMant, lnExp, lcSign, lcDigits, lnPoint
+		lnE = at("e", m.tcNum)
+		if m.lnE = 0
+			return m.tcNum
+		endif
+		lcMant = left(m.tcNum, m.lnE - 1)
+		lnExp = int(val(substr(m.tcNum, m.lnE + 1)))
+		if abs(m.lnExp) > 20
+			return m.lcMant + "e" + iif(m.lnExp > 0, "+", "-") + transform(abs(m.lnExp))
+		endif
+		lcSign = iif(left(m.lcMant, 1) == "-", "-", "")
+		lcMant = chrtran(m.lcMant, "-", "")
+		lcDigits = chrtran(m.lcMant, ".", "")
+		lnPoint = iif(at(".", m.lcMant) = 0, len(m.lcMant), at(".", m.lcMant) - 1) + m.lnExp
+		do case
+		case m.lnPoint <= 0
+			return m.lcSign + "0." + replicate("0", -m.lnPoint) + m.lcDigits
+		case m.lnPoint >= len(m.lcDigits)
+			return m.lcSign + m.lcDigits + replicate("0", m.lnPoint - len(m.lcDigits))
+		endcase
+		return m.lcSign + left(m.lcDigits, m.lnPoint) + "." + substr(m.lcDigits, m.lnPoint + 1)
 	endfunc
 
 && ======================================================================== &&
@@ -229,22 +309,10 @@ define class jsonutils as custom
 		endif
 		tcString = strtran(m.tcString, '"', '\"' )  && Double quotes (mandatory)
 
-* Escape all chars > 127 automatically
-		local i, nChar, lcChar, lcResult
-		lcResult = ""
-		for i=1 to len(m.tcString)
-			lcChar = substr(m.tcString,m.i,1)
-			nChar = asc(m.lcChar)
-
-			if m.nChar > 127
-				* Convert to Unicode escape \uXXXX
-				lcResult = m.lcResult + '\u' + right('0000' + transform(m.nChar, '@0'), 4)
-			else
-				lcResult = m.lcResult + m.lcChar
-			endif
-		next
-
-		tcString = m.lcResult
+* Lo que no es ASCII imprimible, como \uXXXX del carácter Unicode.
+		if len(chrtran(m.tcString, this.cPlainChars, "")) > 0
+			tcString = this.EscapeUnicode(m.tcString)
+		endif
 
 		* Add quotes if missing
 		LOCAL lnLen, lcLastChar, lcPrevChar
@@ -259,6 +327,29 @@ define class jsonutils as custom
 		ENDIF
 
 		return m.tcString
+	endfunc
+&& ======================================================================== &&
+&& Function EscapeUnicode
+&& Cada carácter que no es ASCII imprimible, como \uXXXX de su código
+&& Unicode. Se escapaba el BYTE: el € (0x80 en 1252) salía \u0080, que en
+&& JSON es un carácter de control (FoxDock, P6b-M0). La cadena pasa a
+&& UTF-16 desde CPCURRENT(), la página de los valores que VFP ya leyó, y el
+&& tokenizer hace la vuelta con la misma. Los de control (< 32) que no
+&& tienen escape corto también van así: JSON no los deja ir sueltos.
+&& ======================================================================== &&
+	function EscapeUnicode(tcString)
+		local lcWide, lcOut, lnPos, lnCode
+		lcWide = strconv(m.tcString, 5, cpcurrent(), 1)
+		lcOut = ""
+		for lnPos = 1 to len(m.lcWide) - 1 step 2
+			lnCode = asc(substr(m.lcWide, m.lnPos, 1)) + 256 * asc(substr(m.lcWide, m.lnPos + 1, 1))
+			if between(m.lnCode, 32, 127)
+				lcOut = m.lcOut + chr(m.lnCode)
+			else
+				lcOut = m.lcOut + '\u' + right(transform(m.lnCode, '@0'), 4)
+			endif
+		endfor
+		return m.lcOut
 	endfunc
 && ======================================================================== &&
 && Function CheckProp
