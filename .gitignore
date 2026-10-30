@@ -35,4 +35,4 @@ JSONFoxHelper/obj/x86/Release/JSONFoxHelper.csproj.FileListAbsolute.txt
 *debug*.txt
 JSONFox.pjx.buildlog.txt
 _result.txt
-!standalone/JsonFox.fxp
+!standalone/JsonFox.fxpshared-rules/
